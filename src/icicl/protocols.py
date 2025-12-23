@@ -1,4 +1,4 @@
-"""Protocol definitions for icicl components."""
+"""Protocol definitions for ICICL components."""
 
 from typing import Protocol, runtime_checkable
 
@@ -10,10 +10,30 @@ class Environment(Protocol):
     """Protocol for environments that the agent interacts with.
 
     Users must implement this protocol for their specific environment.
+    The environment should store the goal from reset() internally
+    to use when determining success in step().
+
+    Example:
+        class MyEnvironment:
+            def __init__(self):
+                self._goal = ""
+
+            def reset(self, goal: str) -> str:
+                self._goal = goal  # Store for success checking
+                return "Initial observation..."
+
+            def step(self, action: str) -> tuple[str, bool, bool]:
+                # ... execute action ...
+                done = self._check_done()
+                success = self._check_success(self._goal)
+                return observation, done, success
     """
 
     def reset(self, goal: str) -> str:
         """Reset the environment for a new episode.
+
+        The environment should store the goal internally for use
+        when determining success in step().
 
         Args:
             goal: The goal description for this episode.
@@ -23,23 +43,17 @@ class Environment(Protocol):
         """
         ...
 
-    def step(self, action: str) -> tuple[str, bool]:
+    def step(self, action: str) -> tuple[str, bool, bool]:
         """Execute an action in the environment.
 
         Args:
             action: The action to execute.
 
         Returns:
-            A tuple of (observation, done) where observation is the resulting
-            observation string and done indicates if the episode has ended.
-        """
-        ...
-
-    def is_success(self) -> bool:
-        """Check if the current episode was successful.
-
-        Returns:
-            True if the episode ended successfully, False otherwise.
+            A tuple of (observation, done, success) where:
+            - observation: The resulting observation string
+            - done: Whether the episode has ended
+            - success: Whether the goal was achieved (use stored goal from reset)
         """
         ...
 
@@ -88,4 +102,3 @@ class Embedder(Protocol):
             Embedding vector.
         """
         ...
-

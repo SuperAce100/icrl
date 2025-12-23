@@ -85,11 +85,9 @@ class LiteLLMProvider:
         return response.choices[0].message.content or ""
 
 
-# Verify it implements the protocol
 def _check_protocol() -> None:
     provider: LLMProvider = LiteLLMProvider()
     _ = provider
 
 
 del _check_protocol
-

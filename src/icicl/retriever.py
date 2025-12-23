@@ -88,4 +88,3 @@ class TrajectoryRetriever:
         if self._retrieved_ids:
             self._database.record_retrieval(self._retrieved_ids, success)
         self.clear_retrieved()
-

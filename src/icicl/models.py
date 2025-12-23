@@ -1,6 +1,7 @@
-"""Pydantic models for icicl trajectories and messages."""
+"""Pydantic models for ICICL trajectories and messages."""
 
 from typing import Any
+
 from pydantic import BaseModel, Field
 import uuid
 
@@ -82,4 +83,3 @@ class CurationMetadata(BaseModel):
             self.utility_score = self.times_led_to_success / self.times_retrieved
         else:
             self.utility_score = 0.0
-

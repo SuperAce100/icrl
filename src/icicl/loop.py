@@ -10,7 +10,7 @@ from icicl.retriever import TrajectoryRetriever
 class ReActLoop:
     """ReAct-style agent loop with planning, reasoning, and acting phases.
 
-    Follows the algorithm from the icicl paper:
+    Follows the algorithm from the SGICL paper:
     1. Retrieve examples and generate initial plan
     2. For each step: observe, retrieve examples, reason, retrieve again, act
     3. Continue until done or max_steps reached
@@ -64,6 +64,7 @@ class ReActLoop:
 
         steps: list[Step] = []
         done = False
+        success = False
 
         for _ in range(self._max_steps):
             context = StepContext(
@@ -95,12 +96,11 @@ class ReActLoop:
             if self._on_step:
                 self._on_step(step, context)
 
-            observation, done = env.step(action)
+            observation, done, success = env.step(action)
 
             if done:
                 break
 
-        success = env.is_success()
         self._retriever.record_episode_result(success)
 
         return Trajectory(
@@ -169,4 +169,3 @@ class ReActLoop:
             history=context.format_history(),
             examples=context.format_examples(),
         )
-

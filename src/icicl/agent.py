@@ -1,4 +1,4 @@
-"""Main Agent class for icicl."""
+"""Main Agent class for ICICL."""
 
 import asyncio
 from typing import Callable
@@ -12,7 +12,7 @@ from icicl.retriever import TrajectoryRetriever
 
 
 class Agent:
-    """icicl Agent that learns from self-generated trajectories.
+    """ICICL Agent that learns from self-generated trajectories.
 
     This agent implements the Self-Generated In-Context Learning algorithm,
     which bootstraps performance by accumulating successful trajectories
@@ -33,7 +33,7 @@ class Agent:
         curation_threshold: float = 0.3,
         curation_min_retrievals: int = 5,
     ) -> None:
-        """Initialize the icicl Agent.
+        """Initialize the ICICL Agent.
 
         Args:
             llm: The LLM provider for generating completions.
@@ -209,4 +209,3 @@ class Agent:
             "successful_trajectories": successful,
             "success_rate": successful / len(all_trajs) if all_trajs else 0.0,
         }
-

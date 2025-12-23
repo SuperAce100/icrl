@@ -47,11 +47,9 @@ class SentenceTransformerEmbedder:
         return self._model.get_sentence_embedding_dimension()
 
 
-# Verify it implements the protocol
 def _check_protocol() -> None:
     embedder: Embedder = SentenceTransformerEmbedder()
     _ = embedder
 
 
 del _check_protocol
-

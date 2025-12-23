@@ -1,6 +1,6 @@
-"""icicl: Self-Generated In-Context Learning for LLM Agents.
+"""ICICL: In-Context ICL for LLM Agents.
 
-This package implements the icicl algorithm from the paper:
+This package implements the Self-Generated In-Context Learning algorithm from:
 "Self-Generated In-Context Examples Improve LLM Agents for Sequential Decision-Making Tasks"
 
 Example usage:

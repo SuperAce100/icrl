@@ -6,7 +6,7 @@ from icicl.database import TrajectoryDatabase
 class CurationManager:
     """Manages automatic curation of trajectory databases.
 
-    Implements exemplar-level curation from the icicl paper:
+    Implements exemplar-level curation from the SGICL paper:
     - Tracks which trajectories are retrieved and whether they lead to success
     - Periodically prunes trajectories with low utility scores
     """
@@ -105,4 +105,3 @@ class CurationManager:
                 low_utility.append(trajectory.id)
 
         return low_utility
-

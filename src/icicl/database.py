@@ -260,4 +260,3 @@ class TrajectoryDatabase:
         self._save_curation()
 
         return True
-
