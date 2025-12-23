@@ -96,11 +96,12 @@ class ReActLoop:
             if self._on_step:
                 self._on_step(step, context)
 
-            observation, done, success = env.step(action)
+            observation, done = env.step(action)
 
             if done:
                 break
 
+        success = env.is_success()
         self._retriever.record_episode_result(success)
 
         return Trajectory(
