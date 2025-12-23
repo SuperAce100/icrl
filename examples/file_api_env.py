@@ -91,11 +91,11 @@ def create_default_file_tree() -> tuple[dict[str, str], set[str]]:
         Tuple of (files dict, directories set)
     """
     files = {
-        "/home/user/projects/README.md": "# My Projects\n\nThis is the projects directory.",
-        "/home/user/projects/src/main.py": 'def main():\n    print("Hello, World!")\n\nif __name__ == "__main__":\n    main()',
-        "/home/user/projects/src/utils.py": "def helper():\n    return 42\n\ndef format_output(data):\n    return str(data)",
-        "/home/user/projects/src/config.py": 'DATABASE_URL = "postgres://localhost/db"\nDEBUG = True',
-        "/home/user/docs/notes.txt": "Meeting notes:\n- Discuss project timeline\n- Review code changes\n- Plan next sprint",
+        "/home/user/projects/README.md": "# My Projects\n\nThis is the projects directory.",  # noqa: E501
+        "/home/user/projects/src/main.py": 'def main():\n    print("Hello, World!")\n\nif __name__ == "__main__":\n    main()',  # noqa: E501
+        "/home/user/projects/src/utils.py": "def helper():\n    return 42\n\ndef format_output(data):\n    return str(data)",  # noqa: E501
+        "/home/user/projects/src/config.py": 'DATABASE_URL = "postgres://localhost/db"\nDEBUG = True',  # noqa: E501
+        "/home/user/docs/notes.txt": "Meeting notes:\n- Discuss project timeline\n- Review code changes\n- Plan next sprint",  # noqa: E501
         "/etc/app/config.json": json.dumps(
             {"port": 8080, "db_password": "secret123", "debug": False}, indent=2
         ),
@@ -154,32 +154,37 @@ class FileSystemEnvironment:
         if self._task.setup:
             self._task.setup(self._state)
 
-        return f"You are in a file system. Current directory: /\nGoal: {self._task.goal}\nAvailable commands: ls, cd <dir>, cat <file>, find <pattern>, pwd, mkdir <name>, cp <src> <dst>"
+        return (
+            f"You are in a file system. Current directory: /\nGoal: {self._task.goal}\n"
+            "Available commands: ls, cd <dir>, cat <file>, find <pattern>, "
+            "pwd, mkdir <name>, cp <src> <dst>"
+        )
 
-    def step(self, action: str) -> tuple[str, bool]:
+    def step(self, action: str) -> tuple[str, bool, bool]:
         """Execute an action in the environment.
 
         Args:
             action: The action to execute.
 
         Returns:
-            Tuple of (observation, done).
+            Tuple of (observation, done, success).
         """
         self._action_count += 1
         action = action.strip()
 
         if self._action_count >= self._max_actions:
             self._done = True
-            return "Maximum actions reached. Episode ended.", True
+            return "Maximum actions reached. Episode ended.", True, False
 
         observation = self._execute_action(action)
         self._state.last_output = observation
 
-        if self._task.verify(self._state):
+        success = self._task.verify(self._state)
+        if success:
             self._done = True
-            return observation + "\n[Task completed successfully!]", True
+            return observation + "\n[Task completed successfully!]", True, True
 
-        return observation, False
+        return observation, False, False
 
     def is_success(self) -> bool:
         """Check if the task was completed successfully."""
@@ -206,7 +211,10 @@ class FileSystemEnvironment:
 
         if cmd in handlers:
             return handlers[cmd](args)
-        return f"Error: Unknown command '{cmd}'. Available: ls, cd, cat, find, pwd, mkdir, cp"
+        return (
+            f"Error: Unknown command '{cmd}'. "
+            "Available: ls, cd, cat, find, pwd, mkdir, cp"
+        )
 
     def _cmd_ls(self, args: str) -> str:
         """List directory contents."""
@@ -311,4 +319,3 @@ class FileSystemEnvironment:
 
         self._state.files[dst_normalized] = self._state.files[src_normalized]
         return f"Copied {src_normalized} to {dst_normalized}"
-

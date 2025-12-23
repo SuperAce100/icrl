@@ -86,7 +86,8 @@ async def run_training_demo(db_path: Path) -> None:
     """Run the training demonstration."""
     console.print("\n[bold cyan]═══ Training Phase ═══[/bold cyan]")
     console.print(
-        "[dim]Training the agent on tasks. Successful trajectories will be stored.[/dim]\n"
+        "[dim]Training the agent on tasks. "
+        "Successful trajectories will be stored.[/dim]\n"
     )
 
     llm = MockLLMProvider()
@@ -109,7 +110,9 @@ async def run_training_demo(db_path: Path) -> None:
         trajectory = await agent.train(env, task.goal)
 
         if trajectory.success:
-            console.print(f"[green]✓ Success![/green] Completed in {len(trajectory.steps)} steps")
+            console.print(
+                f"[green]✓ Success![/green] Completed in {len(trajectory.steps)} steps"
+            )
         else:
             console.print(f"[red]✗ Failed[/red] after {len(trajectory.steps)} steps")
 
@@ -123,7 +126,9 @@ async def run_training_demo(db_path: Path) -> None:
 async def run_persistence_demo(db_path: Path) -> None:
     """Demonstrate database persistence by loading from disk."""
     console.print("\n[bold cyan]═══ Persistence Demo ═══[/bold cyan]")
-    console.print("[dim]Creating a new agent that loads trajectories from disk...[/dim]\n")
+    console.print(
+        "[dim]Creating a new agent that loads trajectories from disk...[/dim]\n"
+    )
 
     llm = MockLLMProvider()
     new_agent = Agent(
@@ -141,14 +146,17 @@ async def run_persistence_demo(db_path: Path) -> None:
 
     for traj in trajectories[:3]:
         console.print(f"  [dim]•[/dim] Goal: {traj.goal[:50]}...")
-        console.print(f"    [dim]Steps: {len(traj.steps)}, Success: {traj.success}[/dim]")
+        console.print(
+            f"    [dim]Steps: {len(traj.steps)}, Success: {traj.success}[/dim]"
+        )
 
 
 async def run_evaluation_demo(db_path: Path) -> None:
     """Run evaluation on held-out tasks."""
     console.print("\n[bold cyan]═══ Evaluation Phase ═══[/bold cyan]")
     console.print(
-        "[dim]Testing on held-out tasks using frozen database (no new learning)...[/dim]\n"
+        "[dim]Testing on held-out tasks using frozen database "
+        "(no new learning)...[/dim]\n"
     )
 
     llm = MockLLMProvider()
@@ -170,18 +178,25 @@ async def run_evaluation_demo(db_path: Path) -> None:
         trajectory = await agent.run(env, task.goal)
 
         if trajectory.success:
-            console.print(f"  [green]✓ Success[/green] in {len(trajectory.steps)} steps")
+            console.print(
+                f"  [green]✓ Success[/green] in {len(trajectory.steps)} steps"
+            )
             successes += 1
         else:
             console.print("  [red]✗ Failed[/red]")
 
-    console.print(f"\n[bold]Evaluation Results:[/bold] {successes}/{len(EVAL_TASKS)} tasks succeeded")
+    console.print(
+        f"\n[bold]Evaluation Results:[/bold] "
+        f"{successes}/{len(EVAL_TASKS)} tasks succeeded"
+    )
 
 
 async def run_retrieval_demo(db_path: Path) -> None:
     """Demonstrate trajectory retrieval."""
     console.print("\n[bold cyan]═══ Retrieval Demo ═══[/bold cyan]")
-    console.print("[dim]Showing how similar trajectories are retrieved for new goals...[/dim]\n")
+    console.print(
+        "[dim]Showing how similar trajectories are retrieved for new goals...[/dim]\n"
+    )
 
     llm = MockLLMProvider()
     agent = Agent(
@@ -207,16 +222,24 @@ async def run_retrieval_demo(db_path: Path) -> None:
         if results:
             for j, traj in enumerate(results, 1):
                 console.print(f"  [cyan]{j}.[/cyan] {traj.goal[:60]}...")
-                console.print(f"     [dim]Success: {traj.success}, Steps: {len(traj.steps)}[/dim]")
+                console.print(
+                    f"     [dim]Success: {traj.success}, Steps: {len(traj.steps)}[/dim]"
+                )
         else:
             console.print("  [dim]No matching trajectories found[/dim]")
 
 
 async def main() -> None:
     """Run all demonstrations."""
-    console.print("[bold magenta]╔══════════════════════════════════════════╗[/bold magenta]")
-    console.print("[bold magenta]║   ICICL File System Agent - Mock Demo   ║[/bold magenta]")
-    console.print("[bold magenta]╚══════════════════════════════════════════╝[/bold magenta]")
+    console.print(
+        "[bold magenta]╔══════════════════════════════════════════╗[/bold magenta]"
+    )
+    console.print(
+        "[bold magenta]║   ICICL File System Agent - Mock Demo   ║[/bold magenta]"
+    )
+    console.print(
+        "[bold magenta]╚══════════════════════════════════════════╝[/bold magenta]"
+    )
 
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / "trajectories"
@@ -232,4 +255,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

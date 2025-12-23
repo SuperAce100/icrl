@@ -41,7 +41,8 @@ class Agent:
             plan_prompt: Template for planning prompts.
                         Placeholders: {goal}, {examples}
             reason_prompt: Template for reasoning prompts.
-                          Placeholders: {goal}, {plan}, {observation}, {history}, {examples}
+                          Placeholders: {goal}, {plan}, {observation},
+                          {history}, {examples}
             act_prompt: Template for action prompts.
                        Placeholders: {goal}, {plan}, {reasoning}, {history}, {examples}
             k: Number of examples to retrieve at each decision point.
@@ -49,7 +50,8 @@ class Agent:
             seed_trajectories: Initial trajectories to populate the database.
             on_step: Optional callback called after each step.
             curation_threshold: Utility threshold below which trajectories are pruned.
-            curation_min_retrievals: Minimum retrievals before a trajectory can be pruned.
+            curation_min_retrievals: Minimum retrievals before a trajectory
+                can be pruned.
         """
         self._llm = llm
         self._plan_prompt = plan_prompt

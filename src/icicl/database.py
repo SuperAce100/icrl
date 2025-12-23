@@ -35,7 +35,7 @@ class TrajectoryDatabase:
         self._embedder = embedder or SentenceTransformerEmbedder()
         self._trajectories: dict[str, Trajectory] = {}
         self._curation_metadata: dict[str, CurationMetadata] = {}
-        self._index: faiss.IndexFlatIP | None = None
+        self._index: faiss.IndexFlatIP | None = None  # type: ignore[assignment]
         self._id_to_idx: dict[str, int] = {}
         self._idx_to_id: dict[int, str] = {}
 
@@ -62,7 +62,7 @@ class TrajectoryDatabase:
         index_file = self._path / "index.faiss"
         ids_file = self._path / "index_ids.json"
         if index_file.exists() and ids_file.exists():
-            self._index = faiss.read_index(str(index_file))
+            self._index = faiss.read_index(str(index_file))  # type: ignore[assignment]
             with open(ids_file) as f:
                 id_list = json.load(f)
                 self._id_to_idx = {id_: idx for idx, id_ in enumerate(id_list)}
@@ -82,7 +82,7 @@ class TrajectoryDatabase:
         """Save the FAISS index to disk."""
         if self._index is not None:
             index_file = self._path / "index.faiss"
-            faiss.write_index(self._index, str(index_file))
+            faiss.write_index(self._index, str(index_file))  # type: ignore[assignment]
 
             ids_file = self._path / "index_ids.json"
             id_list = [self._idx_to_id[i] for i in range(len(self._idx_to_id))]
@@ -99,7 +99,7 @@ class TrajectoryDatabase:
     def _rebuild_index(self) -> None:
         """Rebuild the FAISS index from all trajectories."""
         if not self._trajectories:
-            self._index = faiss.IndexFlatIP(self._embedder.dimension)
+            self._index = faiss.IndexFlatIP(self._embedder.dimension)  # type: ignore[assignment]
             self._id_to_idx = {}
             self._idx_to_id = {}
             return
@@ -114,8 +114,8 @@ class TrajectoryDatabase:
         embeddings_np = np.array(embeddings, dtype=np.float32)
         faiss.normalize_L2(embeddings_np)
 
-        self._index = faiss.IndexFlatIP(embeddings_np.shape[1])
-        self._index.add(embeddings_np)
+        self._index = faiss.IndexFlatIP(embeddings_np.shape[1])  # type: ignore[assignment]
+        self._index.add(embeddings_np)  # type: ignore[call-arg]
 
         self._id_to_idx = {id_: idx for idx, id_ in enumerate(ids)}
         self._idx_to_id = {idx: id_ for idx, id_ in enumerate(ids)}
@@ -147,10 +147,10 @@ class TrajectoryDatabase:
         faiss.normalize_L2(embedding_np)
 
         if self._index is None:
-            self._index = faiss.IndexFlatIP(len(embedding))
+            self._index = faiss.IndexFlatIP(len(embedding))  # type: ignore[assignment]
 
         idx = self._index.ntotal
-        self._index.add(embedding_np)
+        self._index.add(embedding_np)  # type: ignore[call-arg]
         self._id_to_idx[trajectory.id] = idx
         self._idx_to_id[idx] = trajectory.id
 
@@ -185,7 +185,7 @@ class TrajectoryDatabase:
         faiss.normalize_L2(embedding_np)
 
         k = min(k, self._index.ntotal)
-        _, indices = self._index.search(embedding_np, k)
+        _, indices = self._index.search(embedding_np, k)  # type: ignore[call-arg]
 
         results = []
         for idx in indices[0]:

@@ -22,11 +22,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 from rich.console import Console
 
-load_dotenv()
-
 from examples.file_api_env import FileSystemEnvironment
 from examples.tasks import EVAL_TASKS, TRAINING_TASKS
 from icicl import Agent, LiteLLMProvider, Step, StepContext
+
+load_dotenv()
 
 console = Console()
 
@@ -44,7 +44,7 @@ Goal: {goal}
 Previous successful examples from similar tasks:
 {examples}
 
-Create a brief, numbered plan to accomplish the goal. Be specific about the commands you'll use."""
+Create a brief, numbered plan to accomplish the goal. Be specific about the commands you'll use."""  # noqa: E501
 
 REASON_PROMPT = """You are navigating a file system to accomplish a goal.
 
@@ -60,7 +60,7 @@ Current observation: {observation}
 Examples from similar situations:
 {examples}
 
-Think step by step: What have you learned from the observation? What should you do next to make progress toward the goal?"""
+Think step by step: What have you learned from the observation? What should you do next to make progress toward the goal?"""  # noqa: E501
 
 ACT_PROMPT = """Goal: {goal}
 Plan: {plan}
@@ -99,13 +99,21 @@ async def run_demo() -> None:
     """Run the full demonstration."""
     model = os.environ.get("MODEL", "gpt-4o-mini")
 
-    console.print("[bold magenta]╔═══════════════════════════════════════════════╗[/bold magenta]")
-    console.print("[bold magenta]║   ICICL File System Agent - Real LLM Demo    ║[/bold magenta]")
-    console.print("[bold magenta]╚═══════════════════════════════════════════════╝[/bold magenta]")
+    console.print(
+        "[bold magenta]╔═══════════════════════════════════════════════╗[/bold magenta]"
+    )
+    console.print(
+        "[bold magenta]║   ICICL File System Agent - Real LLM Demo    ║[/bold magenta]"
+    )
+    console.print(
+        "[bold magenta]╚═══════════════════════════════════════════════╝[/bold magenta]"
+    )
     console.print(f"\n[dim]Using model: {model}[/dim]")
 
     if "OPENAI_API_KEY" not in os.environ and "ANTHROPIC_API_KEY" not in os.environ:
-        console.print("[yellow]Warning: No API key found. Set OPENAI_API_KEY or another provider's key.[/yellow]")
+        console.print(
+            "[yellow]Warning: No API key found. Set OPENAI_API_KEY or another provider's key.[/yellow]"  # noqa: E501
+        )
 
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / "trajectories"
@@ -143,7 +151,8 @@ async def run_demo() -> None:
 
                 if trajectory.success:
                     console.print(
-                        f"\n[green]✓ Success![/green] Completed in {len(trajectory.steps)} steps"
+                        f"\n[green]✓ Success![/green] "
+                        f"Completed in {len(trajectory.steps)} steps"
                     )
                     training_results.append(True)
                 else:
@@ -157,11 +166,15 @@ async def run_demo() -> None:
 
         stats = agent.get_stats()
         console.print("\n[bold]Training Summary:[/bold]")
-        console.print(f"  Trajectories stored: [cyan]{stats['total_trajectories']}[/cyan]")
+        console.print(
+            f"  Trajectories stored: [cyan]{stats['total_trajectories']}[/cyan]"
+        )
         console.print(f"  Success rate: [yellow]{stats['success_rate']:.1%}[/yellow]")
 
         console.print("\n[bold cyan]═══ Evaluation Phase ═══[/bold cyan]")
-        console.print("[dim]Testing on new tasks using learned examples (no new learning)...[/dim]")
+        console.print(
+            "[dim]Testing on new tasks using learned examples (no new learning)...[/dim]"  # noqa: E501
+        )
 
         eval_results = []
         for i, task in enumerate(EVAL_TASKS, 1):
@@ -182,7 +195,8 @@ async def run_demo() -> None:
 
                 if trajectory.success:
                     console.print(
-                        f"\n[green]✓ Success![/green] Completed in {len(trajectory.steps)} steps"
+                        f"\n[green]✓ Success![/green] "
+                        f"Completed in {len(trajectory.steps)} steps"
                     )
                     eval_results.append(True)
                 else:
@@ -194,10 +208,10 @@ async def run_demo() -> None:
 
         console.print("\n[bold cyan]═══ Final Results ═══[/bold cyan]")
         console.print(
-            f"Training: [green]{sum(training_results)}/{len(training_results)}[/green] tasks succeeded"
+            f"Training: [green]{sum(training_results)}/{len(training_results)}[/green] tasks succeeded"  # noqa: E501
         )
         console.print(
-            f"Evaluation: [green]{sum(eval_results)}/{len(eval_results)}[/green] tasks succeeded"
+            f"Evaluation: [green]{sum(eval_results)}/{len(eval_results)}[/green] tasks succeeded"  # noqa: E501
         )
 
         console.print("\n[bold]Stored Trajectories:[/bold]")
@@ -214,4 +228,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

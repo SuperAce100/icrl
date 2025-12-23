@@ -18,7 +18,8 @@ class MockLLMProvider:
         """Initialize the mock LLM.
 
         Args:
-            success_rate: Probability of generating a correct action (1.0 = always correct).
+            success_rate: Probability of generating a correct action
+                (1.0 = always correct).
         """
         self._success_rate = success_rate
         self._step_count = 0
@@ -51,10 +52,16 @@ class MockLLMProvider:
     def _generate_plan(self, prompt: str) -> str:
         """Generate a plan based on the goal."""
         if "navigate" in prompt and "list" in prompt:
-            return "1. Use cd to navigate to the target directory\n2. Use ls to list the files"
+            return (
+                "1. Use cd to navigate to the target directory\n"
+                "2. Use ls to list the files"
+            )
         elif "copy" in prompt:
             if "find" in prompt:
-                return "1. Use find to locate the file\n2. Use cp to copy it to the destination"
+                return (
+                    "1. Use find to locate the file\n"
+                    "2. Use cp to copy it to the destination"
+                )
             return "1. Use cp to copy the file directly with full paths"
         elif "find" in prompt and "password" in prompt:
             return "1. Navigate to /etc/app\n2. Use cat to read config.json"
@@ -74,9 +81,15 @@ class MockLLMProvider:
     def _generate_reasoning(self, prompt: str) -> str:
         """Generate reasoning based on the current observation."""
         if "error:" in prompt:
-            return "The last command failed. I need to try a different approach or check the path."
+            return (
+                "The last command failed. I need to try a different "
+                "approach or check the path."
+            )
         elif "changed directory" in prompt:
-            return "Successfully changed directory. I should now use the appropriate command."
+            return (
+                "Successfully changed directory. I should now use "
+                "the appropriate command."
+            )
         elif "copied" in prompt:
             return "File copied successfully. The task should be complete."
         elif "task completed" in prompt:
@@ -162,7 +175,8 @@ class MockLLMProvider:
     def _extract_history(self, prompt: str) -> str:
         """Extract action history from the prompt."""
         history_match = re.search(
-            r"(?:previous steps|steps so far|history).*?:\s*(.+?)(?:\ncurrent|\nobservation|\nreasoning|\nexamples|\n\n|$)",
+            r"(?:previous steps|steps so far|history).*?:\s*(.+?)"
+            r"(?:\ncurrent|\nobservation|\nreasoning|\nexamples|\n\n|$)",
             prompt,
             re.IGNORECASE | re.DOTALL,
         )

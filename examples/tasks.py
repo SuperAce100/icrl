@@ -6,7 +6,8 @@ from examples.file_api_env import Task
 EASY_TASKS = [
     Task(
         goal="Navigate to /home/user/projects and list the files there",
-        verify=lambda s: s.cwd == "/home/user/projects" and "README.md" in s.last_output,
+        verify=lambda s: s.cwd == "/home/user/projects"
+        and "README.md" in s.last_output,
     ),
     Task(
         goal="Find out what directory you're currently in",
@@ -88,4 +89,3 @@ EVAL_TASKS = [
     MEDIUM_TASKS[1],  # Find port number
     HARD_TASKS[1],  # Find and copy main.py
 ]
-

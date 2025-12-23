@@ -1,7 +1,8 @@
 """ICICL: In-Context ICL for LLM Agents.
 
 This package implements the Self-Generated In-Context Learning algorithm from:
-"Self-Generated In-Context Examples Improve LLM Agents for Sequential Decision-Making Tasks"
+"Self-Generated In-Context Examples Improve LLM Agents for "
+"Sequential Decision-Making Tasks"
 
 Example usage:
 
@@ -11,7 +12,9 @@ Example usage:
         llm=LiteLLMProvider(model="gpt-4o-mini"),
         db_path="./trajectories",
         plan_prompt="Given goal: {goal}\\nExamples:\\n{examples}\\nCreate a plan:",
-        reason_prompt="Goal: {goal}\\nPlan: {plan}\\nObservation: {observation}\\nThink:",
+        reason_prompt=(
+            "Goal: {goal}\\nPlan: {plan}\\nObservation: {observation}\\nThink:"
+        ),
         act_prompt="Goal: {goal}\\nPlan: {plan}\\nReasoning: {reasoning}\\nAction:",
         k=3,
         max_steps=30,
