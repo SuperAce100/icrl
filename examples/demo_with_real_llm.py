@@ -6,10 +6,10 @@ This script demonstrates icicl with actual LLM calls, showing how the agent:
 - Reasons through multi-step tasks
 
 Prerequisites:
-- Set OPENAI_API_KEY environment variable (or another provider's key)
+- Add OPENAI_API_KEY to .env file (or another provider's key)
 - Optionally set MODEL env var (default: gpt-4o-mini)
 
-Run with: uv run examples/demo_with_real_llm.py
+Run with: PYTHONPATH=. uv run python examples/demo_with_real_llm.py
 """
 
 from __future__ import annotations
@@ -19,7 +19,10 @@ import os
 import tempfile
 from pathlib import Path
 
+from dotenv import load_dotenv
 from rich.console import Console
+
+load_dotenv()
 
 from examples.file_api_env import FileSystemEnvironment
 from examples.tasks import EVAL_TASKS, TRAINING_TASKS
