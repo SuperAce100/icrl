@@ -7,27 +7,7 @@ from icicl.models import Message
 
 @runtime_checkable
 class Environment(Protocol):
-    """Protocol for environments that the agent interacts with.
-
-    Users must implement this protocol for their specific environment.
-    The environment should store the goal from reset() internally
-    to use when determining success in step().
-
-    Example:
-        class MyEnvironment:
-            def __init__(self):
-                self._goal = ""
-
-            def reset(self, goal: str) -> str:
-                self._goal = goal  # Store for success checking
-                return "Initial observation..."
-
-            def step(self, action: str) -> tuple[str, bool, bool]:
-                # ... execute action ...
-                done = self._check_done()
-                success = self._check_success(self._goal)
-                return observation, done, success
-    """
+    """Protocol for environments that the agent interacts with."""
 
     def reset(self, goal: str) -> str:
         """Reset the environment for a new episode.

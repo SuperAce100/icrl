@@ -2,8 +2,6 @@
 
 from sentence_transformers import SentenceTransformer
 
-from icicl.protocols import Embedder
-
 
 class SentenceTransformerEmbedder:
     """Embedder using Sentence Transformers (matches paper's all-MiniLM-L6-v2)."""
@@ -45,11 +43,3 @@ class SentenceTransformerEmbedder:
     def dimension(self) -> int:
         """Return the embedding dimension."""
         return self._model.get_sentence_embedding_dimension()
-
-
-def _check_protocol() -> None:
-    embedder: Embedder = SentenceTransformerEmbedder()
-    _ = embedder
-
-
-del _check_protocol

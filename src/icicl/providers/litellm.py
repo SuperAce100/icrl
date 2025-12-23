@@ -5,7 +5,6 @@ from typing import Any
 import litellm
 
 from icicl.models import Message
-from icicl.protocols import LLMProvider
 
 
 class LiteLLMProvider:
@@ -83,11 +82,3 @@ class LiteLLMProvider:
 
         response = litellm.completion(**kwargs)
         return response.choices[0].message.content or ""
-
-
-def _check_protocol() -> None:
-    provider: LLMProvider = LiteLLMProvider()
-    _ = provider
-
-
-del _check_protocol
