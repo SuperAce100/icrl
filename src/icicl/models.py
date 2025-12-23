@@ -1,4 +1,4 @@
-"""Pydantic models for SGICL trajectories and messages."""
+"""Pydantic models for icicl trajectories and messages."""
 
 from typing import Any
 from pydantic import BaseModel, Field

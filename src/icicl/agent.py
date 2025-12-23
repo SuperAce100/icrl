@@ -1,18 +1,18 @@
-"""Main Agent class for SGICL."""
+"""Main Agent class for icicl."""
 
 import asyncio
 from typing import Callable
 
-from sgicl.curation import CurationManager
-from sgicl.database import TrajectoryDatabase
-from sgicl.loop import ReActLoop
-from sgicl.models import Step, StepContext, Trajectory
-from sgicl.protocols import Environment, LLMProvider
-from sgicl.retriever import TrajectoryRetriever
+from icicl.curation import CurationManager
+from icicl.database import TrajectoryDatabase
+from icicl.loop import ReActLoop
+from icicl.models import Step, StepContext, Trajectory
+from icicl.protocols import Environment, LLMProvider
+from icicl.retriever import TrajectoryRetriever
 
 
 class Agent:
-    """SGICL Agent that learns from self-generated trajectories.
+    """icicl Agent that learns from self-generated trajectories.
 
     This agent implements the Self-Generated In-Context Learning algorithm,
     which bootstraps performance by accumulating successful trajectories
@@ -33,7 +33,7 @@ class Agent:
         curation_threshold: float = 0.3,
         curation_min_retrievals: int = 5,
     ) -> None:
-        """Initialize the SGICL Agent.
+        """Initialize the icicl Agent.
 
         Args:
             llm: The LLM provider for generating completions.

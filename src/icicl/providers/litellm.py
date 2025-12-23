@@ -4,8 +4,8 @@ from typing import Any
 
 import litellm
 
-from sgicl.models import Message
-from sgicl.protocols import LLMProvider
+from icicl.models import Message
+from icicl.protocols import LLMProvider
 
 
 class LiteLLMProvider:

@@ -2,15 +2,15 @@
 
 from typing import Callable
 
-from sgicl.models import Message, Step, StepContext, Trajectory
-from sgicl.protocols import Environment, LLMProvider
-from sgicl.retriever import TrajectoryRetriever
+from icicl.models import Message, Step, StepContext, Trajectory
+from icicl.protocols import Environment, LLMProvider
+from icicl.retriever import TrajectoryRetriever
 
 
 class ReActLoop:
     """ReAct-style agent loop with planning, reasoning, and acting phases.
 
-    Follows the algorithm from the SGICL paper:
+    Follows the algorithm from the icicl paper:
     1. Retrieve examples and generate initial plan
     2. For each step: observe, retrieve examples, reason, retrieve again, act
     3. Continue until done or max_steps reached

@@ -1,8 +1,8 @@
-"""Protocol definitions for SGICL components."""
+"""Protocol definitions for icicl components."""
 
 from typing import Protocol, runtime_checkable
 
-from sgicl.models import Message
+from icicl.models import Message
 
 
 @runtime_checkable

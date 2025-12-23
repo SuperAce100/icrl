@@ -1,11 +1,11 @@
-"""SGICL: Self-Generated In-Context Learning for LLM Agents.
+"""icicl: Self-Generated In-Context Learning for LLM Agents.
 
-This package implements the SGICL algorithm from the paper:
+This package implements the icicl algorithm from the paper:
 "Self-Generated In-Context Examples Improve LLM Agents for Sequential Decision-Making Tasks"
 
 Example usage:
 
-    from sgicl import Agent, LiteLLMProvider, Trajectory, Step
+    from icicl import Agent, LiteLLMProvider, Trajectory, Step
 
     agent = Agent(
         llm=LiteLLMProvider(model="gpt-4o-mini"),
@@ -24,10 +24,10 @@ Example usage:
     trajectory = await agent.run(env, goal="Complete another task")
 """
 
-from sgicl.agent import Agent
-from sgicl.models import Message, Step, StepContext, Trajectory
-from sgicl.protocols import Environment, LLMProvider
-from sgicl.providers import LiteLLMProvider
+from icicl.agent import Agent
+from icicl.models import Message, Step, StepContext, Trajectory
+from icicl.protocols import Environment, LLMProvider
+from icicl.providers import LiteLLMProvider
 
 __all__ = [
     "Agent",

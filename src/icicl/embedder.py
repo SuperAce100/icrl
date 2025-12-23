@@ -2,7 +2,7 @@
 
 from sentence_transformers import SentenceTransformer
 
-from sgicl.protocols import Embedder
+from icicl.protocols import Embedder
 
 
 class SentenceTransformerEmbedder:

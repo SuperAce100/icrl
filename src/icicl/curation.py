@@ -1,12 +1,12 @@
 """Automatic curation for trajectory databases."""
 
-from sgicl.database import TrajectoryDatabase
+from icicl.database import TrajectoryDatabase
 
 
 class CurationManager:
     """Manages automatic curation of trajectory databases.
 
-    Implements exemplar-level curation from the SGICL paper:
+    Implements exemplar-level curation from the icicl paper:
     - Tracks which trajectories are retrieved and whether they lead to success
     - Periodically prunes trajectories with low utility scores
     """

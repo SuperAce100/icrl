@@ -1,7 +1,7 @@
 """Trajectory retriever for in-context learning."""
 
-from sgicl.database import TrajectoryDatabase
-from sgicl.models import Trajectory
+from icicl.database import TrajectoryDatabase
+from icicl.models import Trajectory
 
 
 class TrajectoryRetriever:

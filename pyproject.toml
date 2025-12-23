@@ -1,5 +1,5 @@
 [project]
-name = "sgicl"
+name = "icicl"
 version = "0.1.0"
 description = "Self-Generated In-Context Learning for LLM Agents"
 readme = "README.md"

@@ -6,8 +6,8 @@ from pathlib import Path
 import faiss
 import numpy as np
 
-from sgicl.embedder import SentenceTransformerEmbedder
-from sgicl.models import CurationMetadata, Trajectory
+from icicl.embedder import SentenceTransformerEmbedder
+from icicl.models import CurationMetadata, Trajectory
 
 
 class TrajectoryDatabase:
