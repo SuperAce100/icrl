@@ -1,6 +1,6 @@
 """Predefined verifiable tasks for the file system environment."""
 
-from examples.file_api_env import FileSystemState, Task
+from examples.file_api_env import Task
 
 # Easy tasks - direct navigation and simple commands
 EASY_TASKS = [

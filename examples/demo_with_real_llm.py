@@ -83,9 +83,9 @@ def step_callback(step: Step, context: StepContext) -> None:
     if len(step.observation) > 150:
         obs_preview += "..."
 
-    console.print(f"\n[dim]┌─ Observation:[/dim]")
+    console.print("\n[dim]┌─ Observation:[/dim]")
     console.print(f"[dim]│[/dim]  {obs_preview}")
-    console.print(f"[dim]├─ Reasoning:[/dim]")
+    console.print("[dim]├─ Reasoning:[/dim]")
     console.print(f"[blue]│[/blue]  {step.reasoning[:200]}...")
     console.print(f"[dim]└─ Action:[/dim] [green]{step.action}[/green]")
 
@@ -171,7 +171,7 @@ async def run_demo() -> None:
 
             retrieved = agent.database.search(task.goal, k=2)
             if retrieved:
-                console.print(f"  [dim]Retrieved examples for planning:[/dim]")
+                console.print("  [dim]Retrieved examples for planning:[/dim]")
                 for r in retrieved:
                     console.print(f"    [dim]• {r.goal[:50]}...[/dim]")
 
@@ -186,7 +186,7 @@ async def run_demo() -> None:
                     )
                     eval_results.append(True)
                 else:
-                    console.print(f"\n[red]✗ Failed[/red]")
+                    console.print("\n[red]✗ Failed[/red]")
                     eval_results.append(False)
             except Exception as e:
                 console.print(f"\n[red]Error:[/red] {e}")

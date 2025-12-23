@@ -1,9 +1,9 @@
 """Pydantic models for ICICL trajectories and messages."""
 
+import uuid
 from typing import Any
 
 from pydantic import BaseModel, Field
-import uuid
 
 
 class Message(BaseModel):

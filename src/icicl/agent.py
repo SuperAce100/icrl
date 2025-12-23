@@ -1,7 +1,7 @@
 """Main Agent class for ICICL."""
 
 import asyncio
-from typing import Callable
+from collections.abc import Callable
 
 from icicl.curation import CurationManager
 from icicl.database import TrajectoryDatabase

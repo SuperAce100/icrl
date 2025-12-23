@@ -12,7 +12,6 @@ Run with: uv run examples/test_with_mock.py
 from __future__ import annotations
 
 import asyncio
-import shutil
 import tempfile
 from pathlib import Path
 
@@ -174,7 +173,7 @@ async def run_evaluation_demo(db_path: Path) -> None:
             console.print(f"  [green]✓ Success[/green] in {len(trajectory.steps)} steps")
             successes += 1
         else:
-            console.print(f"  [red]✗ Failed[/red]")
+            console.print("  [red]✗ Failed[/red]")
 
     console.print(f"\n[bold]Evaluation Results:[/bold] {successes}/{len(EVAL_TASKS)} tasks succeeded")
 

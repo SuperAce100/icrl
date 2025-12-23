@@ -1,6 +1,6 @@
 """ReAct-style agent loop implementation."""
 
-from typing import Callable
+from collections.abc import Callable
 
 from icicl.models import Message, Step, StepContext, Trajectory
 from icicl.protocols import Environment, LLMProvider

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
-from typing import Callable
 
 
 @dataclass
@@ -283,7 +283,7 @@ class FileSystemEnvironment:
 
         parent = str(PurePosixPath(normalized).parent)
         if not self._state.dir_exists(parent):
-            return f"Error: Parent directory does not exist"
+            return "Error: Parent directory does not exist"
 
         self._state.directories.add(normalized)
         return f"Created directory {normalized}"
@@ -307,7 +307,7 @@ class FileSystemEnvironment:
 
         dst_parent = str(PurePosixPath(dst_normalized).parent)
         if not self._state.dir_exists(dst_parent):
-            return f"Error: Destination directory does not exist"
+            return "Error: Destination directory does not exist"
 
         self._state.files[dst_normalized] = self._state.files[src_normalized]
         return f"Copied {src_normalized} to {dst_normalized}"
