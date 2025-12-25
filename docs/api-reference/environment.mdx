@@ -1,0 +1,313 @@
+---
+title: Environment Protocol
+description: "Protocol for environments the agent interacts with"
+---
+
+## Overview
+
+The `Environment` protocol defines the interface that all environments must implement. Environments receive actions from the agent and return observations, determining when tasks succeed or fail.
+
+```python
+from icicl import Environment
+```
+
+## Protocol Definition
+
+```python
+from typing import Protocol, runtime_checkable
+
+@runtime_checkable
+class Environment(Protocol):
+    def reset(self, goal: str) -> str:
+        """Reset the environment for a new episode."""
+        ...
+
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        """Execute an action in the environment."""
+        ...
+```
+
+## Methods
+
+### reset
+
+```python
+def reset(self, goal: str) -> str
+```
+
+Reset the environment for a new episode.
+
+<ParamField path="goal" type="str" required>
+  The goal description for this episode. The environment should store this for use when determining success in `step()`.
+</ParamField>
+
+<ResponseField name="return" type="str">
+  The initial observation as a string.
+</ResponseField>
+
+```python
+def reset(self, goal: str) -> str:
+    self._goal = goal  # Store for later
+    self._state = initial_state()
+    return f"Environment ready. Goal: {goal}"
+```
+
+### step
+
+```python
+def step(self, action: str) -> tuple[str, bool, bool]
+```
+
+Execute an action in the environment.
+
+<ParamField path="action" type="str" required>
+  The action string from the agent.
+</ParamField>
+
+<ResponseField name="return" type="tuple[str, bool, bool]">
+  A tuple of `(observation, done, success)`:
+  - `observation`: The resulting observation string
+  - `done`: Whether the episode has ended
+  - `success`: Whether the goal was achieved
+</ResponseField>
+
+```python
+def step(self, action: str) -> tuple[str, bool, bool]:
+    observation = execute_action(action)
+    success = check_if_goal_achieved(self._goal)
+    done = success or max_steps_reached
+    return observation, done, success
+```
+
+## Implementing an Environment
+
+### Minimal Example
+
+```python
+class SimpleEnvironment:
+    def reset(self, goal: str) -> str:
+        self._goal = goal
+        return "Ready to start"
+    
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        if action == "complete":
+            return "Task completed!", True, True
+        return f"Did: {action}", False, False
+```
+
+### Counter Environment
+
+```python
+class CounterEnvironment:
+    def __init__(self, target: int = 10):
+        self.target = target
+        self.count = 0
+        self._goal = ""
+    
+    def reset(self, goal: str) -> str:
+        self._goal = goal
+        self.count = 0
+        return f"Counter at 0. Target: {self.target}"
+    
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        if action == "increment":
+            self.count += 1
+        elif action == "decrement":
+            self.count -= 1
+        elif action.startswith("set "):
+            try:
+                self.count = int(action.split()[1])
+            except:
+                return "Invalid set command", False, False
+        else:
+            return f"Unknown action: {action}", False, False
+        
+        success = self.count == self.target
+        obs = f"Counter is now {self.count}"
+        
+        return obs, success, success
+```
+
+### File System Environment
+
+```python
+class FileSystemEnvironment:
+    def __init__(self):
+        self.cwd = "/"
+        self.files = {
+            "/home/user/notes.txt": "My notes",
+            "/etc/config.json": '{"port": 8080}',
+        }
+        self.directories = {"/", "/home", "/home/user", "/etc"}
+        self._goal = ""
+    
+    def reset(self, goal: str) -> str:
+        self._goal = goal
+        self.cwd = "/"
+        return f"Current directory: /\nGoal: {goal}"
+    
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        parts = action.strip().split(maxsplit=1)
+        cmd = parts[0].lower() if parts else ""
+        args = parts[1] if len(parts) > 1 else ""
+        
+        if cmd == "ls":
+            obs = self._ls(args or self.cwd)
+        elif cmd == "cd":
+            obs = self._cd(args)
+        elif cmd == "cat":
+            obs = self._cat(args)
+        elif cmd == "pwd":
+            obs = self.cwd
+        else:
+            obs = f"Unknown command: {cmd}"
+        
+        success = self._check_success()
+        return obs, success, success
+    
+    def _check_success(self) -> bool:
+        # Implement goal-specific success logic
+        goal = self._goal.lower()
+        if "port" in goal:
+            return hasattr(self, '_last_output') and "8080" in self._last_output
+        return False
+    
+    # ... helper methods _ls, _cd, _cat
+```
+
+## Type Checking
+
+The protocol is runtime checkable:
+
+```python
+from icicl import Environment
+
+class MyEnv:
+    def reset(self, goal: str) -> str:
+        return "Ready"
+    
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        return "Done", True, True
+
+env = MyEnv()
+print(isinstance(env, Environment))  # True
+```
+
+## Using with Agent
+
+```python
+from icicl import Agent, LiteLLMProvider
+
+# Your environment implementation
+env = FileSystemEnvironment()
+
+# Create agent
+agent = Agent(
+    llm=LiteLLMProvider(model="gpt-4o-mini"),
+    db_path="./trajectories",
+    plan_prompt="...",
+    reason_prompt="...",
+    act_prompt="...",
+)
+
+# Train
+trajectory = await agent.train(env, goal="Find the config file")
+
+# The agent calls:
+# 1. env.reset(goal) -> initial observation
+# 2. env.step(action) -> (observation, done, success)
+# 3. Repeat step until done=True
+```
+
+## Best Practices
+
+### Store the Goal
+
+Always store the goal for use in success checking:
+
+```python
+def reset(self, goal: str) -> str:
+    self._goal = goal  # Critical for success checking
+    return "Ready"
+```
+
+### Clear Observations
+
+Return informative but concise observations:
+
+```python
+def step(self, action: str) -> tuple[str, bool, bool]:
+    # Good: Clear, structured
+    if action == "ls":
+        return "Files:\n- config.json\n- data.csv", False, False
+    
+    # Good: Helpful error
+    if not valid_action(action):
+        return f"Error: Unknown command '{action}'", False, False
+```
+
+### Handle Edge Cases
+
+```python
+def step(self, action: str) -> tuple[str, bool, bool]:
+    action = action.strip()
+    
+    if not action:
+        return "Error: Empty action", False, False
+    
+    if len(action) > 1000:
+        return "Error: Action too long", False, False
+    
+    # ... process valid action
+```
+
+### Limit Episode Length
+
+```python
+def __init__(self, max_steps: int = 50):
+    self.max_steps = max_steps
+    self.step_count = 0
+
+def reset(self, goal: str) -> str:
+    self.step_count = 0
+    # ...
+
+def step(self, action: str) -> tuple[str, bool, bool]:
+    self.step_count += 1
+    
+    if self.step_count >= self.max_steps:
+        return "Max steps reached", True, False
+    
+    # ... normal processing
+```
+
+## Testing Environments
+
+```python
+def test_environment():
+    env = MyEnvironment()
+    
+    # Test reset
+    obs = env.reset("Test goal")
+    assert isinstance(obs, str)
+    assert len(obs) > 0
+    
+    # Test step
+    obs, done, success = env.step("some_action")
+    assert isinstance(obs, str)
+    assert isinstance(done, bool)
+    assert isinstance(success, bool)
+    
+    # Test success case
+    # ... setup for success
+    obs, done, success = env.step("winning_action")
+    assert done == True
+    assert success == True
+    
+    print("All tests passed!")
+```
+
+## See Also
+
+- [Custom Environments Guide](/guides/custom-environments) - Detailed guide on building environments
+- [File System Example](/examples/file-system-agent) - Complete environment implementation

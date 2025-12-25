@@ -1,0 +1,353 @@
+---
+title: Testing with Mock LLM
+description: "Fast testing and development without API calls"
+---
+
+## Overview
+
+During development and testing, you may want to iterate quickly without making real LLM API calls. ICICL supports mock LLM providers that return deterministic responses.
+
+## The Mock Provider
+
+Here's a mock LLM that uses pattern matching to generate responses:
+
+```python
+import re
+from icicl import Message
+
+class MockLLMProvider:
+    """Deterministic mock LLM for testing."""
+    
+    def __init__(self, success_rate: float = 1.0):
+        self._success_rate = success_rate
+        self._step_count = 0
+    
+    async def complete(self, messages: list[Message]) -> str:
+        if not messages:
+            return "I need more context."
+        
+        prompt = messages[-1].content.lower()
+        
+        # Detect prompt type and generate appropriate response
+        if "create a plan" in prompt and "action:" not in prompt:
+            return self._generate_plan(prompt)
+        elif "think" in prompt or "reason" in prompt:
+            return self._generate_reasoning(prompt)
+        else:
+            self._step_count += 1
+            return self._generate_action(prompt)
+    
+    def _generate_plan(self, prompt: str) -> str:
+        if "navigate" in prompt and "list" in prompt:
+            return "1. Use cd to navigate\n2. Use ls to list"
+        elif "find" in prompt and "password" in prompt:
+            return "1. Navigate to /etc/app\n2. Use cat to read config"
+        elif "copy" in prompt:
+            return "1. Find the file\n2. Use cp to copy"
+        else:
+            return "1. Explore\n2. Complete task"
+    
+    def _generate_reasoning(self, prompt: str) -> str:
+        if "error" in prompt:
+            return "The command failed. I should try a different approach."
+        elif "success" in prompt or "completed" in prompt:
+            return "The task is complete."
+        else:
+            return "I should proceed with the next step of my plan."
+    
+    def _generate_action(self, prompt: str) -> str:
+        goal = self._extract_goal(prompt)
+        history = self._extract_history(prompt)
+        
+        # Pattern-based action generation
+        if "navigate to /home/user" in goal:
+            if "cd /home/user" in history:
+                return "ls"
+            return "cd /home/user"
+        
+        elif "password" in goal and "config" in goal:
+            if "cd /etc/app" in history:
+                return "cat config.json"
+            return "cd /etc/app"
+        
+        elif "copy" in goal and "notes.txt" in goal:
+            return "cp /home/user/notes.txt /backup"
+        
+        else:
+            # Default behavior
+            if self._step_count == 1:
+                return "ls"
+            elif self._step_count == 2:
+                return "pwd"
+            else:
+                return "done"
+    
+    def _extract_goal(self, prompt: str) -> str:
+        match = re.search(r"goal:\s*(.+?)(?:\n|$)", prompt, re.IGNORECASE)
+        return match.group(1).strip().lower() if match else prompt.lower()
+    
+    def _extract_history(self, prompt: str) -> str:
+        match = re.search(
+            r"(?:history|steps).*?:\s*(.+?)(?:\n\n|observation|$)",
+            prompt,
+            re.IGNORECASE | re.DOTALL,
+        )
+        return match.group(1).strip().lower() if match else ""
+```
+
+## Using the Mock Provider
+
+Replace the real LLM with the mock:
+
+```python
+from icicl import Agent
+
+# Use mock instead of real LLM
+llm = MockLLMProvider(success_rate=1.0)
+
+agent = Agent(
+    llm=llm,
+    db_path="./test_trajectories",
+    plan_prompt="Goal: {goal}\nExamples:\n{examples}\n\nCreate a plan:",
+    reason_prompt="Goal: {goal}\nObservation: {observation}\n\nThink:",
+    act_prompt="Goal: {goal}\nHistory: {history}\nReasoning: {reasoning}\n\nAction:",
+)
+
+# Run without API calls
+trajectory = await agent.train(env, goal="Navigate to /home/user and list files")
+print(f"Success: {trajectory.success}")
+```
+
+## Benefits
+
+<CardGroup cols={2}>
+  <Card title="Speed" icon="bolt">
+    No network latency or API response time
+  </Card>
+  <Card title="Cost" icon="dollar-sign">
+    No API charges during development
+  </Card>
+  <Card title="Reproducibility" icon="rotate">
+    Deterministic outputs for testing
+  </Card>
+  <Card title="Offline" icon="wifi-slash">
+    Works without internet connection
+  </Card>
+</CardGroup>
+
+## Testing Patterns
+
+### Unit Testing
+
+```python
+import pytest
+import asyncio
+from icicl import Agent, Trajectory
+
+class TestAgent:
+    @pytest.fixture
+    def agent(self, tmp_path):
+        return Agent(
+            llm=MockLLMProvider(),
+            db_path=str(tmp_path / "trajectories"),
+            plan_prompt="...",
+            reason_prompt="...",
+            act_prompt="...",
+        )
+    
+    @pytest.mark.asyncio
+    async def test_training_stores_trajectory(self, agent):
+        env = SimpleEnvironment()
+        trajectory = await agent.train(env, "Test goal")
+        
+        assert trajectory.success
+        assert len(agent.database) == 1
+    
+    @pytest.mark.asyncio
+    async def test_inference_uses_examples(self, agent):
+        # First, train to populate database
+        env1 = SimpleEnvironment()
+        await agent.train(env1, "Training goal")
+        
+        # Then run inference
+        env2 = SimpleEnvironment()
+        trajectory = await agent.run(env2, "Similar goal")
+        
+        # Database unchanged (inference mode)
+        assert len(agent.database) == 1
+```
+
+### Integration Testing
+
+```python
+async def test_full_workflow():
+    llm = MockLLMProvider()
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        agent = Agent(
+            llm=llm,
+            db_path=tmpdir,
+            plan_prompt="...",
+            reason_prompt="...",
+            act_prompt="...",
+        )
+        
+        # Training phase
+        training_goals = ["Task 1", "Task 2", "Task 3"]
+        for goal in training_goals:
+            env = make_env()
+            await agent.train(env, goal)
+        
+        # Verify database
+        assert len(agent.database) >= 1
+        
+        # Evaluation phase
+        env = make_env()
+        trajectory = await agent.run(env, "New task")
+        
+        # Assertions
+        assert isinstance(trajectory, Trajectory)
+```
+
+### Testing Curation
+
+```python
+async def test_curation_removes_low_utility():
+    llm = MockLLMProvider()
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        agent = Agent(
+            llm=llm,
+            db_path=tmpdir,
+            plan_prompt="...",
+            reason_prompt="...",
+            act_prompt="...",
+            curation_threshold=0.3,
+            curation_min_retrievals=2,
+        )
+        
+        # Add some trajectories
+        # ... training ...
+        
+        # Force curation
+        removed = agent._curation.curate()
+        
+        # Verify pruning
+        assert len(removed) >= 0
+```
+
+## Advanced Mock Features
+
+### Simulating Failures
+
+```python
+import random
+
+class FlakeyMockProvider:
+    def __init__(self, failure_rate: float = 0.2):
+        self.failure_rate = failure_rate
+    
+    async def complete(self, messages: list[Message]) -> str:
+        if random.random() < self.failure_rate:
+            raise Exception("Simulated API error")
+        return "response"
+```
+
+### Recording Calls
+
+```python
+class RecordingMockProvider:
+    def __init__(self):
+        self.calls = []
+    
+    async def complete(self, messages: list[Message]) -> str:
+        self.calls.append(messages)
+        return "response"
+    
+    def assert_called_with(self, expected_content: str):
+        for call in self.calls:
+            if expected_content in call[-1].content:
+                return True
+        raise AssertionError(f"'{expected_content}' not found in calls")
+```
+
+### Configurable Responses
+
+```python
+class ConfigurableMockProvider:
+    def __init__(self, responses: dict[str, str]):
+        self.responses = responses
+    
+    async def complete(self, messages: list[Message]) -> str:
+        prompt = messages[-1].content.lower()
+        
+        for pattern, response in self.responses.items():
+            if pattern.lower() in prompt:
+                return response
+        
+        return "default response"
+
+# Usage
+mock = ConfigurableMockProvider({
+    "plan": "1. Step one\n2. Step two",
+    "think": "I should proceed carefully",
+    "action": "execute",
+})
+```
+
+## Running the Mock Test
+
+The repository includes a test file:
+
+```python
+# examples/test_with_mock.py
+import asyncio
+from examples.mock_llm import MockLLMProvider
+from examples.file_api_env import FileSystemEnvironment
+from examples.tasks import TRAINING_TASKS
+from icicl import Agent
+
+async def test_with_mock():
+    agent = Agent(
+        llm=MockLLMProvider(),
+        db_path="./mock_trajectories",
+        plan_prompt="...",
+        reason_prompt="...",
+        act_prompt="...",
+    )
+    
+    for task in TRAINING_TASKS[:3]:
+        env = FileSystemEnvironment(task)
+        trajectory = await agent.train(env, task.goal)
+        print(f"{'✅' if trajectory.success else '❌'} {task.goal[:50]}...")
+    
+    print(f"\nDatabase size: {len(agent.database)}")
+
+asyncio.run(test_with_mock())
+```
+
+Run it:
+
+```bash
+cd /path/to/icicl
+uv run python examples/test_with_mock.py
+```
+
+## When to Use Real vs Mock
+
+| Scenario | Use Mock | Use Real LLM |
+|----------|----------|--------------|
+| Unit tests | ✅ | |
+| CI/CD pipeline | ✅ | |
+| Development iteration | ✅ | |
+| Debugging environment | ✅ | |
+| Prompt tuning | | ✅ |
+| Performance evaluation | | ✅ |
+| Production | | ✅ |
+| Demo preparation | | ✅ |
+
+## See Also
+
+- [Custom LLM Providers](/guides/custom-llm-providers) - Build providers
+- [LLMProvider Protocol](/api-reference/llm-provider) - Protocol definition
+- [File System Agent](/examples/file-system-agent) - Full example

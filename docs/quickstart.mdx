@@ -1,0 +1,211 @@
+---
+title: Quickstart
+description: "Get up and running with ICICL in 5 minutes"
+---
+
+## Installation
+
+Install ICICL using pip or uv:
+
+<CodeGroup>
+
+```bash pip
+pip install icicl
+```
+
+```bash uv
+uv add icicl
+```
+
+</CodeGroup>
+
+## Set Up Your API Key
+
+ICICL uses LiteLLM under the hood, which supports 100+ LLM providers. Set up your preferred provider's API key:
+
+<CodeGroup>
+
+```bash OpenAI
+export OPENAI_API_KEY=your-key-here
+```
+
+```bash Anthropic
+export ANTHROPIC_API_KEY=your-key-here
+```
+
+```bash Azure
+export AZURE_API_KEY=your-key-here
+export AZURE_API_BASE=https://your-resource.openai.azure.com
+```
+
+</CodeGroup>
+
+## Create Your First Agent
+
+Here's a minimal example to get you started:
+
+```python
+import asyncio
+from icicl import Agent, LiteLLMProvider
+
+# Initialize the LLM provider
+llm = LiteLLMProvider(model="gpt-4o-mini")
+
+# Define your prompt templates
+PLAN_PROMPT = """Goal: {goal}
+
+Examples of similar tasks:
+{examples}
+
+Create a numbered plan to accomplish this goal."""
+
+REASON_PROMPT = """Goal: {goal}
+Plan: {plan}
+
+Previous steps: {history}
+Current observation: {observation}
+
+Relevant examples:
+{examples}
+
+Think step by step about what to do next."""
+
+ACT_PROMPT = """Goal: {goal}
+Plan: {plan}
+Reasoning: {reasoning}
+
+What is the next action? Respond with only the action."""
+
+# Create the agent
+agent = Agent(
+    llm=llm,
+    db_path="./my_trajectories",
+    plan_prompt=PLAN_PROMPT,
+    reason_prompt=REASON_PROMPT,
+    act_prompt=ACT_PROMPT,
+    k=3,           # Retrieve 3 examples
+    max_steps=30,  # Maximum steps per episode
+)
+```
+
+## Create an Environment
+
+Your environment must implement the `Environment` protocol with `reset()` and `step()` methods:
+
+```python
+class SimpleEnvironment:
+    def reset(self, goal: str) -> str:
+        """Reset and return initial observation."""
+        self._goal = goal
+        self._state = "initial"
+        return f"Environment ready. Goal: {goal}"
+    
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        """Execute action, return (observation, done, success)."""
+        if action == "complete":
+            return "Task completed!", True, True
+        elif action == "fail":
+            return "Task failed.", True, False
+        else:
+            self._state = action
+            return f"Executed: {action}", False, False
+```
+
+## Train the Agent
+
+Training mode stores successful trajectories for future use:
+
+```python
+async def train():
+    env = SimpleEnvironment()
+    trajectory = await agent.train(env, goal="Complete the simple task")
+    
+    if trajectory.success:
+        print(f"Success! Completed in {len(trajectory.steps)} steps")
+        print(f"Plan: {trajectory.plan}")
+    else:
+        print("Failed to complete the task")
+
+asyncio.run(train())
+```
+
+## Run Inference
+
+Inference mode uses stored examples but doesn't add new ones:
+
+```python
+async def run_inference():
+    env = SimpleEnvironment()
+    trajectory = await agent.run(env, goal="Complete another task")
+    
+    print(f"Success: {trajectory.success}")
+    print(f"Steps taken: {len(trajectory.steps)}")
+
+asyncio.run(run_inference())
+```
+
+## Monitor Progress
+
+Use step callbacks to monitor what the agent is doing:
+
+```python
+from icicl import Step, StepContext
+
+def on_step(step: Step, context: StepContext) -> None:
+    print(f"Observation: {step.observation[:100]}...")
+    print(f"Reasoning: {step.reasoning}")
+    print(f"Action: {step.action}")
+    print(f"Examples used: {len(context.examples)}")
+    print("---")
+
+agent = Agent(
+    llm=llm,
+    db_path="./trajectories",
+    plan_prompt=PLAN_PROMPT,
+    reason_prompt=REASON_PROMPT,
+    act_prompt=ACT_PROMPT,
+    on_step=on_step,  # Add the callback
+)
+```
+
+## Check Database Statistics
+
+```python
+stats = agent.get_stats()
+print(f"Total trajectories: {stats['total_trajectories']}")
+print(f"Successful: {stats['successful_trajectories']}")
+print(f"Success rate: {stats['success_rate']:.1%}")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Core Concepts"
+    icon="book"
+    href="/core-concepts/sgicl-algorithm"
+  >
+    Learn how the SGICL algorithm works
+  </Card>
+  <Card
+    title="Custom Environments"
+    icon="puzzle-piece"
+    href="/guides/custom-environments"
+  >
+    Build environments for your use case
+  </Card>
+  <Card
+    title="Prompt Templates"
+    icon="message"
+    href="/guides/prompt-templates"
+  >
+    Design effective prompts for your agent
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/overview"
+  >
+    Explore the complete API
+  </Card>
+</CardGroup>

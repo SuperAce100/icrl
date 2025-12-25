@@ -1,0 +1,280 @@
+---
+title: SentenceTransformerEmbedder
+description: "Embedding generation for semantic search"
+---
+
+## Overview
+
+`SentenceTransformerEmbedder` generates embeddings for trajectories using Sentence Transformers. These embeddings power the semantic similarity search in the trajectory database.
+
+```python
+from icicl.embedder import SentenceTransformerEmbedder
+```
+
+## Constructor
+
+```python
+SentenceTransformerEmbedder(
+    model_name: str = "all-MiniLM-L6-v2",
+)
+```
+
+### Parameters
+
+<ParamField path="model_name" type="str" default="all-MiniLM-L6-v2">
+  Name of the sentence-transformers model to use. The default `all-MiniLM-L6-v2` is the same model used in the original SGICL paper.
+</ParamField>
+
+## Properties
+
+### dimension
+
+```python
+@property
+def dimension(self) -> int
+```
+
+Return the embedding dimension for the current model.
+
+```python
+embedder = SentenceTransformerEmbedder()
+print(f"Dimension: {embedder.dimension}")  # 384 for all-MiniLM-L6-v2
+```
+
+## Methods
+
+### embed
+
+```python
+def embed(self, texts: list[str]) -> list[list[float]]
+```
+
+Generate embeddings for a list of texts.
+
+<ParamField path="texts" type="list[str]" required>
+  List of strings to embed.
+</ParamField>
+
+<ResponseField name="return" type="list[list[float]]">
+  List of embedding vectors.
+</ResponseField>
+
+```python
+embedder = SentenceTransformerEmbedder()
+
+texts = [
+    "Find the config file",
+    "Navigate to home directory",
+    "Copy data to backup",
+]
+
+embeddings = embedder.embed(texts)
+print(f"Generated {len(embeddings)} embeddings")
+print(f"Dimension: {len(embeddings[0])}")
+```
+
+### embed_single
+
+```python
+def embed_single(self, text: str) -> list[float]
+```
+
+Generate embedding for a single text.
+
+<ParamField path="text" type="str" required>
+  String to embed.
+</ParamField>
+
+<ResponseField name="return" type="list[float]">
+  Embedding vector.
+</ResponseField>
+
+```python
+embedding = embedder.embed_single("Find the config file")
+print(f"Dimension: {len(embedding)}")
+```
+
+## Supported Models
+
+Common sentence-transformer models:
+
+| Model | Dimensions | Speed | Quality | Notes |
+|-------|------------|-------|---------|-------|
+| `all-MiniLM-L6-v2` | 384 | Fast | Good | Default, paper model |
+| `all-MiniLM-L12-v2` | 384 | Medium | Better | Deeper version |
+| `all-mpnet-base-v2` | 768 | Slow | Best | Highest quality |
+| `all-distilroberta-v1` | 768 | Medium | Better | Good balance |
+| `paraphrase-MiniLM-L6-v2` | 384 | Fast | Good | Paraphrase focused |
+
+See [Sentence Transformers Models](https://www.sbert.net/docs/pretrained_models.html) for the complete list.
+
+## Example Usage
+
+### Basic Usage
+
+```python
+from icicl.embedder import SentenceTransformerEmbedder
+
+embedder = SentenceTransformerEmbedder()
+
+# Single embedding
+embedding = embedder.embed_single("Hello world")
+
+# Batch embeddings
+texts = ["Text 1", "Text 2", "Text 3"]
+embeddings = embedder.embed(texts)
+```
+
+### With Custom Model
+
+```python
+# Higher quality model
+embedder = SentenceTransformerEmbedder(
+    model_name="all-mpnet-base-v2"
+)
+
+# Check dimension
+print(f"Dimension: {embedder.dimension}")  # 768
+```
+
+### With Database
+
+```python
+from icicl.database import TrajectoryDatabase
+from icicl.embedder import SentenceTransformerEmbedder
+
+# Use custom embedder with database
+embedder = SentenceTransformerEmbedder(
+    model_name="all-mpnet-base-v2"
+)
+
+db = TrajectoryDatabase(
+    path="./trajectories",
+    embedder=embedder,
+)
+```
+
+### Computing Similarity
+
+```python
+import numpy as np
+
+embedder = SentenceTransformerEmbedder()
+
+# Embed texts
+text1 = "Find the configuration file"
+text2 = "Locate the config settings"
+text3 = "Delete all user data"
+
+emb1 = embedder.embed_single(text1)
+emb2 = embedder.embed_single(text2)
+emb3 = embedder.embed_single(text3)
+
+# Compute cosine similarity
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+sim_12 = cosine_similarity(emb1, emb2)
+sim_13 = cosine_similarity(emb1, emb3)
+
+print(f"Similarity 1-2: {sim_12:.3f}")  # High (similar meaning)
+print(f"Similarity 1-3: {sim_13:.3f}")  # Low (different meaning)
+```
+
+## Model Loading
+
+The model is loaded on first use:
+
+```python
+# Model downloaded/loaded here
+embedder = SentenceTransformerEmbedder()
+
+# First embedding call may be slower (model warmup)
+embedding = embedder.embed_single("test")
+
+# Subsequent calls are fast
+embedding = embedder.embed_single("another test")
+```
+
+### Cache Directory
+
+Models are cached in the Hugging Face cache by default. Override with:
+
+```bash
+export SENTENCE_TRANSFORMERS_HOME=/path/to/cache
+```
+
+### Offline Usage
+
+Download models in advance:
+
+```python
+from sentence_transformers import SentenceTransformer
+
+# Download and cache
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+# Now works offline
+```
+
+## GPU Acceleration
+
+Sentence Transformers automatically uses GPU if available:
+
+```python
+import torch
+print(f"GPU available: {torch.cuda.is_available()}")
+
+# Will use GPU if available
+embedder = SentenceTransformerEmbedder()
+```
+
+Force CPU:
+
+```python
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
+```
+
+## Protocol Compliance
+
+The embedder follows the `Embedder` protocol:
+
+```python
+from icicl.protocols import Embedder
+
+embedder = SentenceTransformerEmbedder()
+print(isinstance(embedder, Embedder))  # True
+```
+
+The protocol requires:
+- `embed(texts: list[str]) -> list[list[float]]`
+- `embed_single(text: str) -> list[float]`
+
+## Custom Embedders
+
+Implement your own embedder:
+
+```python
+class MyEmbedder:
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        # Your embedding logic
+        return [[0.0] * 384 for _ in texts]
+    
+    def embed_single(self, text: str) -> list[float]:
+        return self.embed([text])[0]
+    
+    @property
+    def dimension(self) -> int:
+        return 384
+
+# Use with database
+db = TrajectoryDatabase(path="./data", embedder=MyEmbedder())
+```
+
+## See Also
+
+- [TrajectoryDatabase](/api-reference/trajectory-database) - Uses embedder for search
+- [Trajectory Database Concepts](/core-concepts/trajectory-database) - How search works
+- [Sentence Transformers](https://www.sbert.net/) - Model documentation

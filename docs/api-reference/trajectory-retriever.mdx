@@ -1,0 +1,258 @@
+---
+title: TrajectoryRetriever
+description: "Episode-aware semantic retrieval for trajectories"
+---
+
+## Overview
+
+`TrajectoryRetriever` wraps the database with episode-aware retrieval, tracking which trajectories are used during an episode for curation purposes.
+
+```python
+from icicl.retriever import TrajectoryRetriever
+```
+
+## Constructor
+
+```python
+TrajectoryRetriever(
+    database: TrajectoryDatabase,
+    k: int = 3,
+)
+```
+
+### Parameters
+
+<ParamField path="database" type="TrajectoryDatabase" required>
+  The trajectory database to search.
+</ParamField>
+
+<ParamField path="k" type="int" default="3">
+  Default number of examples to retrieve.
+</ParamField>
+
+## Methods
+
+### retrieve_for_plan
+
+```python
+def retrieve_for_plan(
+    self,
+    goal: str,
+    k: int | None = None,
+) -> list[Trajectory]
+```
+
+Retrieve examples for the planning phase.
+
+<ParamField path="goal" type="str" required>
+  The goal description.
+</ParamField>
+
+<ParamField path="k" type="int | None" default="None">
+  Number of examples to retrieve. Uses default if `None`.
+</ParamField>
+
+<ResponseField name="return" type="list[Trajectory]">
+  List of relevant trajectories.
+</ResponseField>
+
+```python
+# At start of episode
+examples = retriever.retrieve_for_plan("Find the config file")
+for ex in examples:
+    print(f"Similar goal: {ex.goal}")
+```
+
+### retrieve_for_step
+
+```python
+def retrieve_for_step(
+    self,
+    goal: str,
+    plan: str,
+    observation: str,
+    k: int | None = None,
+) -> list[Trajectory]
+```
+
+Retrieve examples for a reasoning/acting step.
+
+<ParamField path="goal" type="str" required>
+  The goal description.
+</ParamField>
+
+<ParamField path="plan" type="str" required>
+  The current plan.
+</ParamField>
+
+<ParamField path="observation" type="str" required>
+  The current observation.
+</ParamField>
+
+<ParamField path="k" type="int | None" default="None">
+  Number of examples to retrieve. Uses default if `None`.
+</ParamField>
+
+<ResponseField name="return" type="list[Trajectory]">
+  List of relevant trajectories.
+</ResponseField>
+
+```python
+# During step
+examples = retriever.retrieve_for_step(
+    goal="Find config",
+    plan="1. Navigate\n2. Read",
+    observation="Current directory: /etc",
+)
+```
+
+### get_retrieved_ids
+
+```python
+def get_retrieved_ids(self) -> list[str]
+```
+
+Get all trajectory IDs retrieved in this episode.
+
+<ResponseField name="return" type="list[str]">
+  List of trajectory IDs.
+</ResponseField>
+
+```python
+retrieved_ids = retriever.get_retrieved_ids()
+print(f"Used {len(retrieved_ids)} unique trajectories")
+```
+
+### clear_retrieved
+
+```python
+def clear_retrieved(self) -> None
+```
+
+Clear the list of retrieved trajectory IDs. Called at start of new episodes.
+
+```python
+retriever.clear_retrieved()
+```
+
+### record_episode_result
+
+```python
+def record_episode_result(self, success: bool) -> None
+```
+
+Record the result of the episode for curation tracking.
+
+<ParamField path="success" type="bool" required>
+  Whether the episode was successful.
+</ParamField>
+
+```python
+# At end of episode
+retriever.record_episode_result(success=True)
+# Automatically clears retrieved IDs
+```
+
+## Internal Behavior
+
+### Retrieval Tracking
+
+The retriever tracks which trajectories are used during an episode:
+
+```python
+# Episode starts
+retriever.clear_retrieved()
+
+# Planning phase
+retriever.retrieve_for_plan(goal)  # Tracks IDs
+
+# Step 1
+retriever.retrieve_for_step(goal, plan, obs1)  # Tracks more IDs
+
+# Step 2
+retriever.retrieve_for_step(goal, plan, obs2)  # Tracks more IDs
+
+# Episode ends
+retriever.record_episode_result(success=True)
+# Updates curation metadata for all tracked trajectories
+```
+
+### Query Construction
+
+For planning:
+```python
+query = goal
+```
+
+For steps:
+```python
+query = f"{goal}\n{plan}\n{observation}"
+```
+
+This captures both the intent and current situation for better retrieval.
+
+## Usage in ReActLoop
+
+The `ReActLoop` uses the retriever internally:
+
+```python
+class ReActLoop:
+    async def run(self, env: Environment, goal: str) -> Trajectory:
+        self._retriever.clear_retrieved()
+        
+        # Planning
+        examples = self._retriever.retrieve_for_plan(goal)
+        plan = await self._generate_plan(goal, examples)
+        
+        # Steps
+        for _ in range(self._max_steps):
+            examples = self._retriever.retrieve_for_step(goal, plan, observation)
+            reasoning = await self._generate_reasoning(context)
+            
+            examples = self._retriever.retrieve_for_step(goal, plan, reasoning)
+            action = await self._generate_action(context)
+            
+            # ... execute action
+        
+        # Record result
+        self._retriever.record_episode_result(success)
+```
+
+## Creating Manually
+
+You typically don't create a retriever directly—the `Agent` does it for you. But if needed:
+
+```python
+from icicl.database import TrajectoryDatabase
+from icicl.retriever import TrajectoryRetriever
+
+db = TrajectoryDatabase("./trajectories")
+retriever = TrajectoryRetriever(database=db, k=5)
+
+# Use it
+examples = retriever.retrieve_for_plan("My goal")
+```
+
+## Curation Integration
+
+The retriever integrates with the curation system:
+
+1. During retrieval, trajectory IDs are tracked
+2. At episode end, `record_episode_result()` is called
+3. The database updates utility scores for all retrieved trajectories
+4. The `CurationManager` uses these scores to prune low-utility trajectories
+
+```python
+# This flow happens automatically in Agent.train()
+trajectory = await self._loop.run(env, goal)  # Tracks & records
+
+if trajectory.success:
+    self._database.add(trajectory)
+    self._curation.maybe_curate()  # May prune based on utility
+```
+
+## See Also
+
+- [TrajectoryDatabase](/api-reference/trajectory-database) - Underlying storage
+- [CurationManager](/api-reference/curation-manager) - Pruning based on utility
+- [Curation Concepts](/core-concepts/curation) - How curation works

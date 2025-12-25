@@ -1,0 +1,284 @@
+---
+title: ReAct Loop
+description: "The Plan-Reason-Act execution loop"
+---
+
+## Overview
+
+ICICL uses a **ReAct-style** (Reasoning + Acting) loop for agent execution. Each episode follows a structured pattern of planning, reasoning, and acting that enables systematic task completion.
+
+## The Execution Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Episode Start                            │
+│                              ↓                                   │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  1. PLAN: Generate high-level strategy using examples     │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                              ↓                                   │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  2. OBSERVE: Get initial observation from environment     │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                              ↓                                   │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  3. REASON: Analyze observation with retrieved context    │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                              ↓                                   │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  4. ACT: Execute action based on reasoning                │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                              ↓                                   │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  5. OBSERVE: Get environment feedback                     │  │
+│  │     └─→ Loop back to REASON until done                    │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                              ↓                                   │
+│                        Episode End                               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Phase Details
+
+### 1. Planning Phase
+
+At the start of each episode, the agent generates a high-level plan:
+
+```python
+# Retrieve examples based on the goal
+examples = retriever.retrieve_for_plan(goal)
+
+# Generate plan using the LLM
+plan = await llm.complete([
+    Message(role="user", content=plan_prompt.format(
+        goal=goal,
+        examples=formatted_examples
+    ))
+])
+```
+
+The plan provides a strategic roadmap that guides subsequent reasoning.
+
+<Tip>
+Good plans are concise and numbered. They outline the key steps without being overly detailed.
+</Tip>
+
+### 2. Reasoning Phase
+
+Before each action, the agent reasons about the current situation:
+
+```python
+# Retrieve examples relevant to current situation
+examples = retriever.retrieve_for_step(goal, plan, observation)
+
+# Generate reasoning
+reasoning = await llm.complete([
+    Message(role="user", content=reason_prompt.format(
+        goal=goal,
+        plan=plan,
+        observation=observation,
+        history=formatted_history,
+        examples=formatted_examples
+    ))
+])
+```
+
+Reasoning helps the agent:
+- Interpret what it observes
+- Connect observations to the plan
+- Decide what to do next
+
+### 3. Acting Phase
+
+Based on reasoning, the agent generates and executes an action:
+
+```python
+# Retrieve examples again (may differ based on reasoning)
+examples = retriever.retrieve_for_step(goal, plan, reasoning)
+
+# Generate action
+action = await llm.complete([
+    Message(role="user", content=act_prompt.format(
+        goal=goal,
+        plan=plan,
+        reasoning=reasoning,
+        history=formatted_history,
+        examples=formatted_examples
+    ))
+])
+
+# Execute in environment
+observation, done, success = env.step(action)
+```
+
+### 4. Loop Termination
+
+The loop continues until:
+- The environment signals `done=True`
+- Maximum steps (`max_steps`) is reached
+
+```python
+for step_num in range(max_steps):
+    # ... reasoning and acting ...
+    
+    if done:
+        break  # Goal achieved or failed
+
+# Record result for curation
+retriever.record_episode_result(success)
+```
+
+## The ReActLoop Class
+
+ICICL's `ReActLoop` class encapsulates this logic:
+
+```python
+from icicl.loop import ReActLoop
+
+loop = ReActLoop(
+    llm=llm_provider,
+    retriever=trajectory_retriever,
+    plan_prompt="...",
+    reason_prompt="...",
+    act_prompt="...",
+    max_steps=30,
+    on_step=callback_function,
+)
+
+trajectory = await loop.run(env, goal)
+```
+
+## Step Recording
+
+Each step is recorded as a `Step` object:
+
+```python
+from icicl import Step
+
+step = Step(
+    observation=observation,  # What the agent observed
+    reasoning=reasoning,      # Agent's analysis
+    action=action,           # Action taken
+)
+```
+
+The complete trajectory captures the entire episode:
+
+```python
+from icicl import Trajectory
+
+trajectory = Trajectory(
+    goal=goal,
+    plan=plan,
+    steps=[step1, step2, ...],
+    success=True,
+)
+```
+
+## Step Callbacks
+
+Monitor the loop in real-time with callbacks:
+
+```python
+from icicl import Step, StepContext
+
+def on_step(step: Step, context: StepContext) -> None:
+    print(f"Step {len(context.history) + 1}")
+    print(f"  Observed: {step.observation[:50]}...")
+    print(f"  Thought: {step.reasoning[:50]}...")
+    print(f"  Action: {step.action}")
+    print(f"  Examples used: {len(context.examples)}")
+
+agent = Agent(
+    ...,
+    on_step=on_step,
+)
+```
+
+## Example Trace
+
+Here's what a typical episode looks like:
+
+```
+Goal: Find the config file and read the port number
+
+PLAN:
+1. Navigate to the config directory
+2. List files to find the config
+3. Read the config file
+4. Extract the port number
+
+STEP 1:
+  Observation: Current directory: /
+  Reasoning: I need to find the config directory. Common locations 
+             include /etc. Let me navigate there.
+  Action: cd /etc
+
+STEP 2:
+  Observation: Changed directory to /etc
+  Reasoning: Good, I'm in /etc. Now I should look for config files 
+             or a config subdirectory.
+  Action: ls
+
+STEP 3:
+  Observation: app/ hosts passwd shadow
+  Reasoning: I see an 'app' directory which likely contains the 
+             application config. Let me check there.
+  Action: cd app
+
+STEP 4:
+  Observation: Changed directory to /etc/app
+  Reasoning: Now let me list the files to find the config.
+  Action: ls
+
+STEP 5:
+  Observation: config.json
+  Reasoning: Found config.json. Let me read it to find the port.
+  Action: cat config.json
+
+STEP 6:
+  Observation: {"port": 8080, "db_password": "secret123"}
+  Reasoning: The port number is 8080. Task complete!
+  Action: done
+
+SUCCESS: Completed in 6 steps
+```
+
+## Customizing the Loop
+
+### Adjust Maximum Steps
+
+```python
+agent = Agent(
+    ...,
+    max_steps=50,  # Allow more steps for complex tasks
+)
+```
+
+### Control Retrieval
+
+```python
+agent = Agent(
+    ...,
+    k=5,  # Retrieve more examples for complex domains
+)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Prompt Templates"
+    icon="message"
+    href="/guides/prompt-templates"
+  >
+    Design effective prompts for planning, reasoning, and acting
+  </Card>
+  <Card
+    title="Trajectory Database"
+    icon="database"
+    href="/core-concepts/trajectory-database"
+  >
+    Learn how trajectories are stored and retrieved
+  </Card>
+</CardGroup>

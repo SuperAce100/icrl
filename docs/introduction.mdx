@@ -1,0 +1,128 @@
+---
+title: Introduction
+description: "Self-Generated In-Context Learning for LLM Agents"
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/hero-light.svg"
+  alt="ICICL Hero"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/hero-dark.svg"
+  alt="ICICL Hero"
+/>
+
+## What is ICICL?
+
+**ICICL** (In-Context ICL) implements the Self-Generated In-Context Learning algorithm, enabling LLM agents to bootstrap their own performance by learning from successful trajectories.
+
+The key insight is that LLM agents can dramatically improve their task completion rates by:
+
+1. **Attempting tasks** and recording successful trajectories
+2. **Retrieving relevant examples** at each decision point using semantic search
+3. **Automatically curating** the example database to retain high-utility examples
+
+<CardGroup cols={2}>
+  <Card
+    title="Quickstart"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get up and running with ICICL in under 5 minutes
+  </Card>
+  <Card
+    title="Core Concepts"
+    icon="book"
+    href="/core-concepts/sgicl-algorithm"
+  >
+    Understand the SGICL algorithm and how it works
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/overview"
+  >
+    Complete API documentation for all classes and methods
+  </Card>
+  <Card
+    title="Examples"
+    icon="flask"
+    href="/examples/file-system-agent"
+  >
+    Real-world examples and tutorials
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion icon="brain" title="Self-Improving Agents">
+    Agents automatically learn from their successful experiences, improving performance over time without manual intervention.
+  </Accordion>
+  <Accordion icon="magnifying-glass" title="Semantic Retrieval">
+    Uses FAISS-backed vector similarity search with sentence transformers to find the most relevant examples for each situation.
+  </Accordion>
+  <Accordion icon="wand-magic-sparkles" title="Automatic Curation">
+    Low-utility trajectories are automatically pruned based on their contribution to successful outcomes.
+  </Accordion>
+  <Accordion icon="plug" title="Flexible LLM Support">
+    Built-in LiteLLM provider supports 100+ models including OpenAI, Anthropic, Google, Azure, and more.
+  </Accordion>
+  <Accordion icon="gear" title="Customizable Prompts">
+    Template-based prompts let you customize the agent's planning, reasoning, and action generation.
+  </Accordion>
+</AccordionGroup>
+
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      SGICL Algorithm                            │
+├─────────────────────────────────────────────────────────────────┤
+│  1. BOOTSTRAP: Agent attempts tasks, stores successes           │
+│  2. RETRIEVE: Semantic search finds relevant examples           │
+│  3. GENERATE: LLM uses examples for better decisions            │
+│  4. CURATE: Low-utility examples are pruned over time          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+Each episode follows a **Plan → Reason → Act** loop:
+
+1. **Plan**: Generate a high-level strategy using retrieved examples
+2. **Reason**: Analyze the current observation with context from similar situations
+3. **Act**: Execute the next action based on reasoning
+4. **Observe**: Get environment feedback and loop back to Reason
+
+## Research Background
+
+ICICL is based on the algorithm described in:
+
+> **Self-Generated In-Context Examples Improve LLM Agents for Sequential Decision-Making Tasks**
+
+The research demonstrates that self-generated examples can match or exceed the performance of human-crafted demonstrations, while being significantly more scalable.
+
+## Quick Example
+
+```python
+import asyncio
+from icicl import Agent, LiteLLMProvider
+
+# Create the agent
+agent = Agent(
+    llm=LiteLLMProvider(model="gpt-4o-mini"),
+    db_path="./trajectories",
+    plan_prompt="Goal: {goal}\n\nExamples:\n{examples}\n\nCreate a plan:",
+    reason_prompt="Goal: {goal}\nPlan: {plan}\nObservation: {observation}\nThink step by step:",
+    act_prompt="Goal: {goal}\nPlan: {plan}\nReasoning: {reasoning}\nNext action:",
+    k=3,           # number of examples to retrieve
+    max_steps=30,  # max steps per episode
+)
+
+# Training: successful trajectories are stored for future use
+trajectory = asyncio.run(agent.train(env, goal="Complete the task"))
+
+# Inference: uses stored examples but doesn't add new ones
+trajectory = asyncio.run(agent.run(env, goal="Complete another task"))
+```

@@ -1,0 +1,171 @@
+---
+title: SGICL Algorithm
+description: "Understanding Self-Generated In-Context Learning"
+---
+
+## Overview
+
+The **Self-Generated In-Context Learning (SGICL)** algorithm enables LLM agents to bootstrap their own performance by learning from successful trajectories. Unlike traditional approaches that require human-crafted demonstrations, SGICL allows agents to generate their own examples through trial and interaction.
+
+## The Core Insight
+
+LLMs perform significantly better when given relevant examples in their context (in-context learning). SGICL leverages this by:
+
+1. **Self-Generating Examples**: The agent creates its own demonstrations by attempting tasks
+2. **Selective Storage**: Only successful trajectories are stored as future examples
+3. **Semantic Retrieval**: The most relevant examples are retrieved for each new situation
+4. **Continuous Improvement**: Performance improves as the agent accumulates more successful experiences
+
+## Algorithm Phases
+
+### 1. Bootstrap Phase
+
+During the initial bootstrap phase, the agent attempts tasks without prior examples:
+
+```
+Episode 1: Agent attempts task → Fails → Nothing stored
+Episode 2: Agent attempts task → Succeeds → Trajectory stored
+Episode 3: Agent attempts task → Succeeds → Trajectory stored
+...
+```
+
+<Note>
+Early episodes may have lower success rates, but each success contributes to improved future performance.
+</Note>
+
+### 2. Retrieval Phase
+
+At each decision point, the agent retrieves semantically similar trajectories:
+
+```python
+# During planning
+examples = retriever.retrieve_for_plan(goal)
+
+# During each step
+examples = retriever.retrieve_for_step(goal, plan, observation)
+```
+
+The retrieval uses:
+- **Sentence Transformers** (`all-MiniLM-L6-v2` by default) for embedding
+- **FAISS** for fast vector similarity search
+- Configurable `k` (number of examples to retrieve)
+
+### 3. Generation Phase
+
+The LLM generates plans, reasoning, and actions informed by retrieved examples:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Goal: Navigate to /home/user and find config.json              │
+│                                                                 │
+│ Examples of similar successful tasks:                           │
+│ ─────────────────────────────────────────────────────────────── │
+│ Example 1: Goal: Find database.json in /home...                │
+│   Steps: cd /home → ls → cd user → find database.json          │
+│                                                                 │
+│ Example 2: Goal: Locate settings in home directory...          │
+│   Steps: cd /home/user → ls → cat settings.json                │
+│ ─────────────────────────────────────────────────────────────── │
+│                                                                 │
+│ Based on these examples, generate a plan...                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 4. Curation Phase
+
+Low-utility trajectories are automatically pruned:
+
+```python
+# A trajectory is pruned when:
+# 1. It has been retrieved at least `min_retrievals` times
+# 2. Its utility score falls below `threshold`
+
+utility_score = times_led_to_success / times_retrieved
+
+if utility_score < threshold and times_retrieved >= min_retrievals:
+    remove_trajectory(trajectory_id)
+```
+
+## Key Benefits
+
+<CardGroup cols={2}>
+  <Card title="No Human Demonstrations" icon="robot">
+    Agents learn from their own experience, reducing the need for manual example curation
+  </Card>
+  <Card title="Domain Adaptation" icon="bullseye">
+    Examples are naturally aligned with the specific tasks and environments the agent encounters
+  </Card>
+  <Card title="Continuous Learning" icon="chart-line">
+    Performance improves over time as more successful trajectories are accumulated
+  </Card>
+  <Card title="Quality Control" icon="filter">
+    Automatic curation ensures only high-utility examples are retained
+  </Card>
+</CardGroup>
+
+## Implementation in ICICL
+
+ICICL implements SGICL with a clean API:
+
+```python
+from icicl import Agent, LiteLLMProvider
+
+agent = Agent(
+    llm=LiteLLMProvider(model="gpt-4o-mini"),
+    db_path="./trajectories",
+    plan_prompt="...",
+    reason_prompt="...",
+    act_prompt="...",
+    k=3,                        # Examples to retrieve
+    curation_threshold=0.3,     # Utility threshold
+    curation_min_retrievals=5,  # Min retrievals before pruning
+)
+
+# Training mode - stores successful trajectories
+trajectory = await agent.train(env, goal="Complete task")
+
+# Inference mode - uses examples, doesn't store new ones
+trajectory = await agent.run(env, goal="Another task")
+```
+
+## Comparison with Traditional ICL
+
+| Aspect | Traditional ICL | Self-Generated ICL |
+|--------|-----------------|-------------------|
+| **Example Source** | Human-crafted | Self-generated |
+| **Scalability** | Limited by human effort | Scales automatically |
+| **Domain Alignment** | May be misaligned | Naturally aligned |
+| **Maintenance** | Manual updates needed | Self-maintaining |
+| **Cold Start** | Requires examples upfront | Bootstraps from zero |
+
+## Research Foundation
+
+ICICL is based on the algorithm described in:
+
+> **Self-Generated In-Context Examples Improve LLM Agents for Sequential Decision-Making Tasks**
+
+Key findings from the research:
+
+1. Self-generated examples can match or exceed human-crafted demonstrations
+2. Semantic retrieval significantly outperforms random example selection
+3. Automatic curation improves example quality over time
+4. The approach generalizes across different task domains
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="ReAct Loop"
+    icon="rotate"
+    href="/core-concepts/react-loop"
+  >
+    Learn about the Plan-Reason-Act execution loop
+  </Card>
+  <Card
+    title="Trajectory Database"
+    icon="database"
+    href="/core-concepts/trajectory-database"
+  >
+    Understand how trajectories are stored and retrieved
+  </Card>
+</CardGroup>

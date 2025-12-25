@@ -1,0 +1,447 @@
+---
+title: Custom Environments
+description: "Building environments for your ICICL agents"
+---
+
+## Overview
+
+Environments define the world your agent interacts with. They receive actions from the agent and return observations, determining when tasks succeed or fail.
+
+## The Environment Protocol
+
+Every environment must implement the `Environment` protocol:
+
+```python
+from icicl import Environment
+
+class MyEnvironment:
+    def reset(self, goal: str) -> str:
+        """Reset the environment for a new episode.
+        
+        Args:
+            goal: The goal description for this episode.
+        
+        Returns:
+            Initial observation as a string.
+        """
+        ...
+
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        """Execute an action in the environment.
+        
+        Args:
+            action: The action string from the agent.
+        
+        Returns:
+            Tuple of (observation, done, success):
+            - observation: What the agent sees after the action
+            - done: Whether the episode has ended
+            - success: Whether the goal was achieved
+        """
+        ...
+```
+
+## Basic Example
+
+Here's a simple counter environment:
+
+```python
+class CounterEnvironment:
+    def __init__(self, target: int = 10):
+        self.target = target
+        self.count = 0
+        self._goal = ""
+    
+    def reset(self, goal: str) -> str:
+        self._goal = goal
+        self.count = 0
+        return f"Counter initialized at 0. Target: {self.target}"
+    
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        action = action.strip().lower()
+        
+        if action == "increment":
+            self.count += 1
+            obs = f"Counter is now {self.count}"
+        elif action == "decrement":
+            self.count -= 1
+            obs = f"Counter is now {self.count}"
+        elif action.startswith("set "):
+            try:
+                self.count = int(action.split()[1])
+                obs = f"Counter set to {self.count}"
+            except (IndexError, ValueError):
+                obs = "Error: Invalid set command. Use 'set N'"
+        else:
+            obs = f"Unknown action: {action}. Use: increment, decrement, set N"
+        
+        success = self.count == self.target
+        done = success
+        
+        return obs, done, success
+```
+
+## File System Environment
+
+A more complex example that simulates a file system:
+
+```python
+from pathlib import PurePosixPath
+
+class FileSystemEnvironment:
+    def __init__(self):
+        self.cwd = "/"
+        self.files = {
+            "/home/user/notes.txt": "My notes",
+            "/etc/config.json": '{"port": 8080}',
+        }
+        self.directories = {"/", "/home", "/home/user", "/etc"}
+        self._goal = ""
+    
+    def reset(self, goal: str) -> str:
+        self._goal = goal
+        self.cwd = "/"
+        return f"Current directory: /\nGoal: {goal}"
+    
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        parts = action.strip().split(maxsplit=1)
+        cmd = parts[0].lower() if parts else ""
+        args = parts[1] if len(parts) > 1 else ""
+        
+        if cmd == "ls":
+            obs = self._ls(args or self.cwd)
+        elif cmd == "cd":
+            obs = self._cd(args)
+        elif cmd == "cat":
+            obs = self._cat(args)
+        elif cmd == "pwd":
+            obs = self.cwd
+        else:
+            obs = f"Unknown command: {cmd}"
+        
+        # Check success based on goal
+        success = self._check_success()
+        done = success
+        
+        return obs, done, success
+    
+    def _ls(self, path: str) -> str:
+        normalized = self._normalize_path(path)
+        if normalized not in self.directories:
+            return f"Error: Directory '{path}' not found"
+        
+        entries = []
+        prefix = normalized if normalized == "/" else normalized + "/"
+        
+        for f in self.files:
+            if f.startswith(prefix):
+                rel = f[len(prefix):]
+                if "/" not in rel:
+                    entries.append(rel)
+        
+        for d in self.directories:
+            if d.startswith(prefix) and d != normalized:
+                rel = d[len(prefix):]
+                if "/" not in rel:
+                    entries.append(rel + "/")
+        
+        return "\n".join(sorted(set(entries))) or "(empty)"
+    
+    def _cd(self, path: str) -> str:
+        if not path:
+            return "Error: cd requires a path"
+        
+        normalized = self._normalize_path(path)
+        if normalized not in self.directories:
+            return f"Error: Directory '{path}' not found"
+        
+        self.cwd = normalized
+        return f"Changed to {normalized}"
+    
+    def _cat(self, path: str) -> str:
+        if not path:
+            return "Error: cat requires a file"
+        
+        normalized = self._normalize_path(path)
+        if normalized in self.files:
+            return self.files[normalized]
+        return f"Error: File '{path}' not found"
+    
+    def _normalize_path(self, path: str) -> str:
+        if path.startswith("/"):
+            return str(PurePosixPath(path))
+        return str(PurePosixPath(self.cwd) / path)
+    
+    def _check_success(self) -> bool:
+        # Custom logic based on goal
+        if "port" in self._goal.lower():
+            return "8080" in getattr(self, '_last_output', '')
+        return False
+```
+
+## Environment with External Services
+
+Connect to real APIs or services:
+
+```python
+import httpx
+
+class APIEnvironment:
+    def __init__(self, base_url: str):
+        self.base_url = base_url
+        self.client = httpx.Client()
+        self._goal = ""
+        self._context = {}
+    
+    def reset(self, goal: str) -> str:
+        self._goal = goal
+        self._context = {}
+        return f"API at {self.base_url} ready. Goal: {goal}"
+    
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        try:
+            parts = action.strip().split(maxsplit=2)
+            method = parts[0].upper()
+            path = parts[1] if len(parts) > 1 else "/"
+            body = parts[2] if len(parts) > 2 else None
+            
+            url = f"{self.base_url}{path}"
+            
+            if method == "GET":
+                response = self.client.get(url)
+            elif method == "POST":
+                response = self.client.post(url, json=eval(body) if body else {})
+            elif method == "DELETE":
+                response = self.client.delete(url)
+            else:
+                return f"Unknown method: {method}", False, False
+            
+            obs = f"Status: {response.status_code}\n{response.text[:500]}"
+            self._context['last_response'] = response
+            
+            success = self._check_success()
+            return obs, success, success
+            
+        except Exception as e:
+            return f"Error: {str(e)}", False, False
+    
+    def _check_success(self) -> bool:
+        # Implement goal-specific success checking
+        return False
+```
+
+## Task-Based Environments
+
+Create environments with verifiable tasks:
+
+```python
+from dataclasses import dataclass
+from typing import Callable
+
+@dataclass
+class Task:
+    goal: str
+    verify: Callable[['EnvState'], bool]
+    setup: Callable[['EnvState'], None] | None = None
+
+class TaskEnvironment:
+    def __init__(self, task: Task):
+        self.task = task
+        self.state = {}
+    
+    def reset(self, goal: str) -> str:
+        self.state = {"output": "", "actions": []}
+        
+        if self.task.setup:
+            self.task.setup(self.state)
+        
+        return f"Ready. Goal: {self.task.goal}"
+    
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        self.state["actions"].append(action)
+        
+        # Execute action and update state...
+        obs = self._execute(action)
+        self.state["output"] = obs
+        
+        success = self.task.verify(self.state)
+        return obs, success, success
+    
+    def _execute(self, action: str) -> str:
+        # Your action execution logic
+        return f"Executed: {action}"
+
+# Define tasks
+tasks = [
+    Task(
+        goal="Create a file called test.txt",
+        verify=lambda s: "test.txt" in s.get("files", []),
+    ),
+    Task(
+        goal="Set counter to 42",
+        verify=lambda s: s.get("counter") == 42,
+    ),
+]
+```
+
+## Best Practices
+
+### 1. Store the Goal
+
+Always store the goal in `reset()` for use in success checking:
+
+```python
+def reset(self, goal: str) -> str:
+    self._goal = goal  # Store for later
+    # ... initialization
+    return initial_observation
+```
+
+### 2. Return Clear Observations
+
+Make observations informative but concise:
+
+```python
+def step(self, action: str) -> tuple[str, bool, bool]:
+    if action == "ls":
+        # Good: Clear, structured output
+        return "Files:\n- config.json\n- data.csv", False, False
+    
+    if error:
+        # Good: Descriptive error
+        return f"Error: File '{path}' not found. Check the path.", False, False
+```
+
+### 3. Handle Invalid Actions Gracefully
+
+```python
+def step(self, action: str) -> tuple[str, bool, bool]:
+    action = action.strip()
+    
+    if not action:
+        return "Error: Empty action. Please provide a command.", False, False
+    
+    cmd = action.split()[0].lower()
+    if cmd not in self.valid_commands:
+        return (
+            f"Unknown command: {cmd}\n"
+            f"Valid commands: {', '.join(self.valid_commands)}",
+            False,
+            False
+        )
+    
+    # Process valid command...
+```
+
+### 4. Implement Robust Success Checking
+
+```python
+def _check_success(self) -> bool:
+    goal = self._goal.lower()
+    
+    # Multiple success conditions based on goal
+    if "find" in goal and "file" in goal:
+        return self._found_target_file
+    
+    if "count" in goal:
+        target = self._extract_number(goal)
+        return self.counter == target
+    
+    if "create" in goal:
+        return self._created_item
+    
+    return False
+```
+
+### 5. Limit Episode Length
+
+Prevent infinite loops:
+
+```python
+def __init__(self, max_steps: int = 50):
+    self.max_steps = max_steps
+    self.step_count = 0
+
+def step(self, action: str) -> tuple[str, bool, bool]:
+    self.step_count += 1
+    
+    if self.step_count >= self.max_steps:
+        return "Maximum steps reached.", True, False
+    
+    # ... normal processing
+```
+
+## Testing Environments
+
+Test your environment before using with an agent:
+
+```python
+def test_environment():
+    env = FileSystemEnvironment()
+    
+    # Test reset
+    obs = env.reset("Find the config file")
+    assert "Current directory" in obs
+    
+    # Test valid actions
+    obs, done, success = env.step("ls")
+    assert not done
+    assert "home" in obs or "etc" in obs
+    
+    # Test navigation
+    obs, done, success = env.step("cd /etc")
+    assert "Changed" in obs
+    
+    # Test file reading
+    obs, done, success = env.step("cat config.json")
+    assert "8080" in obs
+    
+    # Test invalid action
+    obs, done, success = env.step("invalid_command")
+    assert "Unknown" in obs or "Error" in obs
+    
+    print("All tests passed!")
+
+test_environment()
+```
+
+## Using with Agent
+
+```python
+from icicl import Agent, LiteLLMProvider
+
+# Create your environment
+env = FileSystemEnvironment()
+
+# Create agent with matching prompts
+agent = Agent(
+    llm=LiteLLMProvider(model="gpt-4o-mini"),
+    db_path="./trajectories",
+    plan_prompt="...",  # Mention available commands
+    reason_prompt="...",
+    act_prompt="...",
+)
+
+# Train
+trajectory = await agent.train(env, goal="Find the config file")
+print(f"Success: {trajectory.success}")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Custom LLM Providers"
+    icon="microchip"
+    href="/guides/custom-llm-providers"
+  >
+    Integrate custom LLM backends
+  </Card>
+  <Card
+    title="File System Example"
+    icon="folder"
+    href="/examples/file-system-agent"
+  >
+    See a complete environment implementation
+  </Card>
+</CardGroup>

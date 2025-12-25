@@ -1,0 +1,347 @@
+---
+title: Agent
+description: "Main Agent class for training and running ICICL agents"
+---
+
+## Overview
+
+The `Agent` class is the main interface for ICICL. It handles training, inference, database management, and curation.
+
+```python
+from icicl import Agent
+```
+
+## Constructor
+
+```python
+Agent(
+    llm: LLMProvider,
+    db_path: str,
+    plan_prompt: str,
+    reason_prompt: str,
+    act_prompt: str,
+    k: int = 3,
+    max_steps: int = 30,
+    seed_trajectories: list[Trajectory] | None = None,
+    on_step: Callable[[Step, StepContext], None] | None = None,
+    curation_threshold: float = 0.3,
+    curation_min_retrievals: int = 5,
+)
+```
+
+### Parameters
+
+<ParamField path="llm" type="LLMProvider" required>
+  The LLM provider for generating completions. Can be `LiteLLMProvider` or any class implementing the `LLMProvider` protocol.
+</ParamField>
+
+<ParamField path="db_path" type="str" required>
+  Path to the directory for storing trajectories and the FAISS index. Created automatically if it doesn't exist.
+</ParamField>
+
+<ParamField path="plan_prompt" type="str" required>
+  Template for planning prompts. Available placeholders: `{goal}`, `{examples}`.
+</ParamField>
+
+<ParamField path="reason_prompt" type="str" required>
+  Template for reasoning prompts. Available placeholders: `{goal}`, `{plan}`, `{observation}`, `{history}`, `{examples}`.
+</ParamField>
+
+<ParamField path="act_prompt" type="str" required>
+  Template for action prompts. Available placeholders: `{goal}`, `{plan}`, `{reasoning}`, `{history}`, `{examples}`.
+</ParamField>
+
+<ParamField path="k" type="int" default="3">
+  Number of examples to retrieve at each decision point.
+</ParamField>
+
+<ParamField path="max_steps" type="int" default="30">
+  Maximum number of steps per episode before terminating.
+</ParamField>
+
+<ParamField path="seed_trajectories" type="list[Trajectory] | None" default="None">
+  Initial trajectories to populate the database. Useful for bootstrapping with existing examples.
+</ParamField>
+
+<ParamField path="on_step" type="Callable[[Step, StepContext], None] | None" default="None">
+  Callback function called after each step. Receives the step and its context.
+</ParamField>
+
+<ParamField path="curation_threshold" type="float" default="0.3">
+  Utility score threshold below which trajectories are pruned. Range: 0.0 to 1.0.
+</ParamField>
+
+<ParamField path="curation_min_retrievals" type="int" default="5">
+  Minimum number of times a trajectory must be retrieved before it can be considered for pruning.
+</ParamField>
+
+## Properties
+
+### database
+
+```python
+@property
+def database(self) -> TrajectoryDatabase
+```
+
+Access the underlying trajectory database directly.
+
+```python
+db = agent.database
+print(f"Trajectories: {len(db)}")
+```
+
+## Methods
+
+### train
+
+```python
+async def train(
+    self,
+    env: Environment,
+    goal: str,
+) -> Trajectory
+```
+
+Run a training episode. Successful trajectories are stored in the database.
+
+<ParamField path="env" type="Environment" required>
+  The environment to interact with.
+</ParamField>
+
+<ParamField path="goal" type="str" required>
+  The goal description for this episode.
+</ParamField>
+
+<ResponseField name="return" type="Trajectory">
+  The resulting trajectory, whether successful or not.
+</ResponseField>
+
+```python
+trajectory = await agent.train(env, goal="Find the config file")
+
+if trajectory.success:
+    print(f"Completed in {len(trajectory.steps)} steps")
+```
+
+### run
+
+```python
+async def run(
+    self,
+    env: Environment,
+    goal: str,
+) -> Trajectory
+```
+
+Run an inference episode. Uses stored examples but doesn't add new trajectories.
+
+<ParamField path="env" type="Environment" required>
+  The environment to interact with.
+</ParamField>
+
+<ParamField path="goal" type="str" required>
+  The goal description for this episode.
+</ParamField>
+
+<ResponseField name="return" type="Trajectory">
+  The resulting trajectory.
+</ResponseField>
+
+```python
+trajectory = await agent.run(env, goal="Complete the task")
+```
+
+### train_sync
+
+```python
+def train_sync(
+    self,
+    env: Environment,
+    goal: str,
+) -> Trajectory
+```
+
+Synchronous wrapper for `train()`.
+
+```python
+trajectory = agent.train_sync(env, goal="Find the config file")
+```
+
+### run_sync
+
+```python
+def run_sync(
+    self,
+    env: Environment,
+    goal: str,
+) -> Trajectory
+```
+
+Synchronous wrapper for `run()`.
+
+```python
+trajectory = agent.run_sync(env, goal="Complete the task")
+```
+
+### train_batch
+
+```python
+async def train_batch(
+    self,
+    env_factory: Callable[[], Environment],
+    goals: list[str],
+) -> list[Trajectory]
+```
+
+Train on multiple goals sequentially.
+
+<ParamField path="env_factory" type="Callable[[], Environment]" required>
+  A callable that returns a new environment instance for each goal.
+</ParamField>
+
+<ParamField path="goals" type="list[str]" required>
+  List of goal descriptions to train on.
+</ParamField>
+
+<ResponseField name="return" type="list[Trajectory]">
+  List of resulting trajectories, one per goal.
+</ResponseField>
+
+```python
+def make_env():
+    return FileSystemEnvironment()
+
+goals = ["Task 1", "Task 2", "Task 3"]
+trajectories = await agent.train_batch(make_env, goals)
+```
+
+### run_batch
+
+```python
+async def run_batch(
+    self,
+    env_factory: Callable[[], Environment],
+    goals: list[str],
+) -> list[Trajectory]
+```
+
+Run inference on multiple goals sequentially.
+
+<ParamField path="env_factory" type="Callable[[], Environment]" required>
+  A callable that returns a new environment instance for each goal.
+</ParamField>
+
+<ParamField path="goals" type="list[str]" required>
+  List of goal descriptions.
+</ParamField>
+
+<ResponseField name="return" type="list[Trajectory]">
+  List of resulting trajectories.
+</ResponseField>
+
+```python
+trajectories = await agent.run_batch(make_env, eval_goals)
+successes = sum(1 for t in trajectories if t.success)
+```
+
+### get_stats
+
+```python
+def get_stats(self) -> dict[str, int | float]
+```
+
+Get statistics about the agent's database.
+
+<ResponseField name="return" type="dict[str, int | float]">
+  Dictionary containing:
+  - `total_trajectories`: Total number of stored trajectories
+  - `successful_trajectories`: Number of successful trajectories
+  - `success_rate`: Ratio of successful to total trajectories
+</ResponseField>
+
+```python
+stats = agent.get_stats()
+print(f"Total: {stats['total_trajectories']}")
+print(f"Successful: {stats['successful_trajectories']}")
+print(f"Success rate: {stats['success_rate']:.1%}")
+```
+
+## Example Usage
+
+### Basic Usage
+
+```python
+from icicl import Agent, LiteLLMProvider
+
+agent = Agent(
+    llm=LiteLLMProvider(model="gpt-4o-mini"),
+    db_path="./trajectories",
+    plan_prompt="Goal: {goal}\n\nExamples:\n{examples}\n\nPlan:",
+    reason_prompt="Goal: {goal}\nPlan: {plan}\nObservation: {observation}\nThink:",
+    act_prompt="Goal: {goal}\nReasoning: {reasoning}\nAction:",
+)
+
+# Train
+trajectory = await agent.train(env, "Complete task")
+
+# Check results
+print(f"Success: {trajectory.success}")
+print(f"Steps: {len(trajectory.steps)}")
+```
+
+### With Seed Trajectories
+
+```python
+from icicl import Trajectory, Step
+
+seed = Trajectory(
+    goal="Example task",
+    plan="1. Step one\n2. Step two",
+    steps=[
+        Step(observation="Start", reasoning="Begin", action="start"),
+        Step(observation="Done", reasoning="Finish", action="end"),
+    ],
+    success=True,
+)
+
+agent = Agent(
+    ...,
+    seed_trajectories=[seed],
+)
+```
+
+### With Step Callback
+
+```python
+from icicl import Step, StepContext
+
+def on_step(step: Step, context: StepContext) -> None:
+    print(f"Step {len(context.history) + 1}")
+    print(f"  Observation: {step.observation[:50]}...")
+    print(f"  Action: {step.action}")
+    print(f"  Examples: {len(context.examples)}")
+
+agent = Agent(
+    ...,
+    on_step=on_step,
+)
+```
+
+### Custom Curation Settings
+
+```python
+# Conservative: keep more trajectories
+agent = Agent(
+    ...,
+    curation_threshold=0.1,
+    curation_min_retrievals=10,
+)
+
+# Aggressive: prune more aggressively
+agent = Agent(
+    ...,
+    curation_threshold=0.5,
+    curation_min_retrievals=3,
+)
+```

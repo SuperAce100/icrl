@@ -1,0 +1,299 @@
+---
+title: Trajectory Database
+description: "How trajectories are stored and retrieved"
+---
+
+## Overview
+
+The **Trajectory Database** is the persistent memory of an ICICL agent. It stores successful trajectories on disk and uses FAISS for efficient semantic similarity search.
+
+## Database Structure
+
+When you create an agent with `db_path="./trajectories"`, the following structure is created:
+
+```
+./trajectories/
+├── trajectories/          # Individual trajectory files
+│   ├── <uuid-1>.json
+│   ├── <uuid-2>.json
+│   └── ...
+├── index.faiss            # FAISS vector index for fast search
+├── index_ids.json         # Mapping between FAISS indices and trajectory IDs
+└── curation.json          # Utility tracking for each trajectory
+```
+
+## Trajectory Storage
+
+Each trajectory is stored as a JSON file:
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "goal": "Navigate to /home/user and list files",
+  "plan": "1. Use cd to navigate\n2. Use ls to list",
+  "steps": [
+    {
+      "observation": "Current directory: /",
+      "reasoning": "I need to navigate to /home/user first",
+      "action": "cd /home/user"
+    },
+    {
+      "observation": "Changed directory to /home/user",
+      "reasoning": "Now I can list the files",
+      "action": "ls"
+    }
+  ],
+  "success": true,
+  "metadata": {}
+}
+```
+
+## Semantic Search
+
+The database uses **sentence-transformers** for embedding and **FAISS** for vector search:
+
+```python
+# How search works internally
+query = "Find the config file"
+embedding = embedder.embed_single(query)
+
+# FAISS finds the k most similar trajectories
+indices = faiss_index.search(embedding, k=3)
+
+# Return the corresponding trajectories
+return [trajectories[idx] for idx in indices]
+```
+
+### Embedding Strategy
+
+By default, trajectories are embedded using their goal and plan:
+
+```python
+def _get_embedding_text(trajectory: Trajectory) -> str:
+    return f"{trajectory.goal}\n{trajectory.plan}"
+```
+
+This captures both the intent (goal) and approach (plan) of each trajectory.
+
+## Using the Database Directly
+
+You can access the database through the agent:
+
+```python
+# Access the database
+db = agent.database
+
+# Search for similar trajectories
+similar = db.search("find configuration files", k=3)
+for traj in similar:
+    print(f"Goal: {traj.goal}")
+    print(f"Steps: {len(traj.steps)}")
+
+# Get all trajectories
+all_trajectories = db.get_all()
+print(f"Total stored: {len(all_trajectories)}")
+
+# Get a specific trajectory
+traj = db.get("trajectory-id")
+
+# Remove a trajectory manually
+db.remove("trajectory-id")
+```
+
+## The TrajectoryDatabase Class
+
+```python
+from icicl.database import TrajectoryDatabase
+
+db = TrajectoryDatabase(path="./my_trajectories")
+
+# Add a trajectory
+db.add(trajectory)
+
+# Search
+results = db.search("query string", k=5)
+
+# Get all
+all_trajs = db.get_all()
+
+# Get by ID
+traj = db.get("uuid")
+
+# Remove
+removed = db.remove("uuid")  # Returns True if found
+
+# Get count
+count = len(db)
+```
+
+### Key Methods
+
+| Method | Description |
+|--------|-------------|
+| `add(trajectory)` | Add a trajectory to the database |
+| `get(id)` | Get a trajectory by ID |
+| `search(query, k)` | Find k most similar trajectories |
+| `get_all()` | Get all trajectories |
+| `remove(id)` | Remove a trajectory by ID |
+| `__len__()` | Get number of trajectories |
+
+## Retriever Integration
+
+The `TrajectoryRetriever` wraps the database with episode-aware retrieval:
+
+```python
+from icicl.retriever import TrajectoryRetriever
+
+retriever = TrajectoryRetriever(database, k=3)
+
+# Retrieve for planning phase
+examples = retriever.retrieve_for_plan(goal)
+
+# Retrieve for step (includes plan and observation context)
+examples = retriever.retrieve_for_step(goal, plan, observation)
+
+# Record episode result for curation
+retriever.record_episode_result(success=True)
+```
+
+### Retrieval Tracking
+
+The retriever tracks which trajectories are used in each episode:
+
+```python
+# During an episode
+retriever.retrieve_for_plan(goal)       # Tracks IDs
+retriever.retrieve_for_step(...)        # Tracks more IDs
+retriever.retrieve_for_step(...)        # Tracks more IDs
+
+# At episode end
+retriever.record_episode_result(success=True)
+# Updates curation metadata for all retrieved trajectories
+
+# Clear for next episode
+retriever.clear_retrieved()
+```
+
+## Custom Embeddings
+
+Use a different embedding model:
+
+```python
+from icicl.embedder import SentenceTransformerEmbedder
+from icicl.database import TrajectoryDatabase
+
+# Use a different model
+embedder = SentenceTransformerEmbedder(
+    model_name="all-mpnet-base-v2"  # Larger, more accurate
+)
+
+db = TrajectoryDatabase(
+    path="./trajectories",
+    embedder=embedder,
+)
+```
+
+### Available Models
+
+Common sentence-transformer models:
+
+| Model | Dimensions | Speed | Quality |
+|-------|------------|-------|---------|
+| `all-MiniLM-L6-v2` | 384 | Fast | Good |
+| `all-mpnet-base-v2` | 768 | Medium | Better |
+| `all-distilroberta-v1` | 768 | Medium | Better |
+
+## Persistence
+
+The database automatically persists to disk:
+
+- **Trajectories**: Saved immediately after `add()`
+- **Index**: Updated and saved after each `add()` or `remove()`
+- **Curation**: Saved after each retrieval result is recorded
+
+Loading happens automatically:
+
+```python
+# First run - creates new database
+db = TrajectoryDatabase("./trajectories")
+
+# Later run - loads existing data
+db = TrajectoryDatabase("./trajectories")
+print(f"Loaded {len(db)} trajectories")
+```
+
+## Index Rebuilding
+
+The FAISS index is rebuilt when:
+- A trajectory is removed (to maintain index integrity)
+- The index file is missing on load
+
+```python
+# Manual rebuild (rarely needed)
+db._rebuild_index()
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use separate databases for different tasks">
+    ```python
+    # Web navigation agent
+    web_agent = Agent(db_path="./db/web_nav", ...)
+    
+    # File system agent
+    fs_agent = Agent(db_path="./db/file_sys", ...)
+    ```
+  </Accordion>
+  
+  <Accordion title="Seed with initial trajectories">
+    ```python
+    from icicl import Trajectory, Step
+    
+    seed = Trajectory(
+        goal="Example task",
+        plan="1. Do this\n2. Do that",
+        steps=[
+            Step(observation="Start", reasoning="Think", action="act"),
+        ],
+        success=True,
+    )
+    
+    agent = Agent(
+        ...,
+        seed_trajectories=[seed],
+    )
+    ```
+  </Accordion>
+  
+  <Accordion title="Monitor database size">
+    ```python
+    stats = agent.get_stats()
+    print(f"Trajectories: {stats['total_trajectories']}")
+    print(f"Success rate: {stats['success_rate']:.1%}")
+    
+    # Consider increasing curation if too large
+    if stats['total_trajectories'] > 1000:
+        print("Consider more aggressive curation")
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Curation"
+    icon="filter"
+    href="/core-concepts/curation"
+  >
+    Learn how low-utility trajectories are automatically pruned
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/trajectory-database"
+  >
+    Complete TrajectoryDatabase API documentation
+  </Card>
+</CardGroup>
