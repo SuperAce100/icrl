@@ -1,0 +1,283 @@
+---
+title: LiteLLMProvider
+description: "Built-in LLM provider supporting 100+ models"
+---
+
+## Overview
+
+`LiteLLMProvider` is the built-in LLM provider that uses [LiteLLM](https://github.com/BerriAI/litellm) to support 100+ models from various providers through a unified interface.
+
+```python
+from icicl import LiteLLMProvider
+```
+
+## Constructor
+
+```python
+LiteLLMProvider(
+    model: str = "gpt-4o-mini",
+    temperature: float = 0.7,
+    max_tokens: int | None = None,
+    **kwargs: Any,
+)
+```
+
+### Parameters
+
+<ParamField path="model" type="str" default="gpt-4o-mini">
+  The model identifier. Format depends on the provider. See [Supported Models](#supported-models).
+</ParamField>
+
+<ParamField path="temperature" type="float" default="0.7">
+  Sampling temperature. Higher values (e.g., 0.8) make output more random, lower values (e.g., 0.2) make it more deterministic.
+</ParamField>
+
+<ParamField path="max_tokens" type="int | None" default="None">
+  Maximum tokens to generate. `None` uses the model's default.
+</ParamField>
+
+<ParamField path="**kwargs" type="Any">
+  Additional arguments passed directly to `litellm.acompletion`. See [LiteLLM documentation](https://docs.litellm.ai/docs/completion/input).
+</ParamField>
+
+## Methods
+
+### complete
+
+```python
+async def complete(self, messages: list[Message]) -> str
+```
+
+Generate a completion from the given messages.
+
+<ParamField path="messages" type="list[Message]" required>
+  List of Message objects with `role` and `content` fields.
+</ParamField>
+
+<ResponseField name="return" type="str">
+  The generated completion text.
+</ResponseField>
+
+```python
+from icicl import LiteLLMProvider, Message
+
+llm = LiteLLMProvider(model="gpt-4o-mini")
+
+messages = [
+    Message(role="system", content="You are helpful."),
+    Message(role="user", content="Say hello!"),
+]
+
+response = await llm.complete(messages)
+print(response)  # "Hello! How can I help you today?"
+```
+
+### complete_sync
+
+```python
+def complete_sync(self, messages: list[Message]) -> str
+```
+
+Synchronous version of `complete()`.
+
+```python
+response = llm.complete_sync(messages)
+```
+
+## Supported Models
+
+### OpenAI
+
+```python
+# Set API key
+# export OPENAI_API_KEY=sk-...
+
+llm = LiteLLMProvider(model="gpt-4o")
+llm = LiteLLMProvider(model="gpt-4o-mini")
+llm = LiteLLMProvider(model="gpt-4-turbo")
+llm = LiteLLMProvider(model="gpt-3.5-turbo")
+```
+
+### Anthropic
+
+```python
+# Set API key
+# export ANTHROPIC_API_KEY=sk-ant-...
+
+llm = LiteLLMProvider(model="claude-3-5-sonnet-20241022")
+llm = LiteLLMProvider(model="claude-3-opus-20240229")
+llm = LiteLLMProvider(model="claude-3-haiku-20240307")
+```
+
+### Google
+
+```python
+# Set API key
+# export GEMINI_API_KEY=...
+
+llm = LiteLLMProvider(model="gemini/gemini-1.5-pro")
+llm = LiteLLMProvider(model="gemini/gemini-pro")
+```
+
+### Azure OpenAI
+
+```python
+# Set environment variables
+# export AZURE_API_KEY=...
+# export AZURE_API_BASE=https://your-resource.openai.azure.com
+# export AZURE_API_VERSION=2024-02-15-preview
+
+llm = LiteLLMProvider(model="azure/your-deployment-name")
+```
+
+### Other Providers
+
+LiteLLM supports many more providers:
+
+```python
+# Cohere
+llm = LiteLLMProvider(model="command-r-plus")
+
+# Mistral
+llm = LiteLLMProvider(model="mistral/mistral-large-latest")
+
+# Groq
+llm = LiteLLMProvider(model="groq/llama3-70b-8192")
+
+# Together AI
+llm = LiteLLMProvider(model="together_ai/meta-llama/Llama-3-70b-chat-hf")
+
+# Replicate
+llm = LiteLLMProvider(model="replicate/meta/llama-2-70b-chat")
+```
+
+See [LiteLLM Providers](https://docs.litellm.ai/docs/providers) for the complete list.
+
+## Configuration Examples
+
+### Low Temperature (Deterministic)
+
+```python
+llm = LiteLLMProvider(
+    model="gpt-4o-mini",
+    temperature=0.1,  # More deterministic
+)
+```
+
+### High Temperature (Creative)
+
+```python
+llm = LiteLLMProvider(
+    model="gpt-4o-mini",
+    temperature=0.9,  # More creative
+)
+```
+
+### Limited Output
+
+```python
+llm = LiteLLMProvider(
+    model="gpt-4o-mini",
+    max_tokens=100,  # Short responses
+)
+```
+
+### With Additional Parameters
+
+```python
+llm = LiteLLMProvider(
+    model="gpt-4o-mini",
+    temperature=0.5,
+    max_tokens=500,
+    top_p=0.9,
+    frequency_penalty=0.5,
+    presence_penalty=0.5,
+)
+```
+
+### With Timeout
+
+```python
+llm = LiteLLMProvider(
+    model="gpt-4o-mini",
+    timeout=30.0,  # 30 second timeout
+)
+```
+
+## Error Handling
+
+The provider raises exceptions from LiteLLM on API errors:
+
+```python
+try:
+    response = await llm.complete(messages)
+except Exception as e:
+    print(f"LLM call failed: {e}")
+    # Handle retry logic, fallback, etc.
+```
+
+## Using with Agent
+
+```python
+from icicl import Agent, LiteLLMProvider
+
+llm = LiteLLMProvider(
+    model="gpt-4o-mini",
+    temperature=0.3,
+    max_tokens=500,
+)
+
+agent = Agent(
+    llm=llm,
+    db_path="./trajectories",
+    plan_prompt="Goal: {goal}\nExamples:\n{examples}\nPlan:",
+    reason_prompt="Goal: {goal}\nObservation: {observation}\nThink:",
+    act_prompt="Goal: {goal}\nReasoning: {reasoning}\nAction:",
+)
+```
+
+## Environment Variables
+
+LiteLLM automatically reads API keys from environment variables:
+
+| Provider | Environment Variable |
+|----------|---------------------|
+| OpenAI | `OPENAI_API_KEY` |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| Google | `GEMINI_API_KEY` |
+| Azure | `AZURE_API_KEY`, `AZURE_API_BASE` |
+| Cohere | `COHERE_API_KEY` |
+| Mistral | `MISTRAL_API_KEY` |
+
+## Using .env Files
+
+```bash
+# .env file
+OPENAI_API_KEY=sk-...
+```
+
+```python
+from dotenv import load_dotenv
+load_dotenv()  # ICICL does this automatically
+
+from icicl import LiteLLMProvider
+llm = LiteLLMProvider(model="gpt-4o-mini")
+```
+
+## Debugging
+
+Enable LiteLLM debug mode:
+
+```python
+import litellm
+litellm.set_verbose = True
+
+llm = LiteLLMProvider(model="gpt-4o-mini")
+response = await llm.complete(messages)  # Prints debug info
+```
+
+## See Also
+
+- [LLMProvider Protocol](/api-reference/llm-provider) - Protocol definition
+- [Custom LLM Providers](/guides/custom-llm-providers) - Build your own
+- [LiteLLM Documentation](https://docs.litellm.ai/) - Full LiteLLM docs

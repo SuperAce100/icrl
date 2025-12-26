@@ -1,0 +1,225 @@
+---
+title: "Quickstart"
+description: "Build your first self-improving ICICL agent in under 5 minutes"
+---
+
+## Installation
+
+Install ICICL using your preferred package manager:
+
+<Tabs>
+  <Tab title="pip">
+    ```bash
+    pip install icicl
+    ```
+  </Tab>
+  <Tab title="uv">
+    ```bash
+    uv add icicl
+    ```
+  </Tab>
+  <Tab title="poetry">
+    ```bash
+    poetry add icicl
+    ```
+  </Tab>
+</Tabs>
+
+## Set up your API key
+
+ICICL uses LiteLLM under the hood, which supports 100+ LLM providers. Configure your preferred provider:
+
+<Tabs>
+  <Tab title="OpenAI">
+    ```bash
+    export OPENAI_API_KEY=sk-your-key-here
+    ```
+  </Tab>
+  <Tab title="Anthropic">
+    ```bash
+    export ANTHROPIC_API_KEY=sk-ant-your-key-here
+    ```
+  </Tab>
+  <Tab title="Azure OpenAI">
+    ```bash
+    export AZURE_API_KEY=your-key-here
+    export AZURE_API_BASE=https://your-resource.openai.azure.com
+    ```
+  </Tab>
+</Tabs>
+
+## Create your first agent
+
+<Steps>
+  <Step title="Define your prompt templates">
+    Create templates that guide your agent's planning, reasoning, and actions:
+
+    ```python prompts.py
+    PLAN_PROMPT = """Goal: {goal}
+
+    Examples of similar tasks:
+    {examples}
+
+    Create a numbered plan to accomplish this goal."""
+
+    REASON_PROMPT = """Goal: {goal}
+    Plan: {plan}
+
+    Previous steps: {history}
+    Current observation: {observation}
+
+    Relevant examples:
+    {examples}
+
+    Think step by step about what to do next."""
+
+    ACT_PROMPT = """Goal: {goal}
+    Plan: {plan}
+    Reasoning: {reasoning}
+
+    What is the next action? Respond with only the action."""
+    ```
+
+    <Tip>
+    Your prompts use Python format strings with placeholders like `{goal}`, `{examples}`, `{plan}`, `{observation}`, `{reasoning}`, and `{history}`.
+    </Tip>
+  </Step>
+
+  <Step title="Initialize the agent">
+    ```python agent.py
+    from icicl import Agent, LiteLLMProvider
+
+    llm = LiteLLMProvider(model="gpt-4o-mini")
+
+    agent = Agent(
+        llm=llm,
+        db_path="./my_trajectories",
+        plan_prompt=PLAN_PROMPT,
+        reason_prompt=REASON_PROMPT,
+        act_prompt=ACT_PROMPT,
+        k=3,           # Retrieve 3 examples
+        max_steps=30,  # Maximum steps per episode
+    )
+    ```
+
+    <Check>
+    Your agent is now ready. It will store successful trajectories in `./my_trajectories/`.
+    </Check>
+  </Step>
+
+  <Step title="Create an environment">
+    Your environment must implement the `Environment` protocol with `reset()` and `step()` methods:
+
+    ```python environment.py
+    class SimpleEnvironment:
+        def reset(self, goal: str) -> str:
+            """Reset and return initial observation."""
+            self._goal = goal
+            self._state = "initial"
+            return f"Environment ready. Goal: {goal}"
+        
+        def step(self, action: str) -> tuple[str, bool, bool]:
+            """Execute action, return (observation, done, success)."""
+            if action == "complete":
+                return "Task completed!", True, True
+            elif action == "fail":
+                return "Task failed.", True, False
+            else:
+                self._state = action
+                return f"Executed: {action}", False, False
+    ```
+
+    <Note>
+    The `step()` method returns a tuple of `(observation, done, success)` where `done` indicates if the episode ended and `success` indicates if the goal was achieved.
+    </Note>
+  </Step>
+
+  <Step title="Train your agent">
+    Training mode stores successful trajectories for future use:
+
+    ```python train.py
+    import asyncio
+
+    async def train():
+        env = SimpleEnvironment()
+        trajectory = await agent.train(env, goal="Complete the simple task")
+        
+        if trajectory.success:
+            print(f"Success! Completed in {len(trajectory.steps)} steps")
+            print(f"Plan: {trajectory.plan}")
+        else:
+            print("Failed to complete the task")
+
+    asyncio.run(train())
+    ```
+
+    <Check>
+    After successful training, your agent stores the trajectory and can retrieve it as an example for similar future tasks.
+    </Check>
+  </Step>
+
+  <Step title="Run inference">
+    Inference mode uses stored examples but doesn't add new trajectories:
+
+    ```python inference.py
+    async def run_inference():
+        env = SimpleEnvironment()
+        trajectory = await agent.run(env, goal="Complete another task")
+        
+        print(f"Success: {trajectory.success}")
+        print(f"Steps taken: {len(trajectory.steps)}")
+
+    asyncio.run(run_inference())
+    ```
+  </Step>
+</Steps>
+
+## Monitor agent progress
+
+Use step callbacks to observe what your agent does in real-time:
+
+```python callbacks.py
+from icicl import Step, StepContext
+
+def on_step(step: Step, context: StepContext) -> None:
+    print(f"Observation: {step.observation[:100]}...")
+    print(f"Reasoning: {step.reasoning}")
+    print(f"Action: {step.action}")
+    print(f"Examples used: {len(context.examples)}")
+    print("---")
+
+agent = Agent(
+    llm=llm,
+    db_path="./trajectories",
+    plan_prompt=PLAN_PROMPT,
+    reason_prompt=REASON_PROMPT,
+    act_prompt=ACT_PROMPT,
+    on_step=on_step,  # Add the callback
+)
+```
+
+## Check database statistics
+
+```python stats.py
+stats = agent.get_stats()
+print(f"Total trajectories: {stats['total_trajectories']}")
+print(f"Successful: {stats['successful_trajectories']}")
+print(f"Success rate: {stats['success_rate']:.1%}")
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Core Concepts" icon="book" href="/core-concepts/sgicl-algorithm">
+    Learn how the SGICL algorithm enables self-improvement
+  </Card>
+  <Card title="Custom Environments" icon="puzzle-piece" href="/guides/custom-environments">
+    Build environments tailored to your use case
+  </Card>
+  <Card title="Prompt Templates" icon="message" href="/guides/prompt-templates">
+    Design effective prompts for your agent
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Explore the complete API documentation
+  </Card>
+</CardGroup>

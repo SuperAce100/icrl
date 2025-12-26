@@ -1,0 +1,116 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "ICICL",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "theme": "linden",
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#0D9373",
+    "light": "#07C983",
+    "dark": "#0D9373"
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/SuperAce100/icicl"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "/quickstart"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": ["introduction", "quickstart", "installation"]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "core-concepts/sgicl-algorithm",
+              "core-concepts/react-loop",
+              "core-concepts/trajectory-database",
+              "core-concepts/curation"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/prompt-templates",
+              "guides/custom-environments",
+              "guides/custom-llm-providers",
+              "guides/batch-training"
+            ]
+          },
+          {
+            "group": "Examples",
+            "pages": ["examples/file-system-agent", "examples/testing-with-mock-llm"]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["api-reference/overview"]
+          },
+          {
+            "group": "Agent",
+            "pages": ["api-reference/agent"]
+          },
+          {
+            "group": "Models",
+            "pages": [
+              "api-reference/trajectory",
+              "api-reference/step",
+              "api-reference/step-context",
+              "api-reference/message"
+            ]
+          },
+          {
+            "group": "Protocols",
+            "pages": ["api-reference/environment", "api-reference/llm-provider"]
+          },
+          {
+            "group": "Providers",
+            "pages": ["api-reference/litellm-provider"]
+          },
+          {
+            "group": "Database",
+            "pages": [
+              "api-reference/trajectory-database",
+              "api-reference/trajectory-retriever",
+              "api-reference/curation-manager",
+              "api-reference/embedder"
+            ]
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "icon": "github",
+          "href": "https://github.com/SuperAce100/icicl"
+        },
+        {
+          "anchor": "PyPI",
+          "icon": "python",
+          "href": "https://pypi.org/project/icicl/"
+        }
+      ]
+    }
+  },
+  "footerSocials": {
+    "github": "https://github.com/SuperAce100/icicl"
+  }
+}

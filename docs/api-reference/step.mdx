@@ -1,0 +1,202 @@
+---
+title: Step
+description: "Single step in a trajectory"
+---
+
+## Overview
+
+A `Step` represents a single action taken by the agent, including what it observed, how it reasoned, and what action it took.
+
+```python
+from icicl import Step
+```
+
+## Definition
+
+```python
+class Step(BaseModel):
+    observation: str
+    reasoning: str
+    action: str
+```
+
+## Fields
+
+<ParamField path="observation" type="str" required>
+  What the agent observed from the environment before this step.
+</ParamField>
+
+<ParamField path="reasoning" type="str" required>
+  The agent's reasoning about the observation and what to do next.
+</ParamField>
+
+<ParamField path="action" type="str" required>
+  The action the agent decided to take.
+</ParamField>
+
+## Creating Steps
+
+```python
+from icicl import Step
+
+step = Step(
+    observation="Current directory: /home/user\nFiles: notes.txt, config.json",
+    reasoning="I see the config.json file. I should read it to find the port number.",
+    action="cat config.json",
+)
+```
+
+## Accessing Fields
+
+```python
+print(f"Saw: {step.observation}")
+print(f"Thought: {step.reasoning}")
+print(f"Did: {step.action}")
+```
+
+## In Trajectories
+
+Steps are collected in a trajectory's `steps` list:
+
+```python
+from icicl import Trajectory, Step
+
+trajectory = Trajectory(
+    goal="Read the config file",
+    plan="1. List files\n2. Read config.json",
+    steps=[
+        Step(
+            observation="Current dir: /",
+            reasoning="Need to find the config directory first",
+            action="ls",
+        ),
+        Step(
+            observation="home/ etc/ var/",
+            reasoning="Config files are usually in /etc",
+            action="cd /etc",
+        ),
+        Step(
+            observation="Changed to /etc",
+            reasoning="Now list to find config",
+            action="ls",
+        ),
+        Step(
+            observation="config.json passwd hosts",
+            reasoning="Found config.json, read it",
+            action="cat config.json",
+        ),
+    ],
+    success=True,
+)
+```
+
+## In Step Callbacks
+
+Steps are passed to the `on_step` callback:
+
+```python
+from icicl import Step, StepContext
+
+def on_step(step: Step, context: StepContext) -> None:
+    # Access step data
+    print(f"Observation: {step.observation[:100]}...")
+    print(f"Reasoning: {step.reasoning[:100]}...")
+    print(f"Action: {step.action}")
+    
+    # Context provides additional information
+    print(f"Goal: {context.goal}")
+    print(f"Plan: {context.plan}")
+    print(f"Previous steps: {len(context.history)}")
+    print(f"Examples used: {len(context.examples)}")
+
+agent = Agent(..., on_step=on_step)
+```
+
+## Formatting for History
+
+The `StepContext.format_history()` method formats steps for prompt inclusion:
+
+```python
+from icicl import StepContext, Step
+
+context = StepContext(
+    goal="Find config",
+    plan="1. Navigate\n2. Read",
+    observation="Current state",
+    history=[
+        Step(observation="Start", reasoning="Think", action="ls"),
+        Step(observation="Files listed", reasoning="Navigate", action="cd /etc"),
+    ],
+    examples=[],
+)
+
+history_str = context.format_history()
+print(history_str)
+```
+
+Output:
+```
+Step 1: ls -> Start
+Step 2: cd /etc -> Files listed
+```
+
+## Serialization
+
+Steps are Pydantic models:
+
+```python
+# To dictionary
+data = step.model_dump()
+# {"observation": "...", "reasoning": "...", "action": "..."}
+
+# From dictionary
+step = Step.model_validate(data)
+
+# To JSON
+json_str = step.model_dump_json()
+
+# From JSON
+step = Step.model_validate_json(json_str)
+```
+
+## Example: Analyzing Steps
+
+```python
+# Count action types
+from collections import Counter
+
+trajectory = await agent.train(env, "Complete task")
+
+action_types = Counter()
+for step in trajectory.steps:
+    cmd = step.action.split()[0] if step.action else "empty"
+    action_types[cmd] += 1
+
+print("Action distribution:")
+for action, count in action_types.most_common():
+    print(f"  {action}: {count}")
+```
+
+## Example: Verbose Logging
+
+```python
+def detailed_callback(step: Step, context: StepContext) -> None:
+    step_num = len(context.history) + 1
+    
+    print(f"\n{'='*60}")
+    print(f"STEP {step_num}")
+    print(f"{'='*60}")
+    
+    print(f"\n📍 OBSERVATION:")
+    for line in step.observation.split('\n'):
+        print(f"   {line}")
+    
+    print(f"\n🤔 REASONING:")
+    for line in step.reasoning.split('\n'):
+        print(f"   {line}")
+    
+    print(f"\n▶️ ACTION: {step.action}")
+    
+    if context.examples:
+        print(f"\n📚 Retrieved {len(context.examples)} example(s)")
+```

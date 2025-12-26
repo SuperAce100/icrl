@@ -1,0 +1,158 @@
+---
+title: Message
+description: "Chat message for LLM interactions"
+---
+
+## Overview
+
+`Message` represents a single message in an LLM conversation. It's used when communicating with LLM providers.
+
+```python
+from icicl import Message
+```
+
+## Definition
+
+```python
+class Message(BaseModel):
+    role: str
+    content: str
+```
+
+## Fields
+
+<ParamField path="role" type="str" required>
+  The role of the message sender. Common values:
+  - `"user"`: User/human messages
+  - `"assistant"`: Model/AI responses
+  - `"system"`: System prompts/instructions
+</ParamField>
+
+<ParamField path="content" type="str" required>
+  The text content of the message.
+</ParamField>
+
+## Creating Messages
+
+```python
+from icicl import Message
+
+# User message
+user_msg = Message(role="user", content="Hello, how are you?")
+
+# Assistant message
+assistant_msg = Message(role="assistant", content="I'm doing well, thank you!")
+
+# System message
+system_msg = Message(role="system", content="You are a helpful assistant.")
+```
+
+## Accessing Fields
+
+```python
+message = Message(role="user", content="Hello!")
+
+print(f"Role: {message.role}")      # "user"
+print(f"Content: {message.content}")  # "Hello!"
+```
+
+## Usage in LLM Providers
+
+Messages are passed to the `complete` method of LLM providers:
+
+```python
+from icicl import LiteLLMProvider, Message
+
+llm = LiteLLMProvider(model="gpt-4o-mini")
+
+messages = [
+    Message(role="system", content="You are a helpful assistant."),
+    Message(role="user", content="What is 2 + 2?"),
+]
+
+response = await llm.complete(messages)
+print(response)  # "4" or similar
+```
+
+## In Custom Providers
+
+When implementing a custom LLM provider, you receive a list of Messages:
+
+```python
+from icicl import Message
+
+class MyProvider:
+    async def complete(self, messages: list[Message]) -> str:
+        # Convert to your API's format
+        api_messages = [
+            {"role": m.role, "content": m.content}
+            for m in messages
+        ]
+        
+        # Call your API
+        response = await my_api.chat(api_messages)
+        return response.text
+```
+
+## Internal Usage
+
+ICICL creates messages internally when calling the LLM:
+
+```python
+# In ReActLoop._generate_plan()
+prompt = self._format_prompt(self._plan_prompt, context)
+messages = [Message(role="user", content=prompt)]
+return await self._llm.complete(messages)
+```
+
+## Conversation Building
+
+Build multi-turn conversations:
+
+```python
+conversation = [
+    Message(role="system", content="You are a coding assistant."),
+    Message(role="user", content="Write a hello world in Python."),
+    Message(role="assistant", content='print("Hello, World!")'),
+    Message(role="user", content="Now make it a function."),
+]
+
+response = await llm.complete(conversation)
+# Returns something like: def hello(): print("Hello, World!")
+```
+
+## Serialization
+
+Messages are Pydantic models:
+
+```python
+# To dictionary
+data = message.model_dump()
+# {"role": "user", "content": "Hello!"}
+
+# From dictionary
+message = Message.model_validate({"role": "user", "content": "Hi!"})
+
+# To JSON
+json_str = message.model_dump_json()
+
+# From JSON
+message = Message.model_validate_json(json_str)
+```
+
+## Type Hints
+
+Use `Message` in type annotations:
+
+```python
+from icicl import Message
+
+def format_conversation(messages: list[Message]) -> str:
+    lines = []
+    for msg in messages:
+        lines.append(f"{msg.role.upper()}: {msg.content}")
+    return "\n".join(lines)
+
+def create_prompt(text: str) -> list[Message]:
+    return [Message(role="user", content=text)]
+```

@@ -1,0 +1,390 @@
+---
+title: "Prompt Templates"
+description: "Design effective prompts for planning, reasoning, and acting in your ICICL agents"
+---
+
+## Overview
+
+ICICL uses three prompt templates that control how your agent thinks and acts:
+
+1. **Plan prompt**: Generates the initial strategy
+2. **Reason prompt**: Analyzes observations and decides what to do
+3. **Act prompt**: Produces the specific action to execute
+
+## Template placeholders
+
+Each template uses Python format string placeholders:
+
+| Placeholder | Available in | Description |
+|-------------|--------------|-------------|
+| `{goal}` | All prompts | The current goal/task description |
+| `{examples}` | All prompts | Formatted retrieved trajectories |
+| `{plan}` | reason, act | The generated plan |
+| `{observation}` | reason, act | Current environment observation |
+| `{reasoning}` | act | Generated reasoning for current step |
+| `{history}` | reason, act | Previous steps in the episode |
+
+## Plan prompt
+
+The plan prompt runs once at the start of each episode. Design it to:
+
+- Clearly state the goal
+- Show relevant examples
+- Request a structured, actionable plan
+
+```python plan_prompt.py
+PLAN_PROMPT = """You are a helpful agent that completes tasks step by step.
+
+Goal: {goal}
+
+Here are examples of similar tasks that were completed successfully:
+{examples}
+
+Based on these examples and the goal, create a clear numbered plan to accomplish the task.
+Be specific about the actions you'll take."""
+```
+
+<AccordionGroup>
+  <Accordion title="Use numbered steps">
+    Request numbered plans for clarity:
+    
+    ```
+    Create a numbered plan:
+    1. First, do X
+    2. Then, do Y
+    3. Finally, do Z
+    ```
+  </Accordion>
+  
+  <Accordion title="Provide domain context">
+    Include available commands or actions:
+    
+    ```python
+    PLAN_PROMPT = """You are a file system navigation agent.
+    Available commands: ls, cd, cat, find, pwd, mkdir, cp
+    
+    Goal: {goal}
+    ...
+    ```
+  </Accordion>
+  
+  <Accordion title="Reference the examples explicitly">
+    Guide the agent to learn from examples:
+    
+    ```
+    Learn from these successful examples:
+    {examples}
+    
+    Following a similar approach, create your plan...
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Reason prompt
+
+The reason prompt runs before each action. Design it to:
+
+- Remind the agent of the goal and plan
+- Present the current observation
+- Show relevant history and examples
+- Request step-by-step analysis
+
+```python reason_prompt.py
+REASON_PROMPT = """You are working toward a goal.
+
+Goal: {goal}
+
+Your plan: {plan}
+
+Previous steps you've taken:
+{history}
+
+Current observation: {observation}
+
+Examples from similar situations:
+{examples}
+
+Think step by step:
+1. What do you observe?
+2. What progress have you made?
+3. What should you do next?"""
+```
+
+<AccordionGroup>
+  <Accordion title="Encourage structured thinking">
+    Use numbered questions:
+    
+    ```
+    Think step by step:
+    1. What does the observation tell you?
+    2. How does this relate to your plan?
+    3. What is the logical next action?
+    ```
+  </Accordion>
+  
+  <Accordion title="Connect to the plan">
+    Keep the agent focused on the plan:
+    
+    ```
+    Your plan: {plan}
+    
+    Based on the current observation, which step of your plan 
+    should you execute next?
+    ```
+  </Accordion>
+  
+  <Accordion title="Handle errors explicitly">
+    Guide recovery from failures:
+    
+    ```
+    Current observation: {observation}
+    
+    If this shows an error, explain what went wrong and how 
+    to recover. Otherwise, explain what you learned.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Act prompt
+
+The act prompt produces the actual action. Design it to:
+
+- Be concise and focused on action generation
+- Include the reasoning to maintain context
+- Request only the action, nothing else
+
+```python act_prompt.py
+ACT_PROMPT = """Goal: {goal}
+Plan: {plan}
+
+Steps so far:
+{history}
+
+Current observation: {observation}
+
+Your reasoning: {reasoning}
+
+What is the next action? Respond with ONLY the action, nothing else."""
+```
+
+<AccordionGroup>
+  <Accordion title="Be explicit about format">
+    Specify the exact output format:
+    
+    ```
+    Respond with ONLY the command (e.g., "ls", "cd /home", "cat file.txt").
+    Do not include any explanation, just the command.
+    ```
+  </Accordion>
+  
+  <Accordion title="List available actions">
+    Remind the agent of valid options:
+    
+    ```
+    Available actions: ls, cd <dir>, cat <file>, find <pattern>
+    
+    What is your next action?
+    ```
+  </Accordion>
+  
+  <Accordion title="Reinforce brevity">
+    Prevent verbose responses:
+    
+    ```
+    Output only the action. One line. No explanation.
+    
+    Action:
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Complete example
+
+Here's a complete set of prompts for a file system agent:
+
+<CodeGroup>
+```python plan_prompt.py
+PLAN_PROMPT = """You are a file system navigation agent. You can execute:
+- ls [dir] - list directory contents
+- cd <dir> - change directory  
+- cat <file> - display file contents
+- find <pattern> - search for files
+- pwd - print working directory
+- mkdir <name> - create directory
+- cp <src> <dst> - copy file
+
+Goal: {goal}
+
+Previous successful examples:
+{examples}
+
+Create a brief, numbered plan to accomplish the goal."""
+```
+
+```python reason_prompt.py
+REASON_PROMPT = """You are navigating a file system.
+
+Goal: {goal}
+
+Your plan: {plan}
+
+Steps taken so far:
+{history}
+
+Current observation: {observation}
+
+Similar situations from past experience:
+{examples}
+
+Think step by step: What did you observe? What should you do next?"""
+```
+
+```python act_prompt.py
+ACT_PROMPT = """Goal: {goal}
+Plan: {plan}
+
+History: {history}
+
+Observation: {observation}
+
+Your reasoning: {reasoning}
+
+What is the SINGLE next command? Respond with only the command."""
+```
+</CodeGroup>
+
+## Formatting functions
+
+The `StepContext` class provides formatting helpers:
+
+```python formatting.py
+from icicl import StepContext
+
+context = StepContext(
+    goal="Find the config file",
+    plan="1. Navigate to /etc\n2. List files\n3. Read config",
+    observation="Current directory: /",
+    history=[step1, step2],
+    examples=[traj1, traj2],
+)
+
+# Format examples for prompt insertion
+examples_str = context.format_examples()
+
+# Format history for prompt insertion
+history_str = context.format_history()
+```
+
+## Testing prompts
+
+Test your prompts without running full episodes:
+
+```python test_prompts.py
+from icicl import StepContext
+
+# Create test context
+context = StepContext(
+    goal="Find and read the config file",
+    plan="1. Navigate to /etc\n2. Find config\n3. Read it",
+    observation="Directory listing:\napp/\npasswd\nhosts",
+    history=[],
+    examples=[],
+)
+
+# Format prompt
+prompt = REASON_PROMPT.format(
+    goal=context.goal,
+    plan=context.plan,
+    observation=context.observation,
+    history=context.format_history(),
+    examples=context.format_examples(),
+)
+
+print(prompt)
+# Review and iterate on the prompt
+```
+
+## Prompt engineering tips
+
+<Steps>
+  <Step title="Be specific about the domain">
+    Generic prompts produce generic results. Include domain-specific context:
+    
+    ```python
+    # Bad - too generic
+    PLAN_PROMPT = "Goal: {goal}\nMake a plan."
+
+    # Good - domain-specific
+    PLAN_PROMPT = """You are a Kubernetes cluster management agent.
+    Available kubectl commands: get, describe, apply, delete, logs, exec
+
+    Goal: {goal}
+
+    Create a plan using kubectl commands."""
+    ```
+  </Step>
+  
+  <Step title="Show, don't just tell">
+    Provide concrete examples of the expected format:
+    
+    ```
+    Create a numbered plan like:
+    1. Check current state with 'kubectl get pods'
+    2. Identify the problematic pod
+    3. Get logs with 'kubectl logs <pod>'
+    4. Apply fix
+    ```
+  </Step>
+  
+  <Step title="Handle edge cases">
+    Anticipate and address common issues:
+    
+    ```python
+    REASON_PROMPT = """...
+    Current observation: {observation}
+
+    If the observation shows an error:
+    - Explain what went wrong
+    - Suggest how to recover
+
+    If the observation shows success:
+    - Confirm progress made
+    - Identify the next step
+
+    Think step by step..."""
+    ```
+  </Step>
+  
+  <Step title="Leverage examples effectively">
+    Guide the agent to learn from retrieved examples:
+    
+    ```python
+    PLAN_PROMPT = """Goal: {goal}
+
+    Learn from these successful approaches to similar tasks:
+    {examples}
+
+    Notice the patterns:
+    - How they started
+    - Key decisions made
+    - How they verified success
+
+    Now create YOUR plan following similar patterns."""
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+Start with verbose prompts during development, then trim them down once your agent works reliably. Shorter prompts reduce token costs and latency.
+</Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Custom Environments" icon="puzzle-piece" href="/guides/custom-environments">
+    Build environments that work with your prompts
+  </Card>
+  <Card title="File System Example" icon="folder" href="/examples/file-system-agent">
+    See complete prompts in action
+  </Card>
+</CardGroup>

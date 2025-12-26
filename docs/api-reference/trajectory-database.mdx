@@ -1,0 +1,342 @@
+---
+title: TrajectoryDatabase
+description: "FAISS-backed trajectory storage and semantic search"
+---
+
+## Overview
+
+`TrajectoryDatabase` provides persistent storage for trajectories with FAISS-based semantic similarity search. Trajectories are stored as JSON files on disk with an efficient vector index for retrieval.
+
+```python
+from icicl.database import TrajectoryDatabase
+```
+
+## Constructor
+
+```python
+TrajectoryDatabase(
+    path: str | Path,
+    embedder: SentenceTransformerEmbedder | None = None,
+)
+```
+
+### Parameters
+
+<ParamField path="path" type="str | Path" required>
+  Directory path for storing trajectories and the FAISS index. Created automatically if it doesn't exist.
+</ParamField>
+
+<ParamField path="embedder" type="SentenceTransformerEmbedder | None" default="None">
+  Embedder for generating trajectory embeddings. If `None`, creates a default `SentenceTransformerEmbedder` using `all-MiniLM-L6-v2`.
+</ParamField>
+
+## Properties
+
+### Path Structure
+
+When you create a database at `./trajectories`:
+
+```
+./trajectories/
+├── trajectories/          # Individual trajectory JSON files
+│   ├── <uuid-1>.json
+│   ├── <uuid-2>.json
+│   └── ...
+├── index.faiss            # FAISS vector index
+├── index_ids.json         # Mapping: FAISS index → trajectory ID
+└── curation.json          # Utility tracking for curation
+```
+
+## Methods
+
+### add
+
+```python
+def add(self, trajectory: Trajectory) -> None
+```
+
+Add a trajectory to the database.
+
+<ParamField path="trajectory" type="Trajectory" required>
+  The trajectory to add.
+</ParamField>
+
+```python
+from icicl import Trajectory, Step
+
+trajectory = Trajectory(
+    goal="Find the config file",
+    plan="1. Navigate to /etc\n2. List files",
+    steps=[
+        Step(observation="Current: /", reasoning="Go to /etc", action="cd /etc"),
+    ],
+    success=True,
+)
+
+db.add(trajectory)
+```
+
+### get
+
+```python
+def get(self, trajectory_id: str) -> Trajectory | None
+```
+
+Get a trajectory by ID.
+
+<ParamField path="trajectory_id" type="str" required>
+  The UUID of the trajectory to retrieve.
+</ParamField>
+
+<ResponseField name="return" type="Trajectory | None">
+  The trajectory if found, `None` otherwise.
+</ResponseField>
+
+```python
+trajectory = db.get("550e8400-e29b-41d4-a716-446655440000")
+if trajectory:
+    print(f"Goal: {trajectory.goal}")
+```
+
+### search
+
+```python
+def search(self, query: str, k: int = 3) -> list[Trajectory]
+```
+
+Search for similar trajectories using semantic similarity.
+
+<ParamField path="query" type="str" required>
+  The query string to search for.
+</ParamField>
+
+<ParamField path="k" type="int" default="3">
+  Number of results to return.
+</ParamField>
+
+<ResponseField name="return" type="list[Trajectory]">
+  List of most similar trajectories, sorted by similarity.
+</ResponseField>
+
+```python
+similar = db.search("find configuration files", k=5)
+for traj in similar:
+    print(f"Goal: {traj.goal}")
+    print(f"Success: {traj.success}")
+```
+
+### get_all
+
+```python
+def get_all(self) -> list[Trajectory]
+```
+
+Get all trajectories in the database.
+
+<ResponseField name="return" type="list[Trajectory]">
+  List of all stored trajectories.
+</ResponseField>
+
+```python
+all_trajectories = db.get_all()
+print(f"Total: {len(all_trajectories)}")
+```
+
+### remove
+
+```python
+def remove(self, trajectory_id: str) -> bool
+```
+
+Remove a trajectory from the database.
+
+<ParamField path="trajectory_id" type="str" required>
+  The UUID of the trajectory to remove.
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  `True` if the trajectory was removed, `False` if not found.
+</ResponseField>
+
+```python
+if db.remove("550e8400-e29b-41d4-a716-446655440000"):
+    print("Removed successfully")
+else:
+    print("Trajectory not found")
+```
+
+### \_\_len\_\_
+
+```python
+def __len__(self) -> int
+```
+
+Return the number of trajectories in the database.
+
+```python
+print(f"Database has {len(db)} trajectories")
+```
+
+### record_retrieval
+
+```python
+def record_retrieval(
+    self,
+    trajectory_ids: list[str],
+    led_to_success: bool,
+) -> None
+```
+
+Record that trajectories were retrieved and whether the episode succeeded. Used for curation.
+
+<ParamField path="trajectory_ids" type="list[str]" required>
+  IDs of trajectories that were retrieved.
+</ParamField>
+
+<ParamField path="led_to_success" type="bool" required>
+  Whether the episode using these trajectories succeeded.
+</ParamField>
+
+```python
+# Called internally by TrajectoryRetriever
+db.record_retrieval(
+    trajectory_ids=["id1", "id2", "id3"],
+    led_to_success=True,
+)
+```
+
+### get_curation_metadata
+
+```python
+def get_curation_metadata(
+    self,
+    trajectory_id: str,
+) -> CurationMetadata | None
+```
+
+Get curation metadata for a trajectory.
+
+<ParamField path="trajectory_id" type="str" required>
+  The trajectory ID.
+</ParamField>
+
+<ResponseField name="return" type="CurationMetadata | None">
+  The curation metadata if found, `None` otherwise.
+</ResponseField>
+
+```python
+meta = db.get_curation_metadata(trajectory.id)
+if meta:
+    print(f"Retrieved: {meta.times_retrieved}")
+    print(f"Led to success: {meta.times_led_to_success}")
+    print(f"Utility: {meta.utility_score:.2f}")
+```
+
+## Example Usage
+
+### Basic Operations
+
+```python
+from icicl.database import TrajectoryDatabase
+from icicl import Trajectory, Step
+
+# Create or load database
+db = TrajectoryDatabase("./my_trajectories")
+print(f"Loaded {len(db)} trajectories")
+
+# Add a trajectory
+traj = Trajectory(
+    goal="Complete task",
+    plan="1. Do it",
+    steps=[Step(observation="Done", reasoning="Simple", action="done")],
+    success=True,
+)
+db.add(traj)
+
+# Search
+results = db.search("complete something", k=3)
+for r in results:
+    print(f"- {r.goal}: {r.success}")
+
+# Get by ID
+retrieved = db.get(traj.id)
+
+# Remove
+db.remove(traj.id)
+```
+
+### With Agent
+
+```python
+from icicl import Agent
+
+agent = Agent(
+    llm=llm,
+    db_path="./trajectories",
+    # ...
+)
+
+# Access database through agent
+db = agent.database
+
+# Search directly
+similar = db.search("my query", k=5)
+
+# Get stats
+print(f"Total: {len(db)}")
+```
+
+### Custom Embedder
+
+```python
+from icicl.embedder import SentenceTransformerEmbedder
+from icicl.database import TrajectoryDatabase
+
+# Use a different embedding model
+embedder = SentenceTransformerEmbedder(
+    model_name="all-mpnet-base-v2"  # Larger, more accurate
+)
+
+db = TrajectoryDatabase(
+    path="./trajectories",
+    embedder=embedder,
+)
+```
+
+## Persistence
+
+The database automatically persists to disk:
+
+- **Trajectories**: Saved immediately after `add()`
+- **Index**: Updated and saved after `add()` or `remove()`
+- **Curation**: Saved after `record_retrieval()`
+
+Data is automatically loaded when creating a new instance:
+
+```python
+# Session 1
+db = TrajectoryDatabase("./data")
+db.add(trajectory1)
+db.add(trajectory2)
+
+# Session 2 (later)
+db = TrajectoryDatabase("./data")
+print(len(db))  # 2 - data was loaded
+```
+
+## Index Rebuilding
+
+The FAISS index is rebuilt when:
+- A trajectory is removed
+- The index file is missing on load
+
+```python
+# Manual rebuild (rarely needed)
+db._rebuild_index()
+```
+
+## See Also
+
+- [TrajectoryRetriever](/api-reference/trajectory-retriever) - Episode-aware retrieval
+- [CurationManager](/api-reference/curation-manager) - Automatic pruning
+- [Trajectory Database Concepts](/core-concepts/trajectory-database) - Overview

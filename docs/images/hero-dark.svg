@@ -1,0 +1,38 @@
+<svg width="800" height="400" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="400" fill="#0f172a"/>
+  
+  <!-- Title -->
+  <text x="400" y="100" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#07C983" text-anchor="middle">ICICL</text>
+  <text x="400" y="140" font-family="Arial, sans-serif" font-size="20" fill="#94a3b8" text-anchor="middle">Self-Generated In-Context Learning for LLM Agents</text>
+  
+  <!-- Flow diagram -->
+  <g transform="translate(100, 180)">
+    <!-- Bootstrap -->
+    <rect x="0" y="0" width="120" height="60" rx="8" fill="#0D9373"/>
+    <text x="60" y="35" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Bootstrap</text>
+    
+    <!-- Arrow -->
+    <path d="M130 30 L160 30" stroke="#475569" stroke-width="2"/>
+    
+    <!-- Retrieve -->
+    <rect x="170" y="0" width="120" height="60" rx="8" fill="#07C983"/>
+    <text x="230" y="35" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Retrieve</text>
+    
+    <!-- Arrow -->
+    <path d="M300 30 L330 30" stroke="#475569" stroke-width="2"/>
+    
+    <!-- Generate -->
+    <rect x="340" y="0" width="120" height="60" rx="8" fill="#0D9373"/>
+    <text x="400" y="35" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Generate</text>
+    
+    <!-- Arrow -->
+    <path d="M470 30 L500 30" stroke="#475569" stroke-width="2"/>
+    
+    <!-- Curate -->
+    <rect x="510" y="0" width="120" height="60" rx="8" fill="#07C983"/>
+    <text x="570" y="35" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Curate</text>
+  </g>
+  
+  <!-- Tagline -->
+  <text x="400" y="320" font-family="Arial, sans-serif" font-size="16" fill="#94a3b8" text-anchor="middle">Agents that learn from their own experience</text>
+</svg>

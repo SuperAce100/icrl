@@ -1,0 +1,184 @@
+---
+title: "API Overview"
+description: "Complete API reference for the ICICL library"
+---
+
+## Package structure
+
+ICICL is organized into the following modules:
+
+```
+icicl/
+├── agent.py        # Main Agent class
+├── loop.py         # ReAct loop implementation
+├── database.py     # FAISS-backed trajectory storage
+├── retriever.py    # Semantic example retrieval
+├── curation.py     # Automatic trajectory pruning
+├── embedder.py     # Sentence transformer embeddings
+├── models.py       # Pydantic data models
+├── protocols.py    # Environment and LLMProvider protocols
+└── providers/
+    └── litellm.py  # LiteLLM integration
+```
+
+## Main exports
+
+All main classes are available from the top-level package:
+
+```python imports.py
+from icicl import (
+    # Main class
+    Agent,
+    
+    # LLM Providers
+    LiteLLMProvider,
+    
+    # Data Models
+    Trajectory,
+    Step,
+    StepContext,
+    Message,
+    
+    # Protocols (for type hints)
+    Environment,
+    LLMProvider,
+)
+```
+
+## Core classes
+
+<CardGroup cols={2}>
+  <Card title="Agent" icon="robot" href="/api-reference/agent">
+    The main class for training and running ICICL agents
+  </Card>
+  <Card title="LiteLLMProvider" icon="microchip" href="/api-reference/litellm-provider">
+    Built-in LLM provider supporting 100+ models
+  </Card>
+</CardGroup>
+
+## Data models
+
+<CardGroup cols={2}>
+  <Card title="Trajectory" icon="route" href="/api-reference/trajectory">
+    Complete episode trajectory with goal, plan, and steps
+  </Card>
+  <Card title="Step" icon="shoe-prints" href="/api-reference/step">
+    Single step with observation, reasoning, and action
+  </Card>
+  <Card title="StepContext" icon="layer-group" href="/api-reference/step-context">
+    Context available during prompt formatting
+  </Card>
+  <Card title="Message" icon="message" href="/api-reference/message">
+    Chat message with role and content
+  </Card>
+</CardGroup>
+
+## Protocols
+
+<CardGroup cols={2}>
+  <Card title="Environment" icon="globe" href="/api-reference/environment">
+    Protocol for environments the agent interacts with
+  </Card>
+  <Card title="LLMProvider" icon="plug" href="/api-reference/llm-provider">
+    Protocol for custom LLM integrations
+  </Card>
+</CardGroup>
+
+## Database & retrieval
+
+<CardGroup cols={2}>
+  <Card title="TrajectoryDatabase" icon="database" href="/api-reference/trajectory-database">
+    FAISS-backed trajectory storage and search
+  </Card>
+  <Card title="TrajectoryRetriever" icon="magnifying-glass" href="/api-reference/trajectory-retriever">
+    Semantic example retrieval for episodes
+  </Card>
+  <Card title="CurationManager" icon="filter" href="/api-reference/curation-manager">
+    Automatic pruning of low-utility trajectories
+  </Card>
+  <Card title="SentenceTransformerEmbedder" icon="brain" href="/api-reference/embedder">
+    Embedding generation for semantic search
+  </Card>
+</CardGroup>
+
+## Quick reference
+
+### Creating an agent
+
+```python create_agent.py
+from icicl import Agent, LiteLLMProvider
+
+agent = Agent(
+    llm=LiteLLMProvider(model="gpt-4o-mini"),
+    db_path="./trajectories",
+    plan_prompt="Goal: {goal}\nExamples:\n{examples}\nPlan:",
+    reason_prompt="Goal: {goal}\nPlan: {plan}\nObservation: {observation}\nThink:",
+    act_prompt="Goal: {goal}\nPlan: {plan}\nReasoning: {reasoning}\nAction:",
+    k=3,
+    max_steps=30,
+)
+```
+
+### Training and inference
+
+```python training.py
+# Training - stores successful trajectories
+trajectory = await agent.train(env, goal="Complete the task")
+
+# Inference - uses examples but doesn't store
+trajectory = await agent.run(env, goal="Another task")
+
+# Synchronous versions
+trajectory = agent.train_sync(env, goal)
+trajectory = agent.run_sync(env, goal)
+
+# Batch operations
+trajectories = await agent.train_batch(env_factory, goals)
+trajectories = await agent.run_batch(env_factory, goals)
+```
+
+### Accessing the database
+
+```python database.py
+# Search for similar trajectories
+similar = agent.database.search("find config files", k=3)
+
+# Get all trajectories
+all_trajs = agent.database.get_all()
+
+# Get statistics
+stats = agent.get_stats()
+print(f"Total: {stats['total_trajectories']}")
+print(f"Success rate: {stats['success_rate']:.1%}")
+```
+
+### Data models
+
+```python models.py
+from icicl import Trajectory, Step, Message
+
+# Create a step
+step = Step(
+    observation="Directory listing: file1.txt file2.txt",
+    reasoning="I see two files. I should read file1.txt first.",
+    action="cat file1.txt",
+)
+
+# Create a trajectory
+trajectory = Trajectory(
+    goal="Read the first file",
+    plan="1. List files\n2. Read first file",
+    steps=[step],
+    success=True,
+)
+
+# Create a message
+message = Message(role="user", content="Hello")
+```
+
+## Version
+
+```python version.py
+import icicl
+print(icicl.__version__)  # "0.1.0"
+```
