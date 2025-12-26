@@ -1,17 +1,17 @@
 ---
-title: File System Agent
-description: "Complete example of an ICICL agent navigating a virtual file system"
+title: "File System Agent"
+description: "Build a complete ICICL agent that navigates a virtual file system to accomplish tasks"
 ---
 
 ## Overview
 
 This example demonstrates a complete ICICL agent that navigates a simulated file system to accomplish tasks like finding files, reading contents, and copying data.
 
-## The Environment
+## Define the environment
 
-First, we define a simulated file system environment:
+First, create a simulated file system environment:
 
-```python
+```python file_env.py
 from pathlib import PurePosixPath
 from dataclasses import dataclass, field
 from collections.abc import Callable
@@ -88,35 +88,21 @@ class FileSystemEnvironment:
             return self._cmd_find(args)
         elif cmd == "cp":
             return self._cmd_cp(args)
-        elif cmd == "mkdir":
-            return self._cmd_mkdir(args)
         else:
             return f"Unknown command: {cmd}"
     
     # Command implementations...
-    def _cmd_ls(self, args: str) -> str:
-        path = args.strip() or self._state.cwd
-        # List directory contents
-        ...
-    
-    def _cmd_cd(self, args: str) -> str:
-        # Change directory
-        ...
-    
-    def _cmd_cat(self, args: str) -> str:
-        # Read file
-        ...
 ```
 
 <Note>
-See `examples/file_api_env.py` in the repository for the complete implementation.
+See `examples/file_api_env.py` in the repository for the complete implementation with all command handlers.
 </Note>
 
-## Defining Tasks
+## Define tasks
 
-Tasks specify a goal and a verification function:
+Create tasks with goals and verification functions:
 
-```python
+```python tasks.py
 # Easy tasks
 easy_tasks = [
     Task(
@@ -142,11 +128,12 @@ hard_tasks = [
 ]
 ```
 
-## Prompt Templates
+## Create prompt templates
 
 Design prompts that describe available commands and guide the agent:
 
-```python
+<CodeGroup>
+```python plan_prompt.py
 PLAN_PROMPT = """You are a file system navigation agent. Available commands:
 - ls [dir] - list directory contents
 - cd <dir> - change directory
@@ -162,7 +149,9 @@ Previous successful examples:
 {examples}
 
 Create a brief, numbered plan to accomplish the goal."""
+```
 
+```python reason_prompt.py
 REASON_PROMPT = """You are navigating a file system.
 
 Goal: {goal}
@@ -177,7 +166,9 @@ Examples from similar situations:
 {examples}
 
 Think step by step: What did you observe? What should you do next?"""
+```
 
+```python act_prompt.py
 ACT_PROMPT = """Goal: {goal}
 Plan: {plan}
 History: {history}
@@ -186,38 +177,50 @@ Reasoning: {reasoning}
 
 What is the SINGLE next command? Respond with only the command."""
 ```
+</CodeGroup>
 
-## Creating the Agent
+## Create the agent
 
-```python
-import asyncio
-from icicl import Agent, LiteLLMProvider, Step, StepContext
+<Steps>
+  <Step title="Set up the step callback">
+    Monitor what your agent does in real-time:
+    
+    ```python callback.py
+    from icicl import Step, StepContext
 
-# Step callback for monitoring
-def on_step(step: Step, context: StepContext) -> None:
-    print(f"\n📍 Observation: {step.observation[:100]}...")
-    print(f"🤔 Reasoning: {step.reasoning[:100]}...")
-    print(f"▶️ Action: {step.action}")
-    print(f"📚 Examples: {len(context.examples)}")
+    def on_step(step: Step, context: StepContext) -> None:
+        print(f"\n📍 Observation: {step.observation[:100]}...")
+        print(f"🤔 Reasoning: {step.reasoning[:100]}...")
+        print(f"▶️ Action: {step.action}")
+        print(f"📚 Examples: {len(context.examples)}")
+    ```
+  </Step>
+  
+  <Step title="Initialize the agent">
+    ```python agent.py
+    from icicl import Agent, LiteLLMProvider
 
-# Create the agent
-agent = Agent(
-    llm=LiteLLMProvider(model="gpt-4o-mini", temperature=0.3),
-    db_path="./file_agent_trajectories",
-    plan_prompt=PLAN_PROMPT,
-    reason_prompt=REASON_PROMPT,
-    act_prompt=ACT_PROMPT,
-    k=2,
-    max_steps=15,
-    on_step=on_step,
-)
-```
+    agent = Agent(
+        llm=LiteLLMProvider(model="gpt-4o-mini", temperature=0.3),
+        db_path="./file_agent_trajectories",
+        plan_prompt=PLAN_PROMPT,
+        reason_prompt=REASON_PROMPT,
+        act_prompt=ACT_PROMPT,
+        k=2,
+        max_steps=15,
+        on_step=on_step,
+    )
+    ```
+    
+    <Check>
+    Your agent is ready. The `k=2` setting retrieves 2 examples at each decision point.
+    </Check>
+  </Step>
+</Steps>
 
-## Training
+## Train the agent
 
-Train the agent on multiple tasks:
-
-```python
+```python train.py
 async def train_agent():
     print("=== Training Phase ===")
     
@@ -242,7 +245,6 @@ async def train_agent():
         else:
             print(f"❌ Failed after {len(trajectory.steps)} steps")
     
-    # Check database
     stats = agent.get_stats()
     print(f"\nStored: {stats['total_trajectories']} trajectories")
     print(f"Success rate: {stats['success_rate']:.1%}")
@@ -250,11 +252,11 @@ async def train_agent():
 asyncio.run(train_agent())
 ```
 
-## Evaluation
+## Evaluate on new tasks
 
-Test on held-out tasks:
+Test on held-out tasks to measure generalization:
 
-```python
+```python evaluate.py
 async def evaluate_agent():
     print("\n=== Evaluation Phase ===")
     
@@ -287,11 +289,9 @@ async def evaluate_agent():
 asyncio.run(evaluate_agent())
 ```
 
-## Complete Script
+## Complete runnable script
 
-Here's the full runnable example:
-
-```python
+```python demo.py
 #!/usr/bin/env python3
 """File system navigation agent with ICICL."""
 
@@ -307,7 +307,6 @@ from icicl import Agent, LiteLLMProvider, Step, StepContext
 
 load_dotenv()
 
-# Prompts
 PLAN_PROMPT = """You are a file system navigation agent. Commands:
 - ls [dir], cd <dir>, cat <file>, find <pattern>, pwd, mkdir <name>, cp <src> <dst>
 
@@ -353,7 +352,7 @@ async def main():
             on_step=on_step,
         )
         
-        # Training tasks
+        # Training
         training_tasks = [
             Task(
                 goal="Navigate to /home/user/projects and list files",
@@ -372,7 +371,7 @@ async def main():
             traj = await agent.train(env, task.goal)
             print(f"Result: {'✅' if traj.success else '❌'}")
         
-        # Evaluation task
+        # Evaluation
         eval_task = Task(
             goal="Find the port number in the config",
             verify=lambda s: "8080" in s.last_output,
@@ -384,7 +383,6 @@ async def main():
         traj = await agent.run(env, eval_task.goal)
         print(f"Result: {'✅' if traj.success else '❌'}")
         
-        # Stats
         stats = agent.get_stats()
         print(f"\nDatabase: {stats['total_trajectories']} trajectories")
 
@@ -393,18 +391,24 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Running the Example
+## Run the example
 
-```bash
-# Set your API key
-export OPENAI_API_KEY=your-key
+<Steps>
+  <Step title="Set your API key">
+    ```bash
+    export OPENAI_API_KEY=your-key
+    ```
+  </Step>
+  
+  <Step title="Run the demo">
+    ```bash
+    cd /path/to/icicl
+    uv run python examples/demo_with_real_llm.py
+    ```
+  </Step>
+</Steps>
 
-# Run the demo
-cd /path/to/icicl
-uv run python examples/demo_with_real_llm.py
-```
-
-## Sample Output
+## Sample output
 
 ```
 === Training ===
@@ -428,15 +432,40 @@ Result: ✅
 Database: 2 trajectories
 ```
 
-## Key Takeaways
+<Check>
+Your agent learned from training tasks and successfully applied that knowledge to a new evaluation task!
+</Check>
 
-1. **Environment Design**: Clear observations and verifiable success conditions
-2. **Prompt Engineering**: Specific commands and structured thinking
-3. **Training First**: Build up examples before evaluation
-4. **Retrieval Helps**: Similar past experiences improve new task performance
+## Key takeaways
 
-## See Also
+<CardGroup cols={2}>
+  <Card title="Environment design" icon="cube">
+    Clear observations and verifiable success conditions make training effective
+  </Card>
+  <Card title="Prompt engineering" icon="message">
+    Specific commands and structured thinking guides produce better results
+  </Card>
+  <Card title="Training first" icon="graduation-cap">
+    Build up examples before evaluation to leverage in-context learning
+  </Card>
+  <Card title="Retrieval helps" icon="magnifying-glass">
+    Similar past experiences improve performance on new tasks
+  </Card>
+</CardGroup>
 
-- [Custom Environments](/guides/custom-environments) - Build your own environments
-- [Prompt Templates](/guides/prompt-templates) - Design effective prompts
-- [Batch Training](/guides/batch-training) - Train on many tasks
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Custom Environments" icon="puzzle-piece" href="/guides/custom-environments">
+    Build environments for your use case
+  </Card>
+  <Card title="Prompt Templates" icon="message" href="/guides/prompt-templates">
+    Design effective prompts
+  </Card>
+  <Card title="Batch Training" icon="layer-group" href="/guides/batch-training">
+    Train on many tasks efficiently
+  </Card>
+  <Card title="Testing with Mock LLM" icon="flask" href="/examples/testing-with-mock-llm">
+    Fast iteration without API calls
+  </Card>
+</CardGroup>

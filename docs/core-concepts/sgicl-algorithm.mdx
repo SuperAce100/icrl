@@ -1,26 +1,26 @@
 ---
-title: SGICL Algorithm
-description: "Understanding Self-Generated In-Context Learning"
+title: "SGICL Algorithm"
+description: "Understand how Self-Generated In-Context Learning enables agents to bootstrap their own performance"
 ---
 
 ## Overview
 
-The **Self-Generated In-Context Learning (SGICL)** algorithm enables LLM agents to bootstrap their own performance by learning from successful trajectories. Unlike traditional approaches that require human-crafted demonstrations, SGICL allows agents to generate their own examples through trial and interaction.
+The **Self-Generated In-Context Learning** (SGICL) algorithm enables your LLM agents to bootstrap their own performance by learning from successful trajectories. Unlike traditional approaches that require you to craft demonstrations manually, SGICL allows agents to generate their own examples through trial and interaction.
 
-## The Core Insight
+## The core insight
 
-LLMs perform significantly better when given relevant examples in their context (in-context learning). SGICL leverages this by:
+LLMs perform significantly better when you provide relevant examples in their context (in-context learning). SGICL leverages this by:
 
-1. **Self-Generating Examples**: The agent creates its own demonstrations by attempting tasks
-2. **Selective Storage**: Only successful trajectories are stored as future examples
-3. **Semantic Retrieval**: The most relevant examples are retrieved for each new situation
-4. **Continuous Improvement**: Performance improves as the agent accumulates more successful experiences
+1. **Self-generating examples**: Your agent creates its own demonstrations by attempting tasks
+2. **Selective storage**: Only successful trajectories are stored as future examples
+3. **Semantic retrieval**: The most relevant examples are retrieved for each new situation
+4. **Continuous improvement**: Performance improves as the agent accumulates more successful experiences
 
-## Algorithm Phases
+## Algorithm phases
 
-### 1. Bootstrap Phase
+### 1. Bootstrap phase
 
-During the initial bootstrap phase, the agent attempts tasks without prior examples:
+During the initial bootstrap phase, your agent attempts tasks without prior examples:
 
 ```
 Episode 1: Agent attempts task → Fails → Nothing stored
@@ -33,7 +33,7 @@ Episode 3: Agent attempts task → Succeeds → Trajectory stored
 Early episodes may have lower success rates, but each success contributes to improved future performance.
 </Note>
 
-### 2. Retrieval Phase
+### 2. Retrieval phase
 
 At each decision point, the agent retrieves semantically similar trajectories:
 
@@ -45,12 +45,12 @@ examples = retriever.retrieve_for_plan(goal)
 examples = retriever.retrieve_for_step(goal, plan, observation)
 ```
 
-The retrieval uses:
+The retrieval system uses:
 - **Sentence Transformers** (`all-MiniLM-L6-v2` by default) for embedding
 - **FAISS** for fast vector similarity search
-- Configurable `k` (number of examples to retrieve)
+- Configurable `k` parameter to control how many examples to retrieve
 
-### 3. Generation Phase
+### 3. Generation phase
 
 The LLM generates plans, reasoning, and actions informed by retrieved examples:
 
@@ -71,7 +71,7 @@ The LLM generates plans, reasoning, and actions informed by retrieved examples:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 4. Curation Phase
+### 4. Curation phase
 
 Low-utility trajectories are automatically pruned:
 
@@ -86,19 +86,19 @@ if utility_score < threshold and times_retrieved >= min_retrievals:
     remove_trajectory(trajectory_id)
 ```
 
-## Key Benefits
+## Key benefits
 
 <CardGroup cols={2}>
-  <Card title="No Human Demonstrations" icon="robot">
-    Agents learn from their own experience, reducing the need for manual example curation
+  <Card title="No human demonstrations" icon="robot">
+    Agents learn from their own experience, eliminating the need for manual example curation
   </Card>
-  <Card title="Domain Adaptation" icon="bullseye">
-    Examples are naturally aligned with the specific tasks and environments the agent encounters
+  <Card title="Domain adaptation" icon="bullseye">
+    Examples naturally align with the specific tasks and environments your agent encounters
   </Card>
-  <Card title="Continuous Learning" icon="chart-line">
-    Performance improves over time as more successful trajectories are accumulated
+  <Card title="Continuous learning" icon="chart-line">
+    Performance improves over time as more successful trajectories accumulate
   </Card>
-  <Card title="Quality Control" icon="filter">
+  <Card title="Quality control" icon="filter">
     Automatic curation ensures only high-utility examples are retained
   </Card>
 </CardGroup>
@@ -107,7 +107,7 @@ if utility_score < threshold and times_retrieved >= min_retrievals:
 
 ICICL implements SGICL with a clean API:
 
-```python
+```python agent_setup.py
 from icicl import Agent, LiteLLMProvider
 
 agent = Agent(
@@ -128,44 +128,37 @@ trajectory = await agent.train(env, goal="Complete task")
 trajectory = await agent.run(env, goal="Another task")
 ```
 
-## Comparison with Traditional ICL
+## Comparison with traditional ICL
 
 | Aspect | Traditional ICL | Self-Generated ICL |
 |--------|-----------------|-------------------|
-| **Example Source** | Human-crafted | Self-generated |
+| **Example source** | Human-crafted | Self-generated |
 | **Scalability** | Limited by human effort | Scales automatically |
-| **Domain Alignment** | May be misaligned | Naturally aligned |
+| **Domain alignment** | May be misaligned | Naturally aligned |
 | **Maintenance** | Manual updates needed | Self-maintaining |
-| **Cold Start** | Requires examples upfront | Bootstraps from zero |
+| **Cold start** | Requires examples upfront | Bootstraps from zero |
 
-## Research Foundation
+## Research foundation
 
 ICICL is based on the algorithm described in:
 
 > **Self-Generated In-Context Examples Improve LLM Agents for Sequential Decision-Making Tasks**
 
+<Tip>
 Key findings from the research:
+- Self-generated examples can match or exceed human-crafted demonstrations
+- Semantic retrieval significantly outperforms random example selection
+- Automatic curation improves example quality over time
+- The approach generalizes across different task domains
+</Tip>
 
-1. Self-generated examples can match or exceed human-crafted demonstrations
-2. Semantic retrieval significantly outperforms random example selection
-3. Automatic curation improves example quality over time
-4. The approach generalizes across different task domains
-
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
-  <Card
-    title="ReAct Loop"
-    icon="rotate"
-    href="/core-concepts/react-loop"
-  >
-    Learn about the Plan-Reason-Act execution loop
+  <Card title="ReAct Loop" icon="rotate" href="/core-concepts/react-loop">
+    Learn how the Plan-Reason-Act execution loop works
   </Card>
-  <Card
-    title="Trajectory Database"
-    icon="database"
-    href="/core-concepts/trajectory-database"
-  >
+  <Card title="Trajectory Database" icon="database" href="/core-concepts/trajectory-database">
     Understand how trajectories are stored and retrieved
   </Card>
 </CardGroup>

@@ -1,154 +1,184 @@
 ---
-title: Quickstart
-description: "Get up and running with ICICL in 5 minutes"
+title: "Quickstart"
+description: "Build your first self-improving ICICL agent in under 5 minutes"
 ---
 
 ## Installation
 
-Install ICICL using pip or uv:
+Install ICICL using your preferred package manager:
 
-<CodeGroup>
+<Tabs>
+  <Tab title="pip">
+    ```bash
+    pip install icicl
+    ```
+  </Tab>
+  <Tab title="uv">
+    ```bash
+    uv add icicl
+    ```
+  </Tab>
+  <Tab title="poetry">
+    ```bash
+    poetry add icicl
+    ```
+  </Tab>
+</Tabs>
 
-```bash pip
-pip install icicl
-```
+## Set up your API key
 
-```bash uv
-uv add icicl
-```
+ICICL uses LiteLLM under the hood, which supports 100+ LLM providers. Configure your preferred provider:
 
-</CodeGroup>
+<Tabs>
+  <Tab title="OpenAI">
+    ```bash
+    export OPENAI_API_KEY=sk-your-key-here
+    ```
+  </Tab>
+  <Tab title="Anthropic">
+    ```bash
+    export ANTHROPIC_API_KEY=sk-ant-your-key-here
+    ```
+  </Tab>
+  <Tab title="Azure OpenAI">
+    ```bash
+    export AZURE_API_KEY=your-key-here
+    export AZURE_API_BASE=https://your-resource.openai.azure.com
+    ```
+  </Tab>
+</Tabs>
 
-## Set Up Your API Key
+## Create your first agent
 
-ICICL uses LiteLLM under the hood, which supports 100+ LLM providers. Set up your preferred provider's API key:
+<Steps>
+  <Step title="Define your prompt templates">
+    Create templates that guide your agent's planning, reasoning, and actions:
 
-<CodeGroup>
+    ```python prompts.py
+    PLAN_PROMPT = """Goal: {goal}
 
-```bash OpenAI
-export OPENAI_API_KEY=your-key-here
-```
+    Examples of similar tasks:
+    {examples}
 
-```bash Anthropic
-export ANTHROPIC_API_KEY=your-key-here
-```
+    Create a numbered plan to accomplish this goal."""
 
-```bash Azure
-export AZURE_API_KEY=your-key-here
-export AZURE_API_BASE=https://your-resource.openai.azure.com
-```
+    REASON_PROMPT = """Goal: {goal}
+    Plan: {plan}
 
-</CodeGroup>
+    Previous steps: {history}
+    Current observation: {observation}
 
-## Create Your First Agent
+    Relevant examples:
+    {examples}
 
-Here's a minimal example to get you started:
+    Think step by step about what to do next."""
 
-```python
-import asyncio
-from icicl import Agent, LiteLLMProvider
+    ACT_PROMPT = """Goal: {goal}
+    Plan: {plan}
+    Reasoning: {reasoning}
 
-# Initialize the LLM provider
-llm = LiteLLMProvider(model="gpt-4o-mini")
+    What is the next action? Respond with only the action."""
+    ```
 
-# Define your prompt templates
-PLAN_PROMPT = """Goal: {goal}
+    <Tip>
+    Your prompts use Python format strings with placeholders like `{goal}`, `{examples}`, `{plan}`, `{observation}`, `{reasoning}`, and `{history}`.
+    </Tip>
+  </Step>
 
-Examples of similar tasks:
-{examples}
+  <Step title="Initialize the agent">
+    ```python agent.py
+    from icicl import Agent, LiteLLMProvider
 
-Create a numbered plan to accomplish this goal."""
+    llm = LiteLLMProvider(model="gpt-4o-mini")
 
-REASON_PROMPT = """Goal: {goal}
-Plan: {plan}
+    agent = Agent(
+        llm=llm,
+        db_path="./my_trajectories",
+        plan_prompt=PLAN_PROMPT,
+        reason_prompt=REASON_PROMPT,
+        act_prompt=ACT_PROMPT,
+        k=3,           # Retrieve 3 examples
+        max_steps=30,  # Maximum steps per episode
+    )
+    ```
 
-Previous steps: {history}
-Current observation: {observation}
+    <Check>
+    Your agent is now ready. It will store successful trajectories in `./my_trajectories/`.
+    </Check>
+  </Step>
 
-Relevant examples:
-{examples}
+  <Step title="Create an environment">
+    Your environment must implement the `Environment` protocol with `reset()` and `step()` methods:
 
-Think step by step about what to do next."""
+    ```python environment.py
+    class SimpleEnvironment:
+        def reset(self, goal: str) -> str:
+            """Reset and return initial observation."""
+            self._goal = goal
+            self._state = "initial"
+            return f"Environment ready. Goal: {goal}"
+        
+        def step(self, action: str) -> tuple[str, bool, bool]:
+            """Execute action, return (observation, done, success)."""
+            if action == "complete":
+                return "Task completed!", True, True
+            elif action == "fail":
+                return "Task failed.", True, False
+            else:
+                self._state = action
+                return f"Executed: {action}", False, False
+    ```
 
-ACT_PROMPT = """Goal: {goal}
-Plan: {plan}
-Reasoning: {reasoning}
+    <Note>
+    The `step()` method returns a tuple of `(observation, done, success)` where `done` indicates if the episode ended and `success` indicates if the goal was achieved.
+    </Note>
+  </Step>
 
-What is the next action? Respond with only the action."""
+  <Step title="Train your agent">
+    Training mode stores successful trajectories for future use:
 
-# Create the agent
-agent = Agent(
-    llm=llm,
-    db_path="./my_trajectories",
-    plan_prompt=PLAN_PROMPT,
-    reason_prompt=REASON_PROMPT,
-    act_prompt=ACT_PROMPT,
-    k=3,           # Retrieve 3 examples
-    max_steps=30,  # Maximum steps per episode
-)
-```
+    ```python train.py
+    import asyncio
 
-## Create an Environment
-
-Your environment must implement the `Environment` protocol with `reset()` and `step()` methods:
-
-```python
-class SimpleEnvironment:
-    def reset(self, goal: str) -> str:
-        """Reset and return initial observation."""
-        self._goal = goal
-        self._state = "initial"
-        return f"Environment ready. Goal: {goal}"
-    
-    def step(self, action: str) -> tuple[str, bool, bool]:
-        """Execute action, return (observation, done, success)."""
-        if action == "complete":
-            return "Task completed!", True, True
-        elif action == "fail":
-            return "Task failed.", True, False
+    async def train():
+        env = SimpleEnvironment()
+        trajectory = await agent.train(env, goal="Complete the simple task")
+        
+        if trajectory.success:
+            print(f"Success! Completed in {len(trajectory.steps)} steps")
+            print(f"Plan: {trajectory.plan}")
         else:
-            self._state = action
-            return f"Executed: {action}", False, False
-```
+            print("Failed to complete the task")
 
-## Train the Agent
+    asyncio.run(train())
+    ```
 
-Training mode stores successful trajectories for future use:
+    <Check>
+    After successful training, your agent stores the trajectory and can retrieve it as an example for similar future tasks.
+    </Check>
+  </Step>
 
-```python
-async def train():
-    env = SimpleEnvironment()
-    trajectory = await agent.train(env, goal="Complete the simple task")
-    
-    if trajectory.success:
-        print(f"Success! Completed in {len(trajectory.steps)} steps")
-        print(f"Plan: {trajectory.plan}")
-    else:
-        print("Failed to complete the task")
+  <Step title="Run inference">
+    Inference mode uses stored examples but doesn't add new trajectories:
 
-asyncio.run(train())
-```
+    ```python inference.py
+    async def run_inference():
+        env = SimpleEnvironment()
+        trajectory = await agent.run(env, goal="Complete another task")
+        
+        print(f"Success: {trajectory.success}")
+        print(f"Steps taken: {len(trajectory.steps)}")
 
-## Run Inference
+    asyncio.run(run_inference())
+    ```
+  </Step>
+</Steps>
 
-Inference mode uses stored examples but doesn't add new ones:
+## Monitor agent progress
 
-```python
-async def run_inference():
-    env = SimpleEnvironment()
-    trajectory = await agent.run(env, goal="Complete another task")
-    
-    print(f"Success: {trajectory.success}")
-    print(f"Steps taken: {len(trajectory.steps)}")
+Use step callbacks to observe what your agent does in real-time:
 
-asyncio.run(run_inference())
-```
-
-## Monitor Progress
-
-Use step callbacks to monitor what the agent is doing:
-
-```python
+```python callbacks.py
 from icicl import Step, StepContext
 
 def on_step(step: Step, context: StepContext) -> None:
@@ -168,44 +198,28 @@ agent = Agent(
 )
 ```
 
-## Check Database Statistics
+## Check database statistics
 
-```python
+```python stats.py
 stats = agent.get_stats()
 print(f"Total trajectories: {stats['total_trajectories']}")
 print(f"Successful: {stats['successful_trajectories']}")
 print(f"Success rate: {stats['success_rate']:.1%}")
 ```
 
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
-  <Card
-    title="Core Concepts"
-    icon="book"
-    href="/core-concepts/sgicl-algorithm"
-  >
-    Learn how the SGICL algorithm works
+  <Card title="Core Concepts" icon="book" href="/core-concepts/sgicl-algorithm">
+    Learn how the SGICL algorithm enables self-improvement
   </Card>
-  <Card
-    title="Custom Environments"
-    icon="puzzle-piece"
-    href="/guides/custom-environments"
-  >
-    Build environments for your use case
+  <Card title="Custom Environments" icon="puzzle-piece" href="/guides/custom-environments">
+    Build environments tailored to your use case
   </Card>
-  <Card
-    title="Prompt Templates"
-    icon="message"
-    href="/guides/prompt-templates"
-  >
+  <Card title="Prompt Templates" icon="message" href="/guides/prompt-templates">
     Design effective prompts for your agent
   </Card>
-  <Card
-    title="API Reference"
-    icon="code"
-    href="/api-reference/overview"
-  >
-    Explore the complete API
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Explore the complete API documentation
   </Card>
 </CardGroup>

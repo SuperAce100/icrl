@@ -1,17 +1,17 @@
 ---
-title: Custom Environments
-description: "Building environments for your ICICL agents"
+title: "Custom Environments"
+description: "Build environments for your ICICL agents to interact with"
 ---
 
 ## Overview
 
 Environments define the world your agent interacts with. They receive actions from the agent and return observations, determining when tasks succeed or fail.
 
-## The Environment Protocol
+## The Environment protocol
 
 Every environment must implement the `Environment` protocol:
 
-```python
+```python protocol.py
 from icicl import Environment
 
 class MyEnvironment:
@@ -41,11 +41,11 @@ class MyEnvironment:
         ...
 ```
 
-## Basic Example
+## Basic example
 
 Here's a simple counter environment:
 
-```python
+```python counter_env.py
 class CounterEnvironment:
     def __init__(self, target: int = 10):
         self.target = target
@@ -81,11 +81,11 @@ class CounterEnvironment:
         return obs, done, success
 ```
 
-## File System Environment
+## File system environment
 
 A more complex example that simulates a file system:
 
-```python
+```python file_env.py
 from pathlib import PurePosixPath
 
 class FileSystemEnvironment:
@@ -125,116 +125,25 @@ class FileSystemEnvironment:
         
         return obs, done, success
     
-    def _ls(self, path: str) -> str:
-        normalized = self._normalize_path(path)
-        if normalized not in self.directories:
-            return f"Error: Directory '{path}' not found"
-        
-        entries = []
-        prefix = normalized if normalized == "/" else normalized + "/"
-        
-        for f in self.files:
-            if f.startswith(prefix):
-                rel = f[len(prefix):]
-                if "/" not in rel:
-                    entries.append(rel)
-        
-        for d in self.directories:
-            if d.startswith(prefix) and d != normalized:
-                rel = d[len(prefix):]
-                if "/" not in rel:
-                    entries.append(rel + "/")
-        
-        return "\n".join(sorted(set(entries))) or "(empty)"
-    
-    def _cd(self, path: str) -> str:
-        if not path:
-            return "Error: cd requires a path"
-        
-        normalized = self._normalize_path(path)
-        if normalized not in self.directories:
-            return f"Error: Directory '{path}' not found"
-        
-        self.cwd = normalized
-        return f"Changed to {normalized}"
-    
-    def _cat(self, path: str) -> str:
-        if not path:
-            return "Error: cat requires a file"
-        
-        normalized = self._normalize_path(path)
-        if normalized in self.files:
-            return self.files[normalized]
-        return f"Error: File '{path}' not found"
-    
-    def _normalize_path(self, path: str) -> str:
-        if path.startswith("/"):
-            return str(PurePosixPath(path))
-        return str(PurePosixPath(self.cwd) / path)
-    
-    def _check_success(self) -> bool:
-        # Custom logic based on goal
-        if "port" in self._goal.lower():
-            return "8080" in getattr(self, '_last_output', '')
-        return False
-```
-
-## Environment with External Services
-
-Connect to real APIs or services:
-
-```python
-import httpx
-
-class APIEnvironment:
-    def __init__(self, base_url: str):
-        self.base_url = base_url
-        self.client = httpx.Client()
-        self._goal = ""
-        self._context = {}
-    
-    def reset(self, goal: str) -> str:
-        self._goal = goal
-        self._context = {}
-        return f"API at {self.base_url} ready. Goal: {goal}"
-    
-    def step(self, action: str) -> tuple[str, bool, bool]:
-        try:
-            parts = action.strip().split(maxsplit=2)
-            method = parts[0].upper()
-            path = parts[1] if len(parts) > 1 else "/"
-            body = parts[2] if len(parts) > 2 else None
-            
-            url = f"{self.base_url}{path}"
-            
-            if method == "GET":
-                response = self.client.get(url)
-            elif method == "POST":
-                response = self.client.post(url, json=eval(body) if body else {})
-            elif method == "DELETE":
-                response = self.client.delete(url)
-            else:
-                return f"Unknown method: {method}", False, False
-            
-            obs = f"Status: {response.status_code}\n{response.text[:500]}"
-            self._context['last_response'] = response
-            
-            success = self._check_success()
-            return obs, success, success
-            
-        except Exception as e:
-            return f"Error: {str(e)}", False, False
-    
     def _check_success(self) -> bool:
         # Implement goal-specific success checking
+        goal = self._goal.lower()
+        if "port" in goal:
+            return "8080" in getattr(self, '_last_output', '')
         return False
+    
+    # ... additional helper methods
 ```
 
-## Task-Based Environments
+<Note>
+See `examples/file_api_env.py` in the repository for the complete implementation.
+</Note>
+
+## Task-based environments
 
 Create environments with verifiable tasks:
 
-```python
+```python task_env.py
 from dataclasses import dataclass
 from typing import Callable
 
@@ -259,123 +168,141 @@ class TaskEnvironment:
     
     def step(self, action: str) -> tuple[str, bool, bool]:
         self.state["actions"].append(action)
-        
-        # Execute action and update state...
         obs = self._execute(action)
         self.state["output"] = obs
         
         success = self.task.verify(self.state)
         return obs, success, success
-    
-    def _execute(self, action: str) -> str:
-        # Your action execution logic
-        return f"Executed: {action}"
 
-# Define tasks
+# Define tasks with verification
 tasks = [
-    Task(
-        goal="Create a file called test.txt",
-        verify=lambda s: "test.txt" in s.get("files", []),
-    ),
     Task(
         goal="Set counter to 42",
         verify=lambda s: s.get("counter") == 42,
     ),
+    Task(
+        goal="Create a file called test.txt",
+        verify=lambda s: "test.txt" in s.get("files", []),
+    ),
 ]
 ```
 
-## Best Practices
+## API environment
 
-### 1. Store the Goal
+Connect to real APIs or services:
 
-Always store the goal in `reset()` for use in success checking:
+```python api_env.py
+import httpx
 
-```python
-def reset(self, goal: str) -> str:
-    self._goal = goal  # Store for later
-    # ... initialization
-    return initial_observation
+class APIEnvironment:
+    def __init__(self, base_url: str):
+        self.base_url = base_url
+        self.client = httpx.Client()
+        self._goal = ""
+    
+    def reset(self, goal: str) -> str:
+        self._goal = goal
+        return f"API at {self.base_url} ready. Goal: {goal}"
+    
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        try:
+            parts = action.strip().split(maxsplit=2)
+            method = parts[0].upper()
+            path = parts[1] if len(parts) > 1 else "/"
+            body = parts[2] if len(parts) > 2 else None
+            
+            url = f"{self.base_url}{path}"
+            
+            if method == "GET":
+                response = self.client.get(url)
+            elif method == "POST":
+                response = self.client.post(url, json=eval(body) if body else {})
+            else:
+                return f"Unknown method: {method}", False, False
+            
+            obs = f"Status: {response.status_code}\n{response.text[:500]}"
+            success = self._check_success()
+            return obs, success, success
+            
+        except Exception as e:
+            return f"Error: {str(e)}", False, False
 ```
 
-### 2. Return Clear Observations
+<Warning>
+When connecting to external APIs, implement proper error handling and rate limiting to avoid overwhelming the service.
+</Warning>
 
-Make observations informative but concise:
+## Best practices
 
-```python
-def step(self, action: str) -> tuple[str, bool, bool]:
-    if action == "ls":
-        # Good: Clear, structured output
-        return "Files:\n- config.json\n- data.csv", False, False
+<Steps>
+  <Step title="Store the goal">
+    Always store the goal in `reset()` for use in success checking:
     
-    if error:
-        # Good: Descriptive error
-        return f"Error: File '{path}' not found. Check the path.", False, False
-```
-
-### 3. Handle Invalid Actions Gracefully
-
-```python
-def step(self, action: str) -> tuple[str, bool, bool]:
-    action = action.strip()
+    ```python
+    def reset(self, goal: str) -> str:
+        self._goal = goal  # Store for later
+        return "Ready"
+    ```
+  </Step>
+  
+  <Step title="Return clear observations">
+    Make observations informative but concise:
     
-    if not action:
-        return "Error: Empty action. Please provide a command.", False, False
+    ```python
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        if action == "ls":
+            # Good: Clear, structured output
+            return "Files:\n- config.json\n- data.csv", False, False
+        
+        if error:
+            # Good: Descriptive error
+            return f"Error: File '{path}' not found. Check the path.", False, False
+    ```
+  </Step>
+  
+  <Step title="Handle invalid actions gracefully">
+    ```python
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        action = action.strip()
+        
+        if not action:
+            return "Error: Empty action. Please provide a command.", False, False
+        
+        cmd = action.split()[0].lower()
+        if cmd not in self.valid_commands:
+            return (
+                f"Unknown command: {cmd}\n"
+                f"Valid commands: {', '.join(self.valid_commands)}",
+                False,
+                False
+            )
+    ```
+  </Step>
+  
+  <Step title="Limit episode length">
+    Prevent infinite loops:
     
-    cmd = action.split()[0].lower()
-    if cmd not in self.valid_commands:
-        return (
-            f"Unknown command: {cmd}\n"
-            f"Valid commands: {', '.join(self.valid_commands)}",
-            False,
-            False
-        )
-    
-    # Process valid command...
-```
+    ```python
+    def __init__(self, max_steps: int = 50):
+        self.max_steps = max_steps
+        self.step_count = 0
 
-### 4. Implement Robust Success Checking
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        self.step_count += 1
+        
+        if self.step_count >= self.max_steps:
+            return "Maximum steps reached.", True, False
+        
+        # ... normal processing
+    ```
+  </Step>
+</Steps>
 
-```python
-def _check_success(self) -> bool:
-    goal = self._goal.lower()
-    
-    # Multiple success conditions based on goal
-    if "find" in goal and "file" in goal:
-        return self._found_target_file
-    
-    if "count" in goal:
-        target = self._extract_number(goal)
-        return self.counter == target
-    
-    if "create" in goal:
-        return self._created_item
-    
-    return False
-```
+## Testing environments
 
-### 5. Limit Episode Length
+Test your environment before using it with an agent:
 
-Prevent infinite loops:
-
-```python
-def __init__(self, max_steps: int = 50):
-    self.max_steps = max_steps
-    self.step_count = 0
-
-def step(self, action: str) -> tuple[str, bool, bool]:
-    self.step_count += 1
-    
-    if self.step_count >= self.max_steps:
-        return "Maximum steps reached.", True, False
-    
-    # ... normal processing
-```
-
-## Testing Environments
-
-Test your environment before using with an agent:
-
-```python
+```python test_env.py
 def test_environment():
     env = FileSystemEnvironment()
     
@@ -405,9 +332,13 @@ def test_environment():
 test_environment()
 ```
 
-## Using with Agent
+<Check>
+Always test your environment independently before integrating with an agent. This makes debugging much easier.
+</Check>
 
-```python
+## Using with an agent
+
+```python agent_integration.py
 from icicl import Agent, LiteLLMProvider
 
 # Create your environment
@@ -427,21 +358,13 @@ trajectory = await agent.train(env, goal="Find the config file")
 print(f"Success: {trajectory.success}")
 ```
 
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
-  <Card
-    title="Custom LLM Providers"
-    icon="microchip"
-    href="/guides/custom-llm-providers"
-  >
+  <Card title="Custom LLM Providers" icon="microchip" href="/guides/custom-llm-providers">
     Integrate custom LLM backends
   </Card>
-  <Card
-    title="File System Example"
-    icon="folder"
-    href="/examples/file-system-agent"
-  >
+  <Card title="File System Example" icon="folder" href="/examples/file-system-agent">
     See a complete environment implementation
   </Card>
 </CardGroup>

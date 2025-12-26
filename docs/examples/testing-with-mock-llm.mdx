@@ -1,17 +1,17 @@
 ---
-title: Testing with Mock LLM
-description: "Fast testing and development without API calls"
+title: "Testing with Mock LLM"
+description: "Fast testing and development without API calls using mock LLM providers"
 ---
 
 ## Overview
 
 During development and testing, you may want to iterate quickly without making real LLM API calls. ICICL supports mock LLM providers that return deterministic responses.
 
-## The Mock Provider
+## Create a mock provider
 
 Here's a mock LLM that uses pattern matching to generate responses:
 
-```python
+```python mock_llm.py
 import re
 from icicl import Message
 
@@ -74,7 +74,6 @@ class MockLLMProvider:
             return "cp /home/user/notes.txt /backup"
         
         else:
-            # Default behavior
             if self._step_count == 1:
                 return "ls"
             elif self._step_count == 2:
@@ -95,11 +94,11 @@ class MockLLMProvider:
         return match.group(1).strip().lower() if match else ""
 ```
 
-## Using the Mock Provider
+## Use the mock provider
 
-Replace the real LLM with the mock:
+Replace the real LLM with your mock:
 
-```python
+```python use_mock.py
 from icicl import Agent
 
 # Use mock instead of real LLM
@@ -118,7 +117,7 @@ trajectory = await agent.train(env, goal="Navigate to /home/user and list files"
 print(f"Success: {trajectory.success}")
 ```
 
-## Benefits
+## Benefits of mock testing
 
 <CardGroup cols={2}>
   <Card title="Speed" icon="bolt">
@@ -128,18 +127,18 @@ print(f"Success: {trajectory.success}")
     No API charges during development
   </Card>
   <Card title="Reproducibility" icon="rotate">
-    Deterministic outputs for testing
+    Deterministic outputs for reliable testing
   </Card>
   <Card title="Offline" icon="wifi-slash">
     Works without internet connection
   </Card>
 </CardGroup>
 
-## Testing Patterns
+## Testing patterns
 
-### Unit Testing
+### Unit testing
 
-```python
+```python test_agent.py
 import pytest
 import asyncio
 from icicl import Agent, Trajectory
@@ -177,9 +176,9 @@ class TestAgent:
         assert len(agent.database) == 1
 ```
 
-### Integration Testing
+### Integration testing
 
-```python
+```python test_integration.py
 async def test_full_workflow():
     llm = MockLLMProvider()
     
@@ -205,13 +204,12 @@ async def test_full_workflow():
         env = make_env()
         trajectory = await agent.run(env, "New task")
         
-        # Assertions
         assert isinstance(trajectory, Trajectory)
 ```
 
-### Testing Curation
+### Testing curation
 
-```python
+```python test_curation.py
 async def test_curation_removes_low_utility():
     llm = MockLLMProvider()
     
@@ -226,81 +224,88 @@ async def test_curation_removes_low_utility():
             curation_min_retrievals=2,
         )
         
-        # Add some trajectories
-        # ... training ...
+        # Add some trajectories through training
+        # ...
         
         # Force curation
         removed = agent._curation.curate()
         
-        # Verify pruning
+        # Verify pruning behavior
         assert len(removed) >= 0
 ```
 
-## Advanced Mock Features
+## Advanced mock features
 
-### Simulating Failures
-
-```python
-import random
-
-class FlakeyMockProvider:
-    def __init__(self, failure_rate: float = 0.2):
-        self.failure_rate = failure_rate
+<Tabs>
+  <Tab title="Simulating Failures">
+    Test error handling:
     
-    async def complete(self, messages: list[Message]) -> str:
-        if random.random() < self.failure_rate:
-            raise Exception("Simulated API error")
-        return "response"
-```
+    ```python flaky_mock.py
+    import random
 
-### Recording Calls
-
-```python
-class RecordingMockProvider:
-    def __init__(self):
-        self.calls = []
-    
-    async def complete(self, messages: list[Message]) -> str:
-        self.calls.append(messages)
-        return "response"
-    
-    def assert_called_with(self, expected_content: str):
-        for call in self.calls:
-            if expected_content in call[-1].content:
-                return True
-        raise AssertionError(f"'{expected_content}' not found in calls")
-```
-
-### Configurable Responses
-
-```python
-class ConfigurableMockProvider:
-    def __init__(self, responses: dict[str, str]):
-        self.responses = responses
-    
-    async def complete(self, messages: list[Message]) -> str:
-        prompt = messages[-1].content.lower()
+    class FlakeyMockProvider:
+        def __init__(self, failure_rate: float = 0.2):
+            self.failure_rate = failure_rate
         
-        for pattern, response in self.responses.items():
-            if pattern.lower() in prompt:
-                return response
+        async def complete(self, messages: list[Message]) -> str:
+            if random.random() < self.failure_rate:
+                raise Exception("Simulated API error")
+            return "response"
+    ```
+  </Tab>
+  
+  <Tab title="Recording Calls">
+    Track what was sent to the LLM:
+    
+    ```python recording_mock.py
+    class RecordingMockProvider:
+        def __init__(self):
+            self.calls = []
         
-        return "default response"
+        async def complete(self, messages: list[Message]) -> str:
+            self.calls.append(messages)
+            return "response"
+        
+        def assert_called_with(self, expected_content: str):
+            for call in self.calls:
+                if expected_content in call[-1].content:
+                    return True
+            raise AssertionError(f"'{expected_content}' not found")
+    ```
+  </Tab>
+  
+  <Tab title="Configurable Responses">
+    Define custom response patterns:
+    
+    ```python configurable_mock.py
+    class ConfigurableMockProvider:
+        def __init__(self, responses: dict[str, str]):
+            self.responses = responses
+        
+        async def complete(self, messages: list[Message]) -> str:
+            prompt = messages[-1].content.lower()
+            
+            for pattern, response in self.responses.items():
+                if pattern.lower() in prompt:
+                    return response
+            
+            return "default response"
 
-# Usage
-mock = ConfigurableMockProvider({
-    "plan": "1. Step one\n2. Step two",
-    "think": "I should proceed carefully",
-    "action": "execute",
-})
-```
+    # Usage
+    mock = ConfigurableMockProvider({
+        "plan": "1. Step one\n2. Step two",
+        "think": "I should proceed carefully",
+        "action": "execute",
+    })
+    ```
+  </Tab>
+</Tabs>
 
-## Running the Mock Test
+## Run the mock test
 
 The repository includes a test file:
 
-```python
-# examples/test_with_mock.py
+```python test_with_mock.py
 import asyncio
 from examples.mock_llm import MockLLMProvider
 from examples.file_api_env import FileSystemEnvironment
@@ -333,10 +338,10 @@ cd /path/to/icicl
 uv run python examples/test_with_mock.py
 ```
 
-## When to Use Real vs Mock
+## When to use real vs mock
 
-| Scenario | Use Mock | Use Real LLM |
-|----------|----------|--------------|
+| Scenario | Mock | Real LLM |
+|----------|------|----------|
 | Unit tests | ✅ | |
 | CI/CD pipeline | ✅ | |
 | Development iteration | ✅ | |
@@ -346,8 +351,23 @@ uv run python examples/test_with_mock.py
 | Production | | ✅ |
 | Demo preparation | | ✅ |
 
-## See Also
+<Tip>
+Use mock providers during development to iterate on your environment and prompts quickly. Switch to real LLMs for final testing and production.
+</Tip>
 
-- [Custom LLM Providers](/guides/custom-llm-providers) - Build providers
-- [LLMProvider Protocol](/api-reference/llm-provider) - Protocol definition
-- [File System Agent](/examples/file-system-agent) - Full example
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Custom LLM Providers" icon="microchip" href="/guides/custom-llm-providers">
+    Build production LLM providers
+  </Card>
+  <Card title="LLMProvider Protocol" icon="code" href="/api-reference/llm-provider">
+    Complete protocol documentation
+  </Card>
+  <Card title="File System Agent" icon="folder" href="/examples/file-system-agent">
+    Full example with real LLM
+  </Card>
+  <Card title="Batch Training" icon="layer-group" href="/guides/batch-training">
+    Train efficiently at scale
+  </Card>
+</CardGroup>

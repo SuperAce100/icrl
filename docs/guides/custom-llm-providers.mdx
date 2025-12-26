@@ -1,6 +1,6 @@
 ---
-title: Custom LLM Providers
-description: "Integrating custom LLM backends with ICICL"
+title: "Custom LLM Providers"
+description: "Integrate custom LLM backends with your ICICL agents"
 ---
 
 ## Overview
@@ -12,11 +12,11 @@ ICICL includes a built-in `LiteLLMProvider` that supports 100+ models. However, 
 - Rate limiting or caching
 - Specialized inference setups
 
-## The LLMProvider Protocol
+## The LLMProvider protocol
 
 Every LLM provider must implement the `LLMProvider` protocol:
 
-```python
+```python protocol.py
 from icicl import LLMProvider, Message
 
 class MyLLMProvider:
@@ -32,7 +32,7 @@ class MyLLMProvider:
         ...
 ```
 
-## The Message Class
+## The Message class
 
 Messages are simple Pydantic models:
 
@@ -49,288 +49,209 @@ Common roles:
 - `"assistant"`: Model responses
 - `"system"`: System prompts
 
-## Basic Custom Provider
+## Provider implementations
 
-Here's a simple custom provider:
-
-```python
-import httpx
-from icicl import LLMProvider, Message
-
-class MyAPIProvider:
-    def __init__(self, api_url: str, api_key: str):
-        self.api_url = api_url
-        self.api_key = api_key
+<Tabs>
+  <Tab title="OpenAI-Compatible">
+    For OpenAI-compatible APIs:
     
-    async def complete(self, messages: list[Message]) -> str:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                self.api_url,
-                headers={"Authorization": f"Bearer {self.api_key}"},
-                json={
-                    "messages": [
-                        {"role": m.role, "content": m.content}
-                        for m in messages
-                    ]
-                },
+    ```python openai_provider.py
+    from openai import AsyncOpenAI
+    from icicl import Message
+
+    class OpenAIProvider:
+        def __init__(
+            self,
+            model: str = "gpt-4o-mini",
+            api_key: str | None = None,
+            base_url: str | None = None,
+            temperature: float = 0.7,
+        ):
+            self.model = model
+            self.temperature = temperature
+            self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+        
+        async def complete(self, messages: list[Message]) -> str:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": m.role, "content": m.content}
+                    for m in messages
+                ],
+                temperature=self.temperature,
             )
-            response.raise_for_status()
-            return response.json()["content"]
-```
-
-## OpenAI-Compatible Provider
-
-For OpenAI-compatible APIs:
-
-```python
-import openai
-from icicl import Message
-
-class OpenAIProvider:
-    def __init__(
-        self,
-        model: str = "gpt-4o-mini",
-        api_key: str | None = None,
-        base_url: str | None = None,
-        temperature: float = 0.7,
-    ):
-        self.model = model
-        self.temperature = temperature
-        self.client = openai.AsyncOpenAI(
-            api_key=api_key,
-            base_url=base_url,
-        )
+            return response.choices[0].message.content or ""
+    ```
+  </Tab>
+  
+  <Tab title="Anthropic Claude">
+    For Anthropic's Claude:
     
-    async def complete(self, messages: list[Message]) -> str:
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": m.role, "content": m.content}
-                for m in messages
-            ],
-            temperature=self.temperature,
-        )
-        return response.choices[0].message.content or ""
-```
+    ```python anthropic_provider.py
+    import anthropic
+    from icicl import Message
 
-## Anthropic Provider
-
-For Anthropic's Claude:
-
-```python
-import anthropic
-from icicl import Message
-
-class AnthropicProvider:
-    def __init__(
-        self,
-        model: str = "claude-3-5-sonnet-20241022",
-        api_key: str | None = None,
-        max_tokens: int = 1024,
-    ):
-        self.model = model
-        self.max_tokens = max_tokens
-        self.client = anthropic.AsyncAnthropic(api_key=api_key)
-    
-    async def complete(self, messages: list[Message]) -> str:
-        # Separate system message if present
-        system = None
-        chat_messages = []
+    class AnthropicProvider:
+        def __init__(
+            self,
+            model: str = "claude-3-5-sonnet-20241022",
+            api_key: str | None = None,
+            max_tokens: int = 1024,
+        ):
+            self.model = model
+            self.max_tokens = max_tokens
+            self.client = anthropic.AsyncAnthropic(api_key=api_key)
         
-        for m in messages:
-            if m.role == "system":
-                system = m.content
-            else:
-                chat_messages.append({
-                    "role": m.role,
-                    "content": m.content,
-                })
-        
-        response = await self.client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            system=system,
-            messages=chat_messages,
-        )
-        return response.content[0].text
-```
-
-## Local Model Provider (Ollama)
-
-For locally-hosted models via Ollama:
-
-```python
-import httpx
-from icicl import Message
-
-class OllamaProvider:
-    def __init__(
-        self,
-        model: str = "llama3",
-        base_url: str = "http://localhost:11434",
-    ):
-        self.model = model
-        self.base_url = base_url
-    
-    async def complete(self, messages: list[Message]) -> str:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.base_url}/api/chat",
-                json={
-                    "model": self.model,
-                    "messages": [
-                        {"role": m.role, "content": m.content}
-                        for m in messages
-                    ],
-                    "stream": False,
-                },
-                timeout=120.0,
+        async def complete(self, messages: list[Message]) -> str:
+            # Separate system message if present
+            system = None
+            chat_messages = []
+            
+            for m in messages:
+                if m.role == "system":
+                    system = m.content
+                else:
+                    chat_messages.append({
+                        "role": m.role,
+                        "content": m.content,
+                    })
+            
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                system=system,
+                messages=chat_messages,
             )
-            response.raise_for_status()
-            return response.json()["message"]["content"]
-```
-
-## vLLM Provider
-
-For high-performance inference with vLLM:
-
-```python
-from openai import AsyncOpenAI
-from icicl import Message
-
-class VLLMProvider:
-    def __init__(
-        self,
-        model: str,
-        base_url: str = "http://localhost:8000/v1",
-    ):
-        self.model = model
-        self.client = AsyncOpenAI(
-            api_key="EMPTY",  # vLLM doesn't require a real key
-            base_url=base_url,
-        )
+            return response.content[0].text
+    ```
+  </Tab>
+  
+  <Tab title="Ollama (Local)">
+    For locally-hosted models via Ollama:
     
-    async def complete(self, messages: list[Message]) -> str:
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": m.role, "content": m.content}
-                for m in messages
-            ],
-        )
-        return response.choices[0].message.content or ""
-```
+    ```python ollama_provider.py
+    import httpx
+    from icicl import Message
 
-## Provider with Caching
-
-Add caching to reduce API calls:
-
-```python
-import hashlib
-import json
-from functools import lru_cache
-from icicl import Message
-
-class CachedProvider:
-    def __init__(self, base_provider, cache_size: int = 1000):
-        self.base_provider = base_provider
-        self._cache = {}
-        self._cache_size = cache_size
+    class OllamaProvider:
+        def __init__(
+            self,
+            model: str = "llama3",
+            base_url: str = "http://localhost:11434",
+        ):
+            self.model = model
+            self.base_url = base_url
+        
+        async def complete(self, messages: list[Message]) -> str:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.base_url}/api/chat",
+                    json={
+                        "model": self.model,
+                        "messages": [
+                            {"role": m.role, "content": m.content}
+                            for m in messages
+                        ],
+                        "stream": False,
+                    },
+                    timeout=120.0,
+                )
+                response.raise_for_status()
+                return response.json()["message"]["content"]
+    ```
+  </Tab>
+  
+  <Tab title="vLLM">
+    For high-performance inference with vLLM:
     
-    def _cache_key(self, messages: list[Message]) -> str:
-        content = json.dumps([
-            {"role": m.role, "content": m.content}
-            for m in messages
-        ])
-        return hashlib.sha256(content.encode()).hexdigest()
-    
-    async def complete(self, messages: list[Message]) -> str:
-        key = self._cache_key(messages)
-        
-        if key in self._cache:
-            return self._cache[key]
-        
-        result = await self.base_provider.complete(messages)
-        
-        # Simple LRU-like behavior
-        if len(self._cache) >= self._cache_size:
-            # Remove oldest entry
-            oldest = next(iter(self._cache))
-            del self._cache[oldest]
-        
-        self._cache[key] = result
-        return result
-```
+    ```python vllm_provider.py
+    from openai import AsyncOpenAI
+    from icicl import Message
 
-## Provider with Retry Logic
+    class VLLMProvider:
+        def __init__(
+            self,
+            model: str,
+            base_url: str = "http://localhost:8000/v1",
+        ):
+            self.model = model
+            self.client = AsyncOpenAI(
+                api_key="EMPTY",  # vLLM doesn't require a key
+                base_url=base_url,
+            )
+        
+        async def complete(self, messages: list[Message]) -> str:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": m.role, "content": m.content}
+                    for m in messages
+                ],
+            )
+            return response.choices[0].message.content or ""
+    ```
+  </Tab>
+</Tabs>
+
+## Provider wrappers
+
+### Retry logic
 
 Handle transient failures:
 
-```python
+```python retry_provider.py
 import asyncio
 from icicl import Message
 
 class RetryProvider:
-    def __init__(
-        self,
-        base_provider,
-        max_retries: int = 3,
-        base_delay: float = 1.0,
-    ):
-        self.base_provider = base_provider
+    def __init__(self, base_provider, max_retries: int = 3):
+        self.base = base_provider
         self.max_retries = max_retries
-        self.base_delay = base_delay
     
     async def complete(self, messages: list[Message]) -> str:
-        last_exception = None
-        
         for attempt in range(self.max_retries):
             try:
-                return await self.base_provider.complete(messages)
+                return await self.base.complete(messages)
             except Exception as e:
-                last_exception = e
-                if attempt < self.max_retries - 1:
-                    delay = self.base_delay * (2 ** attempt)
-                    await asyncio.sleep(delay)
-        
-        raise last_exception
+                if attempt == self.max_retries - 1:
+                    raise
+                await asyncio.sleep(2 ** attempt)
 ```
 
-## Mock Provider for Testing
+### Caching
 
-Test without making API calls:
+Reduce API calls for repeated prompts:
 
-```python
+```python cached_provider.py
+import hashlib
+import json
 from icicl import Message
 
-class MockProvider:
-    def __init__(self, responses: dict[str, str] | None = None):
-        self.responses = responses or {}
-        self.calls = []
+class CachedProvider:
+    def __init__(self, base_provider):
+        self.base = base_provider
+        self._cache = {}
+    
+    def _key(self, messages: list[Message]) -> str:
+        data = json.dumps([{"role": m.role, "content": m.content} for m in messages])
+        return hashlib.sha256(data.encode()).hexdigest()
     
     async def complete(self, messages: list[Message]) -> str:
-        self.calls.append(messages)
+        key = self._key(messages)
         
-        # Check for matching response
-        last_content = messages[-1].content.lower()
-        for pattern, response in self.responses.items():
-            if pattern in last_content:
-                return response
+        if key in self._cache:
+            return self._cache[key]
         
-        # Default responses based on prompt type
-        if "plan" in last_content:
-            return "1. First step\n2. Second step"
-        elif "reason" in last_content or "think" in last_content:
-            return "I should proceed with the next step."
-        else:
-            return "action"
+        result = await self.base.complete(messages)
+        self._cache[key] = result
+        return result
 ```
 
-## Combining Providers
+### Fallback
 
-Create composite providers:
+Use a backup provider when the primary fails:
 
-```python
+```python fallback_provider.py
 class FallbackProvider:
     def __init__(self, primary, fallback):
         self.primary = primary
@@ -341,32 +262,64 @@ class FallbackProvider:
             return await self.primary.complete(messages)
         except Exception:
             return await self.fallback.complete(messages)
-
-class LoadBalancedProvider:
-    def __init__(self, providers: list):
-        self.providers = providers
-        self.index = 0
-    
-    async def complete(self, messages: list[Message]) -> str:
-        provider = self.providers[self.index]
-        self.index = (self.index + 1) % len(self.providers)
-        return await provider.complete(messages)
 ```
 
-## Using Custom Providers
+## Mock provider for testing
 
-```python
+Test without making API calls:
+
+```python mock_provider.py
+from icicl import Message
+
+class MockProvider:
+    def __init__(self):
+        self.calls = []
+    
+    async def complete(self, messages: list[Message]) -> str:
+        self.calls.append(messages)
+        
+        # Return sensible defaults based on prompt
+        content = messages[-1].content.lower()
+        
+        if "plan" in content:
+            return "1. First step\n2. Second step"
+        elif "reason" in content or "think" in content:
+            return "I should proceed with the task."
+        else:
+            return "execute"
+```
+
+<Tip>
+Use mock providers during development to iterate quickly without API costs or latency.
+</Tip>
+
+## Combining providers
+
+Create composite providers for production:
+
+```python composite_provider.py
+# Production setup with retry, cache, and fallback
+llm = RetryProvider(
+    CachedProvider(
+        FallbackProvider(
+            primary=OpenAIProvider(model="gpt-4o"),
+            fallback=OllamaProvider(model="llama3"),
+        )
+    ),
+    max_retries=3,
+)
+```
+
+## Using custom providers
+
+```python agent_setup.py
 from icicl import Agent
 
 # Create your custom provider
 llm = OllamaProvider(model="llama3")
 
 # Or with wrappers
-llm = RetryProvider(
-    CachedProvider(
-        OllamaProvider(model="llama3")
-    )
-)
+llm = RetryProvider(CachedProvider(OllamaProvider(model="llama3")))
 
 # Use with agent
 agent = Agent(
@@ -378,11 +331,11 @@ agent = Agent(
 )
 ```
 
-## Synchronous Support
+## Synchronous support
 
 Add sync methods for convenience:
 
-```python
+```python sync_provider.py
 import asyncio
 
 class MyProvider:
@@ -395,21 +348,13 @@ class MyProvider:
         return asyncio.run(self.complete(messages))
 ```
 
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
-  <Card
-    title="Batch Training"
-    icon="layer-group"
-    href="/guides/batch-training"
-  >
+  <Card title="Batch Training" icon="layer-group" href="/guides/batch-training">
     Train on multiple tasks efficiently
   </Card>
-  <Card
-    title="API Reference"
-    icon="code"
-    href="/api-reference/llm-provider"
-  >
+  <Card title="API Reference" icon="code" href="/api-reference/llm-provider">
     Complete LLMProvider API documentation
   </Card>
 </CardGroup>

@@ -1,5 +1,5 @@
 ---
-title: Agent
+title: "Agent"
 description: "Main Agent class for training and running ICICL agents"
 ---
 
@@ -117,12 +117,14 @@ Run a training episode. Successful trajectories are stored in the database.
   The resulting trajectory, whether successful or not.
 </ResponseField>
 
-```python
+<RequestExample>
+```python train_example.py
 trajectory = await agent.train(env, goal="Find the config file")
 
 if trajectory.success:
     print(f"Completed in {len(trajectory.steps)} steps")
 ```
+</RequestExample>
 
 ### run
 
@@ -148,39 +150,18 @@ Run an inference episode. Uses stored examples but doesn't add new trajectories.
   The resulting trajectory.
 </ResponseField>
 
-```python
+<RequestExample>
+```python run_example.py
 trajectory = await agent.run(env, goal="Complete the task")
 ```
+</RequestExample>
 
-### train_sync
+### train_sync / run_sync
 
-```python
-def train_sync(
-    self,
-    env: Environment,
-    goal: str,
-) -> Trajectory
-```
+Synchronous wrappers for `train()` and `run()`:
 
-Synchronous wrapper for `train()`.
-
-```python
+```python sync.py
 trajectory = agent.train_sync(env, goal="Find the config file")
-```
-
-### run_sync
-
-```python
-def run_sync(
-    self,
-    env: Environment,
-    goal: str,
-) -> Trajectory
-```
-
-Synchronous wrapper for `run()`.
-
-```python
 trajectory = agent.run_sync(env, goal="Complete the task")
 ```
 
@@ -208,13 +189,15 @@ Train on multiple goals sequentially.
   List of resulting trajectories, one per goal.
 </ResponseField>
 
-```python
+<RequestExample>
+```python batch_train.py
 def make_env():
     return FileSystemEnvironment()
 
 goals = ["Task 1", "Task 2", "Task 3"]
 trajectories = await agent.train_batch(make_env, goals)
 ```
+</RequestExample>
 
 ### run_batch
 
@@ -228,22 +211,12 @@ async def run_batch(
 
 Run inference on multiple goals sequentially.
 
-<ParamField path="env_factory" type="Callable[[], Environment]" required>
-  A callable that returns a new environment instance for each goal.
-</ParamField>
-
-<ParamField path="goals" type="list[str]" required>
-  List of goal descriptions.
-</ParamField>
-
-<ResponseField name="return" type="list[Trajectory]">
-  List of resulting trajectories.
-</ResponseField>
-
-```python
+<RequestExample>
+```python batch_run.py
 trajectories = await agent.run_batch(make_env, eval_goals)
 successes = sum(1 for t in trajectories if t.success)
 ```
+</RequestExample>
 
 ### get_stats
 
@@ -260,18 +233,20 @@ Get statistics about the agent's database.
   - `success_rate`: Ratio of successful to total trajectories
 </ResponseField>
 
-```python
+<RequestExample>
+```python stats.py
 stats = agent.get_stats()
 print(f"Total: {stats['total_trajectories']}")
 print(f"Successful: {stats['successful_trajectories']}")
 print(f"Success rate: {stats['success_rate']:.1%}")
 ```
+</RequestExample>
 
-## Example Usage
+## Examples
 
-### Basic Usage
+### Basic usage
 
-```python
+```python basic.py
 from icicl import Agent, LiteLLMProvider
 
 agent = Agent(
@@ -282,17 +257,13 @@ agent = Agent(
     act_prompt="Goal: {goal}\nReasoning: {reasoning}\nAction:",
 )
 
-# Train
 trajectory = await agent.train(env, "Complete task")
-
-# Check results
 print(f"Success: {trajectory.success}")
-print(f"Steps: {len(trajectory.steps)}")
 ```
 
-### With Seed Trajectories
+### With seed trajectories
 
-```python
+```python seed.py
 from icicl import Trajectory, Step
 
 seed = Trajectory(
@@ -311,9 +282,9 @@ agent = Agent(
 )
 ```
 
-### With Step Callback
+### With step callback
 
-```python
+```python callback.py
 from icicl import Step, StepContext
 
 def on_step(step: Step, context: StepContext) -> None:
@@ -328,20 +299,29 @@ agent = Agent(
 )
 ```
 
-### Custom Curation Settings
+### Custom curation settings
 
-```python
-# Conservative: keep more trajectories
-agent = Agent(
-    ...,
-    curation_threshold=0.1,
-    curation_min_retrievals=10,
-)
-
-# Aggressive: prune more aggressively
-agent = Agent(
-    ...,
-    curation_threshold=0.5,
-    curation_min_retrievals=3,
-)
-```
+<Tabs>
+  <Tab title="Conservative">
+    Keep more trajectories:
+    
+    ```python
+    agent = Agent(
+        ...,
+        curation_threshold=0.1,
+        curation_min_retrievals=10,
+    )
+    ```
+  </Tab>
+  <Tab title="Aggressive">
+    Prune more aggressively:
+    
+    ```python
+    agent = Agent(
+        ...,
+        curation_threshold=0.5,
+        curation_min_retrievals=3,
+    )
+    ```
+  </Tab>
+</Tabs>

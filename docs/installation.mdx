@@ -1,35 +1,35 @@
 ---
-title: Installation
-description: "How to install ICICL and its dependencies"
+title: "Installation"
+description: "Install ICICL and configure your environment for self-improving LLM agents"
 ---
 
 ## Requirements
 
 ICICL requires **Python 3.12** or higher.
 
-## Installation
+## Install ICICL
 
-Install ICICL using your preferred package manager:
-
-<CodeGroup>
-
-```bash pip
-pip install icicl
-```
-
-```bash uv
-uv add icicl
-```
-
-```bash poetry
-poetry add icicl
-```
-
-</CodeGroup>
+<Tabs>
+  <Tab title="pip">
+    ```bash
+    pip install icicl
+    ```
+  </Tab>
+  <Tab title="uv">
+    ```bash
+    uv add icicl
+    ```
+  </Tab>
+  <Tab title="poetry">
+    ```bash
+    poetry add icicl
+    ```
+  </Tab>
+</Tabs>
 
 ## Dependencies
 
-ICICL automatically installs the following dependencies:
+ICICL automatically installs these dependencies:
 
 | Package | Version | Purpose |
 |---------|---------|---------|
@@ -41,9 +41,9 @@ ICICL automatically installs the following dependencies:
 | `rich` | ≥13.0.0 | Terminal formatting |
 | `python-dotenv` | ≥1.0.0 | Environment variable loading |
 
-## API Keys
+## Configure your LLM provider
 
-ICICL uses LiteLLM for LLM access, which supports [100+ providers](https://docs.litellm.ai/docs/providers). Configure your preferred provider:
+ICICL uses LiteLLM for LLM access, which supports [100+ providers](https://docs.litellm.ai/docs/providers). Set up your preferred provider:
 
 <Tabs>
   <Tab title="OpenAI">
@@ -55,7 +55,7 @@ ICICL uses LiteLLM for LLM access, which supports [100+ providers](https://docs.
     from icicl import LiteLLMProvider
     
     llm = LiteLLMProvider(model="gpt-4o-mini")
-    # or: gpt-4o, gpt-4-turbo, gpt-3.5-turbo
+    # Other options: gpt-4o, gpt-4-turbo, gpt-3.5-turbo
     ```
   </Tab>
   <Tab title="Anthropic">
@@ -67,7 +67,7 @@ ICICL uses LiteLLM for LLM access, which supports [100+ providers](https://docs.
     from icicl import LiteLLMProvider
     
     llm = LiteLLMProvider(model="claude-3-5-sonnet-20241022")
-    # or: claude-3-opus-20240229, claude-3-haiku-20240307
+    # Other options: claude-3-opus-20240229, claude-3-haiku-20240307
     ```
   </Tab>
   <Tab title="Google">
@@ -79,7 +79,7 @@ ICICL uses LiteLLM for LLM access, which supports [100+ providers](https://docs.
     from icicl import LiteLLMProvider
     
     llm = LiteLLMProvider(model="gemini/gemini-1.5-pro")
-    # or: gemini/gemini-pro
+    # Other options: gemini/gemini-pro
     ```
   </Tab>
   <Tab title="Azure OpenAI">
@@ -97,42 +97,47 @@ ICICL uses LiteLLM for LLM access, which supports [100+ providers](https://docs.
   </Tab>
 </Tabs>
 
-## Using .env Files
+## Use .env files
 
-You can also use a `.env` file in your project root:
+You can store your API keys in a `.env` file in your project root:
 
-```bash
-# .env
+```bash .env
 OPENAI_API_KEY=sk-...
 ```
 
+<Note>
 ICICL automatically loads environment variables from `.env` using `python-dotenv`.
+</Note>
 
-## GPU Acceleration (Optional)
+## Optional: GPU acceleration
 
-For faster embeddings with sentence-transformers, you can use GPU acceleration:
+For faster embeddings with sentence-transformers, install PyTorch with GPU support:
 
-```bash
-# Install PyTorch with CUDA support
-pip install torch --index-url https://download.pytorch.org/whl/cu121
-
-# Or with ROCm (AMD GPUs)
-pip install torch --index-url https://download.pytorch.org/whl/rocm5.6
-```
+<Tabs>
+  <Tab title="NVIDIA (CUDA)">
+    ```bash
+    pip install torch --index-url https://download.pytorch.org/whl/cu121
+    ```
+  </Tab>
+  <Tab title="AMD (ROCm)">
+    ```bash
+    pip install torch --index-url https://download.pytorch.org/whl/rocm5.6
+    ```
+  </Tab>
+</Tabs>
 
 For GPU-accelerated FAISS:
 
 ```bash
-# Replace faiss-cpu with faiss-gpu
 pip uninstall faiss-cpu
 pip install faiss-gpu
 ```
 
-## Verify Installation
+## Verify your installation
 
-Run this script to verify everything is working:
+Run this script to confirm everything works correctly:
 
-```python
+```python verify.py
 import icicl
 
 print(f"ICICL version: {icicl.__version__}")
@@ -160,31 +165,43 @@ print(f"Embedding dimension: {len(embedding)}")
 print("\n✓ Installation verified!")
 ```
 
-## Development Installation
+<Check>
+If you see "Installation verified!" your setup is complete and ready to use.
+</Check>
+
+## Development installation
 
 To install from source for development:
 
-```bash
-git clone https://github.com/SuperAce100/icicl.git
-cd icicl
-
-# Using uv (recommended)
-uv sync
-
-# Or using pip
-pip install -e .
-```
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/SuperAce100/icicl.git
+    cd icicl
+    ```
+  </Step>
+  <Step title="Install dependencies">
+    <Tabs>
+      <Tab title="uv (recommended)">
+        ```bash
+        uv sync
+        ```
+      </Tab>
+      <Tab title="pip">
+        ```bash
+        pip install -e .
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+</Steps>
 
 ## Troubleshooting
 
 <AccordionGroup>
   <Accordion title="ImportError: No module named 'faiss'">
-    Make sure you have the CPU version installed:
-    ```bash
-    pip install faiss-cpu
-    ```
+    Reinstall the CPU version of FAISS:
     
-    On some systems, you may need to install it first:
     ```bash
     pip uninstall faiss faiss-cpu faiss-gpu
     pip install faiss-cpu
@@ -192,10 +209,11 @@ pip install -e .
   </Accordion>
   
   <Accordion title="sentence-transformers model download fails">
-    The default model (`all-MiniLM-L6-v2`) is downloaded on first use. If you're behind a firewall:
+    The default model (`all-MiniLM-L6-v2`) downloads on first use. If you're behind a firewall:
     
     1. Download the model manually from [HuggingFace](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)
     2. Set the cache directory:
+    
     ```bash
     export SENTENCE_TRANSFORMERS_HOME=/path/to/models
     ```
@@ -203,12 +221,14 @@ pip install -e .
   
   <Accordion title="LiteLLM API errors">
     Verify your API key is set correctly:
+    
     ```python
     import os
     print(os.environ.get("OPENAI_API_KEY", "NOT SET"))
     ```
     
-    Test the connection:
+    Test the connection directly:
+    
     ```python
     import litellm
     response = litellm.completion(
@@ -219,3 +239,7 @@ pip install -e .
     ```
   </Accordion>
 </AccordionGroup>
+
+<Check>
+Installation complete! Head to the [Quickstart guide](/quickstart) to build your first agent.
+</Check>

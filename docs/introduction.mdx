@@ -1,81 +1,70 @@
 ---
-title: Introduction
-description: "Self-Generated In-Context Learning for LLM Agents"
+title: "Introduction to ICICL"
+description: "Build self-improving LLM agents that learn from their own successful experiences using Self-Generated In-Context Learning"
 ---
 
-<img
-  className="block dark:hidden"
-  src="/images/hero-light.svg"
-  alt="ICICL Hero"
-/>
-<img
-  className="hidden dark:block"
-  src="/images/hero-dark.svg"
-  alt="ICICL Hero"
-/>
+<Frame>
+  <img
+    className="block dark:hidden"
+    src="/images/hero-light.svg"
+    alt="ICICL architecture diagram showing Bootstrap, Retrieve, Generate, and Curate phases"
+  />
+  <img
+    className="hidden dark:block"
+    src="/images/hero-dark.svg"
+    alt="ICICL architecture diagram showing Bootstrap, Retrieve, Generate, and Curate phases"
+  />
+</Frame>
 
 ## What is ICICL?
 
-**ICICL** (In-Context ICL) implements the Self-Generated In-Context Learning algorithm, enabling LLM agents to bootstrap their own performance by learning from successful trajectories.
+ICICL implements the **Self-Generated In-Context Learning** (SGICL) algorithm, enabling your LLM agents to bootstrap their own performance by learning from successful task completions.
 
-The key insight is that LLM agents can dramatically improve their task completion rates by:
+Instead of requiring you to craft examples manually, ICICL agents:
 
-1. **Attempting tasks** and recording successful trajectories
-2. **Retrieving relevant examples** at each decision point using semantic search
-3. **Automatically curating** the example database to retain high-utility examples
+1. **Attempt tasks** and record successful trajectories automatically
+2. **Retrieve relevant examples** at each decision point using semantic search
+3. **Improve over time** as they accumulate more successful experiences
+4. **Self-curate** by pruning low-utility examples from their memory
 
 <CardGroup cols={2}>
-  <Card
-    title="Quickstart"
-    icon="rocket"
-    href="/quickstart"
-  >
-    Get up and running with ICICL in under 5 minutes
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get your first ICICL agent running in under 5 minutes
   </Card>
-  <Card
-    title="Core Concepts"
-    icon="book"
-    href="/core-concepts/sgicl-algorithm"
-  >
-    Understand the SGICL algorithm and how it works
+  <Card title="Core Concepts" icon="book" href="/core-concepts/sgicl-algorithm">
+    Understand how the SGICL algorithm works
   </Card>
-  <Card
-    title="API Reference"
-    icon="code"
-    href="/api-reference/overview"
-  >
-    Complete API documentation for all classes and methods
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Explore the complete API documentation
   </Card>
-  <Card
-    title="Examples"
-    icon="flask"
-    href="/examples/file-system-agent"
-  >
-    Real-world examples and tutorials
+  <Card title="Examples" icon="flask" href="/examples/file-system-agent">
+    Learn from real-world implementation examples
   </Card>
 </CardGroup>
 
-## Key Features
+## Key features
 
 <AccordionGroup>
-  <Accordion icon="brain" title="Self-Improving Agents">
-    Agents automatically learn from their successful experiences, improving performance over time without manual intervention.
+  <Accordion title="Self-improving agents" icon="brain">
+    Your agents automatically learn from successful experiences. Each completed task becomes a potential example for future similar tasks, improving performance without manual intervention.
   </Accordion>
-  <Accordion icon="magnifying-glass" title="Semantic Retrieval">
-    Uses FAISS-backed vector similarity search with sentence transformers to find the most relevant examples for each situation.
+  <Accordion title="Semantic retrieval" icon="magnifying-glass">
+    ICICL uses FAISS-backed vector similarity search with sentence transformers to find the most relevant examples for each situation. You configure how many examples to retrieve with the `k` parameter.
   </Accordion>
-  <Accordion icon="wand-magic-sparkles" title="Automatic Curation">
-    Low-utility trajectories are automatically pruned based on their contribution to successful outcomes.
+  <Accordion title="Automatic curation" icon="wand-magic-sparkles">
+    Low-utility trajectories are automatically pruned based on their contribution to successful outcomes. You control the aggressiveness of curation through threshold settings.
   </Accordion>
-  <Accordion icon="plug" title="Flexible LLM Support">
-    Built-in LiteLLM provider supports 100+ models including OpenAI, Anthropic, Google, Azure, and more.
+  <Accordion title="100+ LLM support" icon="plug">
+    The built-in LiteLLM provider supports OpenAI, Anthropic, Google, Azure, and many other providers through a unified interface.
   </Accordion>
-  <Accordion icon="gear" title="Customizable Prompts">
-    Template-based prompts let you customize the agent's planning, reasoning, and action generation.
+  <Accordion title="Customizable prompts" icon="message">
+    Template-based prompts give you complete control over how your agent plans, reasons, and acts.
   </Accordion>
 </AccordionGroup>
 
-## How It Works
+## How it works
+
+The SGICL algorithm follows four phases:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -90,34 +79,46 @@ The key insight is that LLM agents can dramatically improve their task completio
 
 Each episode follows a **Plan → Reason → Act** loop:
 
-1. **Plan**: Generate a high-level strategy using retrieved examples
-2. **Reason**: Analyze the current observation with context from similar situations
-3. **Act**: Execute the next action based on reasoning
-4. **Observe**: Get environment feedback and loop back to Reason
+<Steps>
+  <Step title="Plan">
+    Generate a high-level strategy using retrieved examples from similar past tasks
+  </Step>
+  <Step title="Reason">
+    Analyze the current observation with context from similar situations
+  </Step>
+  <Step title="Act">
+    Execute the next action based on your reasoning
+  </Step>
+  <Step title="Observe">
+    Get environment feedback and loop back to Reason until the task completes
+  </Step>
+</Steps>
 
-## Research Background
+## Research foundation
 
-ICICL is based on the algorithm described in:
+ICICL implements the algorithm described in:
 
 > **Self-Generated In-Context Examples Improve LLM Agents for Sequential Decision-Making Tasks**
 
-The research demonstrates that self-generated examples can match or exceed the performance of human-crafted demonstrations, while being significantly more scalable.
+<Note>
+The research demonstrates that self-generated examples can match or exceed the performance of human-crafted demonstrations while being significantly more scalable.
+</Note>
 
-## Quick Example
+## Quick example
 
-```python
+```python quickstart.py
 import asyncio
 from icicl import Agent, LiteLLMProvider
 
-# Create the agent
+# Create your agent
 agent = Agent(
     llm=LiteLLMProvider(model="gpt-4o-mini"),
     db_path="./trajectories",
     plan_prompt="Goal: {goal}\n\nExamples:\n{examples}\n\nCreate a plan:",
     reason_prompt="Goal: {goal}\nPlan: {plan}\nObservation: {observation}\nThink step by step:",
     act_prompt="Goal: {goal}\nPlan: {plan}\nReasoning: {reasoning}\nNext action:",
-    k=3,           # number of examples to retrieve
-    max_steps=30,  # max steps per episode
+    k=3,           # Number of examples to retrieve
+    max_steps=30,  # Maximum steps per episode
 )
 
 # Training: successful trajectories are stored for future use
@@ -126,3 +127,7 @@ trajectory = asyncio.run(agent.train(env, goal="Complete the task"))
 # Inference: uses stored examples but doesn't add new ones
 trajectory = asyncio.run(agent.run(env, goal="Complete another task"))
 ```
+
+<Check>
+Ready to build your first self-improving agent? Head to the [Quickstart guide](/quickstart) to get started in under 5 minutes.
+</Check>

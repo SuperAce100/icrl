@@ -1,17 +1,17 @@
 ---
-title: Batch Training
-description: "Training agents on multiple tasks efficiently"
+title: "Batch Training"
+description: "Train your ICICL agents on multiple tasks efficiently to build a robust trajectory database"
 ---
 
 ## Overview
 
 Batch training allows you to train an agent on multiple goals in sequence, building up a database of successful trajectories that improves performance over time.
 
-## Basic Batch Training
+## Basic batch training
 
 Use `train_batch` to train on multiple goals:
 
-```python
+```python batch_training.py
 from icicl import Agent, LiteLLMProvider
 
 agent = Agent(
@@ -43,11 +43,11 @@ for traj in trajectories:
     print(f"{status} {traj.goal}")
 ```
 
-## Environment Factory Pattern
+## Environment factory pattern
 
 The factory pattern ensures each episode gets a fresh environment:
 
-```python
+```python factory.py
 def make_file_env():
     """Factory that creates a new FileSystemEnvironment."""
     return FileSystemEnvironment()
@@ -58,7 +58,7 @@ trajectories = await agent.train_batch(make_file_env, goals)
 
 For task-based environments:
 
-```python
+```python task_factory.py
 from examples.file_api_env import FileSystemEnvironment, Task
 
 tasks = [
@@ -72,8 +72,8 @@ tasks = [
     ),
 ]
 
-# Create factory for each task
-def train_on_tasks(agent, tasks):
+# Train on each task
+async def train_on_tasks(agent, tasks):
     trajectories = []
     for task in tasks:
         def make_env(t=task):  # Capture task in closure
@@ -85,11 +85,11 @@ def train_on_tasks(agent, tasks):
     return trajectories
 ```
 
-## Curriculum Learning
+## Curriculum learning
 
 Start with easier tasks and progress to harder ones:
 
-```python
+```python curriculum.py
 # Define task difficulties
 easy_goals = [
     "List files in /home",
@@ -123,11 +123,15 @@ await agent.train_batch(make_env, hard_goals)
 print(f"Database size: {len(agent.database)}")
 ```
 
-## Tracking Progress
+<Tip>
+Curriculum learning helps your agent build foundational skills before tackling complex tasks. Easier tasks create examples that help with harder ones.
+</Tip>
+
+## Tracking progress
 
 Monitor training progress with callbacks:
 
-```python
+```python progress.py
 from rich.console import Console
 from rich.progress import Progress
 
@@ -138,7 +142,6 @@ def on_step(step, context):
 
 agent = Agent(..., on_step=on_step)
 
-# Train with progress tracking
 async def train_with_progress(agent, goals):
     results = {"success": 0, "failed": 0}
     
@@ -166,71 +169,71 @@ results = await train_with_progress(agent, all_goals)
 print(f"\nResults: {results['success']}/{len(all_goals)} succeeded")
 ```
 
-## Training Strategies
+## Training strategies
 
-### 1. Bootstrap Phase
-
-Train without examples to bootstrap the database:
-
-```python
-# Initial training - agent has no examples
-print("Bootstrap phase...")
-await agent.train_batch(make_env, bootstrap_goals)
-
-stats = agent.get_stats()
-print(f"Trajectories stored: {stats['total_trajectories']}")
-```
-
-### 2. Iterative Improvement
-
-Run multiple training rounds:
-
-```python
-for round_num in range(3):
-    print(f"\n=== Training Round {round_num + 1} ===")
+<Tabs>
+  <Tab title="Bootstrap">
+    Train without examples to bootstrap the database:
     
-    trajectories = await agent.train_batch(make_env, goals)
+    ```python
+    print("Bootstrap phase...")
+    await agent.train_batch(make_env, bootstrap_goals)
     
-    successes = sum(1 for t in trajectories if t.success)
-    print(f"Success rate: {successes}/{len(goals)}")
+    stats = agent.get_stats()
+    print(f"Trajectories stored: {stats['total_trajectories']}")
+    ```
+  </Tab>
+  
+  <Tab title="Iterative">
+    Run multiple training rounds:
     
-    # Check if we've reached target performance
-    if successes == len(goals):
-        print("All tasks succeeded! Training complete.")
-        break
-```
-
-### 3. Active Learning
-
-Focus on failed tasks:
-
-```python
-async def active_training(agent, goals, max_rounds=5):
-    remaining_goals = list(goals)
-    
-    for round_num in range(max_rounds):
-        if not remaining_goals:
+    ```python
+    for round_num in range(3):
+        print(f"\n=== Training Round {round_num + 1} ===")
+        
+        trajectories = await agent.train_batch(make_env, goals)
+        
+        successes = sum(1 for t in trajectories if t.success)
+        print(f"Success rate: {successes}/{len(goals)}")
+        
+        if successes == len(goals):
+            print("All tasks succeeded! Training complete.")
             break
-        
-        print(f"\n=== Round {round_num + 1}: {len(remaining_goals)} goals ===")
-        
-        failed = []
-        for goal in remaining_goals:
-            traj = await agent.train(make_env(), goal)
-            if not traj.success:
-                failed.append(goal)
-        
-        remaining_goals = failed
-        print(f"Failed: {len(failed)}")
+    ```
+  </Tab>
+  
+  <Tab title="Active Learning">
+    Focus on failed tasks:
     
-    return len(goals) - len(remaining_goals)
-```
+    ```python
+    async def active_training(agent, goals, max_rounds=5):
+        remaining_goals = list(goals)
+        
+        for round_num in range(max_rounds):
+            if not remaining_goals:
+                break
+            
+            print(f"\n=== Round {round_num + 1}: {len(remaining_goals)} goals ===")
+            
+            failed = []
+            for goal in remaining_goals:
+                traj = await agent.train(make_env(), goal)
+                if not traj.success:
+                    failed.append(goal)
+            
+            remaining_goals = failed
+            print(f"Failed: {len(failed)}")
+        
+        return len(goals) - len(remaining_goals)
+    ```
+  </Tab>
+</Tabs>
 
-## Batch Inference
+## Batch inference
 
 After training, run inference on new tasks:
 
-```python
+```python inference.py
 # Freeze the database and evaluate
 eval_goals = [
     "New task 1",
@@ -247,36 +250,11 @@ for traj in trajectories:
     print(f"  Steps: {len(traj.steps)}")
 ```
 
-## Parallel Training
-
-<Warning>
-Parallel training should be used carefully as trajectories are added to the database during training, which could cause race conditions.
-</Warning>
-
-For inference (where the database is frozen), you can parallelize:
-
-```python
-import asyncio
-
-async def parallel_inference(agent, goals, max_concurrent=5):
-    semaphore = asyncio.Semaphore(max_concurrent)
-    
-    async def run_one(goal):
-        async with semaphore:
-            env = make_env()
-            return await agent.run(env, goal)
-    
-    tasks = [run_one(goal) for goal in goals]
-    return await asyncio.gather(*tasks)
-
-trajectories = await parallel_inference(agent, eval_goals)
-```
-
-## Saving and Loading Progress
+## Saving and loading progress
 
 The database persists automatically, so you can resume training:
 
-```python
+```python resume.py
 # Day 1: Initial training
 agent = Agent(db_path="./my_project/trajectories", ...)
 await agent.train_batch(make_env, day1_goals)
@@ -288,11 +266,11 @@ print(f"Loaded: {len(agent.database)} trajectories")
 await agent.train_batch(make_env, day2_goals)
 ```
 
-## Monitoring Database Health
+## Monitoring database health
 
 Check the database periodically:
 
-```python
+```python health.py
 def print_database_health(agent):
     stats = agent.get_stats()
     
@@ -315,9 +293,9 @@ def print_database_health(agent):
 print_database_health(agent)
 ```
 
-## Complete Training Pipeline
+## Complete training pipeline
 
-```python
+```python pipeline.py
 import asyncio
 from icicl import Agent, LiteLLMProvider
 
@@ -334,7 +312,6 @@ async def full_training_pipeline():
         curation_min_retrievals=5,
     )
     
-    # Define task sets
     training_goals = [...]
     eval_goals = [...]
     
@@ -349,7 +326,7 @@ async def full_training_pipeline():
     for round_num in range(3):
         print(f"\nRound {round_num + 1}")
         for goal in training_goals:
-            traj = await agent.train(make_env(), goal)
+            await agent.train(make_env(), goal)
         print_database_health(agent)
     
     # Evaluation
@@ -363,21 +340,17 @@ async def full_training_pipeline():
 agent, results = asyncio.run(full_training_pipeline())
 ```
 
-## Next Steps
+<Warning>
+Parallel training should be used carefully as trajectories are added to the database during training, which could cause race conditions. Use sequential training for reliability.
+</Warning>
+
+## Next steps
 
 <CardGroup cols={2}>
-  <Card
-    title="Curation"
-    icon="filter"
-    href="/core-concepts/curation"
-  >
+  <Card title="Curation" icon="filter" href="/core-concepts/curation">
     Learn about automatic trajectory pruning
   </Card>
-  <Card
-    title="File System Example"
-    icon="folder"
-    href="/examples/file-system-agent"
-  >
+  <Card title="File System Example" icon="folder" href="/examples/file-system-agent">
     See batch training in action
   </Card>
 </CardGroup>

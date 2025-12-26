@@ -1,9 +1,9 @@
 ---
-title: API Overview
-description: "Complete API reference for ICICL"
+title: "API Overview"
+description: "Complete API reference for the ICICL library"
 ---
 
-## Package Structure
+## Package structure
 
 ICICL is organized into the following modules:
 
@@ -21,11 +21,11 @@ icicl/
     └── litellm.py  # LiteLLM integration
 ```
 
-## Main Exports
+## Main exports
 
 All main classes are available from the top-level package:
 
-```python
+```python imports.py
 from icicl import (
     # Main class
     Agent,
@@ -45,7 +45,7 @@ from icicl import (
 )
 ```
 
-## Core Classes
+## Core classes
 
 <CardGroup cols={2}>
   <Card title="Agent" icon="robot" href="/api-reference/agent">
@@ -56,7 +56,7 @@ from icicl import (
   </Card>
 </CardGroup>
 
-## Data Models
+## Data models
 
 <CardGroup cols={2}>
   <Card title="Trajectory" icon="route" href="/api-reference/trajectory">
@@ -84,7 +84,7 @@ from icicl import (
   </Card>
 </CardGroup>
 
-## Database & Retrieval
+## Database & retrieval
 
 <CardGroup cols={2}>
   <Card title="TrajectoryDatabase" icon="database" href="/api-reference/trajectory-database">
@@ -101,11 +101,11 @@ from icicl import (
   </Card>
 </CardGroup>
 
-## Quick Reference
+## Quick reference
 
-### Creating an Agent
+### Creating an agent
 
-```python
+```python create_agent.py
 from icicl import Agent, LiteLLMProvider
 
 agent = Agent(
@@ -119,9 +119,9 @@ agent = Agent(
 )
 ```
 
-### Training and Inference
+### Training and inference
 
-```python
+```python training.py
 # Training - stores successful trajectories
 trajectory = await agent.train(env, goal="Complete the task")
 
@@ -137,9 +137,9 @@ trajectories = await agent.train_batch(env_factory, goals)
 trajectories = await agent.run_batch(env_factory, goals)
 ```
 
-### Accessing the Database
+### Accessing the database
 
-```python
+```python database.py
 # Search for similar trajectories
 similar = agent.database.search("find config files", k=3)
 
@@ -152,9 +152,9 @@ print(f"Total: {stats['total_trajectories']}")
 print(f"Success rate: {stats['success_rate']:.1%}")
 ```
 
-### Data Models
+### Data models
 
-```python
+```python models.py
 from icicl import Trajectory, Step, Message
 
 # Create a step
@@ -178,7 +178,7 @@ message = Message(role="user", content="Hello")
 
 ## Version
 
-```python
+```python version.py
 import icicl
 print(icicl.__version__)  # "0.1.0"
 ```

@@ -1,13 +1,13 @@
 ---
-title: ReAct Loop
-description: "The Plan-Reason-Act execution loop"
+title: "ReAct Loop"
+description: "Learn how the Plan-Reason-Act execution loop enables systematic task completion"
 ---
 
 ## Overview
 
 ICICL uses a **ReAct-style** (Reasoning + Acting) loop for agent execution. Each episode follows a structured pattern of planning, reasoning, and acting that enables systematic task completion.
 
-## The Execution Flow
+## Execution flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -38,117 +38,97 @@ ICICL uses a **ReAct-style** (Reasoning + Acting) loop for agent execution. Each
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Phase Details
+## Phase details
 
-### 1. Planning Phase
+<Steps>
+  <Step title="Planning phase">
+    At the start of each episode, the agent generates a high-level plan:
 
-At the start of each episode, the agent generates a high-level plan:
+    ```python
+    # Retrieve examples based on the goal
+    examples = retriever.retrieve_for_plan(goal)
 
-```python
-# Retrieve examples based on the goal
-examples = retriever.retrieve_for_plan(goal)
+    # Generate plan using the LLM
+    plan = await llm.complete([
+        Message(role="user", content=plan_prompt.format(
+            goal=goal,
+            examples=formatted_examples
+        ))
+    ])
+    ```
 
-# Generate plan using the LLM
-plan = await llm.complete([
-    Message(role="user", content=plan_prompt.format(
-        goal=goal,
-        examples=formatted_examples
-    ))
-])
-```
+    <Tip>
+    Good plans are concise and numbered. They outline key steps without being overly detailed.
+    </Tip>
+  </Step>
 
-The plan provides a strategic roadmap that guides subsequent reasoning.
+  <Step title="Reasoning phase">
+    Before each action, the agent reasons about the current situation:
 
-<Tip>
-Good plans are concise and numbered. They outline the key steps without being overly detailed.
-</Tip>
+    ```python
+    # Retrieve examples relevant to current situation
+    examples = retriever.retrieve_for_step(goal, plan, observation)
 
-### 2. Reasoning Phase
+    # Generate reasoning
+    reasoning = await llm.complete([
+        Message(role="user", content=reason_prompt.format(
+            goal=goal,
+            plan=plan,
+            observation=observation,
+            history=formatted_history,
+            examples=formatted_examples
+        ))
+    ])
+    ```
 
-Before each action, the agent reasons about the current situation:
+    Reasoning helps your agent:
+    - Interpret what it observes
+    - Connect observations to the plan
+    - Decide what to do next
+  </Step>
 
-```python
-# Retrieve examples relevant to current situation
-examples = retriever.retrieve_for_step(goal, plan, observation)
+  <Step title="Acting phase">
+    Based on reasoning, the agent generates and executes an action:
 
-# Generate reasoning
-reasoning = await llm.complete([
-    Message(role="user", content=reason_prompt.format(
-        goal=goal,
-        plan=plan,
-        observation=observation,
-        history=formatted_history,
-        examples=formatted_examples
-    ))
-])
-```
+    ```python
+    # Retrieve examples again (may differ based on reasoning)
+    examples = retriever.retrieve_for_step(goal, plan, reasoning)
 
-Reasoning helps the agent:
-- Interpret what it observes
-- Connect observations to the plan
-- Decide what to do next
+    # Generate action
+    action = await llm.complete([
+        Message(role="user", content=act_prompt.format(
+            goal=goal,
+            plan=plan,
+            reasoning=reasoning,
+            history=formatted_history,
+            examples=formatted_examples
+        ))
+    ])
 
-### 3. Acting Phase
+    # Execute in environment
+    observation, done, success = env.step(action)
+    ```
+  </Step>
 
-Based on reasoning, the agent generates and executes an action:
+  <Step title="Loop termination">
+    The loop continues until:
+    - The environment signals `done=True`
+    - Maximum steps (`max_steps`) is reached
 
-```python
-# Retrieve examples again (may differ based on reasoning)
-examples = retriever.retrieve_for_step(goal, plan, reasoning)
+    ```python
+    for step_num in range(max_steps):
+        # ... reasoning and acting ...
+        
+        if done:
+            break  # Goal achieved or failed
 
-# Generate action
-action = await llm.complete([
-    Message(role="user", content=act_prompt.format(
-        goal=goal,
-        plan=plan,
-        reasoning=reasoning,
-        history=formatted_history,
-        examples=formatted_examples
-    ))
-])
+    # Record result for curation
+    retriever.record_episode_result(success)
+    ```
+  </Step>
+</Steps>
 
-# Execute in environment
-observation, done, success = env.step(action)
-```
-
-### 4. Loop Termination
-
-The loop continues until:
-- The environment signals `done=True`
-- Maximum steps (`max_steps`) is reached
-
-```python
-for step_num in range(max_steps):
-    # ... reasoning and acting ...
-    
-    if done:
-        break  # Goal achieved or failed
-
-# Record result for curation
-retriever.record_episode_result(success)
-```
-
-## The ReActLoop Class
-
-ICICL's `ReActLoop` class encapsulates this logic:
-
-```python
-from icicl.loop import ReActLoop
-
-loop = ReActLoop(
-    llm=llm_provider,
-    retriever=trajectory_retriever,
-    plan_prompt="...",
-    reason_prompt="...",
-    act_prompt="...",
-    max_steps=30,
-    on_step=callback_function,
-)
-
-trajectory = await loop.run(env, goal)
-```
-
-## Step Recording
+## Step recording
 
 Each step is recorded as a `Step` object:
 
@@ -175,11 +155,11 @@ trajectory = Trajectory(
 )
 ```
 
-## Step Callbacks
+## Step callbacks
 
 Monitor the loop in real-time with callbacks:
 
-```python
+```python callbacks.py
 from icicl import Step, StepContext
 
 def on_step(step: Step, context: StepContext) -> None:
@@ -195,7 +175,7 @@ agent = Agent(
 )
 ```
 
-## Example Trace
+## Example trace
 
 Here's what a typical episode looks like:
 
@@ -244,9 +224,9 @@ STEP 6:
 SUCCESS: Completed in 6 steps
 ```
 
-## Customizing the Loop
+## Customizing the loop
 
-### Adjust Maximum Steps
+### Adjust maximum steps
 
 ```python
 agent = Agent(
@@ -255,7 +235,7 @@ agent = Agent(
 )
 ```
 
-### Control Retrieval
+### Control retrieval
 
 ```python
 agent = Agent(
@@ -264,21 +244,13 @@ agent = Agent(
 )
 ```
 
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
-  <Card
-    title="Prompt Templates"
-    icon="message"
-    href="/guides/prompt-templates"
-  >
+  <Card title="Prompt Templates" icon="message" href="/guides/prompt-templates">
     Design effective prompts for planning, reasoning, and acting
   </Card>
-  <Card
-    title="Trajectory Database"
-    icon="database"
-    href="/core-concepts/trajectory-database"
-  >
+  <Card title="Trajectory Database" icon="database" href="/core-concepts/trajectory-database">
     Learn how trajectories are stored and retrieved
   </Card>
 </CardGroup>
