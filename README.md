@@ -449,6 +449,34 @@ llm = MockLLMProvider(success_rate=1.0)
 agent = Agent(llm=llm, ...)
 ```
 
+### Harbor Coding Agent (Terminal-Bench 2.0 Compatible)
+
+See `examples/harbor_coding_agent.py` for a coding agent example compatible with [Harbor](https://harborframework.com) and Terminal-Bench 2.0. This demonstrates:
+
+- A sandboxed coding environment with shell commands (ls, cat, grep, sed, etc.)
+- Realistic software engineering tasks (debugging, refactoring, testing)
+- Performance improvement tracking before/after ICICL training
+
+```bash
+# With real LLM
+export OPENAI_API_KEY=your-key
+uv run python examples/harbor_coding_agent.py
+
+# Mock version (no API key required)
+uv run python examples/harbor_coding_mock.py
+```
+
+The Harbor example shows how ICICL improves agent performance on coding tasks:
+
+1. **Baseline Evaluation**: Agent attempts tasks without learned examples
+2. **Training Phase**: Agent learns from successful coding task trajectories
+3. **Improved Evaluation**: Re-test shows performance gains from trajectory learning
+
+This pattern integrates with Harbor's agent evaluation framework, allowing you to:
+- Benchmark coding agents on Terminal-Bench 2.0 tasks
+- Use ICICL's self-generated examples to improve agent performance
+- Track improvements across training iterations
+
 ## Architecture
 
 ```
