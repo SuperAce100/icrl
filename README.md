@@ -458,12 +458,8 @@ See `examples/harbor_coding_agent.py` for a coding agent example compatible with
 - Performance improvement tracking before/after ICICL training
 
 ```bash
-# With real LLM
 export OPENAI_API_KEY=your-key
 uv run python examples/harbor_coding_agent.py
-
-# Mock version (no API key required)
-uv run python examples/harbor_coding_mock.py
 ```
 
 The Harbor example shows how ICICL improves agent performance on coding tasks:

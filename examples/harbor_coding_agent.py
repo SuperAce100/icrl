@@ -138,7 +138,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Config:
-    port: int = 8000  # BUG: should be 3000 per requirements
+    port: int = 8000
     debug: bool = False
     database_url: str = ""
     secret_key: str = ""
@@ -146,7 +146,7 @@ class Config:
     @classmethod
     def load(cls) -> "Config":
         return cls(
-            port=int(os.getenv("PORT", 8000)),  # BUG: default should be 3000
+            port=int(os.getenv("PORT", 8000)),
             debug=os.getenv("DEBUG", "false").lower() == "true",
             database_url=os.getenv("DATABASE_URL", "sqlite:///app.db"),
             secret_key=os.getenv("SECRET_KEY", "dev-key"),
@@ -531,7 +531,7 @@ CODING_TASKS = {
         CodingTask(
             goal="Fix the port configuration in config.py - change default from 8000 to 3000 to match README requirements",
             verify=lambda s: s.file_exists("/workspace/src/config.py")
-            and "3000" in (s.get_file_content("/workspace/src/config.py") or ""),
+            and "port:int=3000" in (s.get_file_content("/workspace/src/config.py") or "").lower().replace(" ", ""),
             difficulty="medium",
             category="debugging",
         ),
@@ -568,7 +568,7 @@ CODING_TASKS = {
         CodingTask(
             goal="Fix the debug mode default in config.py - it should be True for development",
             verify=lambda s: s.file_exists("/workspace/src/config.py")
-            and "debug: bool = True" in (s.get_file_content("/workspace/src/config.py") or "").lower().replace(" ", ""),
+            and "debug:bool=true" in (s.get_file_content("/workspace/src/config.py") or "").lower().replace(" ", ""),
             difficulty="medium",
             category="debugging",
         ),

@@ -255,19 +255,24 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Run the Examples
+## Run the Example
 
 <Steps>
-  <Step title="With Real LLM">
+  <Step title="Set your API key">
     ```bash
     export OPENAI_API_KEY=your-key
+    ```
+  </Step>
+  
+  <Step title="Run the demo">
+    ```bash
     uv run python examples/harbor_coding_agent.py
     ```
   </Step>
   
-  <Step title="Mock Version (No API Key)">
+  <Step title="Run tests">
     ```bash
-    uv run python examples/harbor_coding_mock.py
+    uv run pytest examples/test_harbor_coding.py -v
     ```
   </Step>
 </Steps>
