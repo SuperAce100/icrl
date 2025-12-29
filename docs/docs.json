@@ -8,9 +8,19 @@
   "theme": "linden",
   "favicon": "/favicon.svg",
   "colors": {
-    "primary": "#0D9373",
-    "light": "#07C983",
-    "dark": "#0D9373"
+    "primary": "#4666FF",
+    "light": "#4666FF",
+    "dark": "#4666FF"
+  },
+  "fonts": {
+    "heading": {
+      "family": "JetBrains Mono",
+      "weight": 600
+    },
+    "body": {
+      "family": "Inter",
+      "weight": 400
+    }
   },
   "topbarLinks": [
     {
