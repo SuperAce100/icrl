@@ -61,7 +61,7 @@
           },
           {
             "group": "Examples",
-            "pages": ["examples/file-system-agent", "examples/testing-with-mock-llm"]
+            "pages": ["examples/file-system-agent", "examples/harbor-coding-agent", "examples/testing-with-mock-llm"]
           }
         ]
       },
