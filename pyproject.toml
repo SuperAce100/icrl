@@ -15,6 +15,7 @@ dependencies = [
     "aiofiles>=23.0.0",
     "rich>=13.0.0",
     "python-dotenv>=1.0.0",
+    "harbor>=0.1.0",
 ]
 
 [build-system]

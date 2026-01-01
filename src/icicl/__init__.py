@@ -43,4 +43,19 @@ __all__ = [
     "Trajectory",
 ]
 
+# Optional Harbor integration exports
+try:
+    from icicl.harbor import HarborEnvironmentAdapter, ICICLTestAgent, ICICLTrainAgent
+
+    __all__.extend(
+        [
+            "HarborEnvironmentAdapter",
+            "ICICLTrainAgent",
+            "ICICLTestAgent",
+        ]
+    )
+except ImportError:
+    # Harbor not installed, skip harbor-specific exports
+    pass
+
 __version__ = "0.1.0"

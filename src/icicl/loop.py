@@ -1,10 +1,19 @@
 """ReAct-style agent loop implementation."""
 
-from collections.abc import Callable
+import inspect
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from icicl.models import Message, Step, StepContext, Trajectory
 from icicl.protocols import Environment, LLMProvider
 from icicl.retriever import TrajectoryRetriever
+
+
+async def _maybe_await(result: Any) -> Any:
+    """Await the result if it's awaitable, otherwise return as-is."""
+    if inspect.isawaitable(result):
+        return await result
+    return result
 
 
 class ReActLoop:
@@ -96,7 +105,8 @@ class ReActLoop:
             if self._on_step:
                 self._on_step(step, context)
 
-            observation, done, success = env.step(action)
+            step_result = env.step(action)
+            observation, done, success = await _maybe_await(step_result)
 
             if done:
                 break
