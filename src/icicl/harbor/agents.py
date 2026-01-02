@@ -21,12 +21,16 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import litellm
 from dotenv import load_dotenv
 from harbor.agents.base import BaseAgent
 
 from icicl import Agent, LiteLLMProvider, Step, StepContext
+
+# Drop unsupported params for newer models like GPT-5
+litellm.drop_params = True
 from icicl.harbor.adapter import HarborEnvironmentAdapter
-from icicl.harbor.prompts import ACT_PROMPT, PLAN_PROMPT, REASON_PROMPT
+from icicl.harbor.prompts import ACT_PROMPT, PLAN_PROMPT, REASON_PROMPT, SYSTEM_PROMPT
 
 if TYPE_CHECKING:
     from harbor.agents.context import AgentContext
@@ -43,7 +47,7 @@ def _get_db_path() -> str:
 
 def _get_model() -> str:
     """Get the LLM model from environment or default."""
-    return os.environ.get("MODEL", "gpt-4o-mini")
+    return os.environ.get("MODEL", "gpt-5")
 
 
 def _get_k() -> int:
@@ -53,7 +57,7 @@ def _get_k() -> int:
 
 def _get_max_steps() -> int:
     """Get the maximum steps per episode from environment or default."""
-    return int(os.environ.get("ICICL_MAX_STEPS", "30"))
+    return int(os.environ.get("ICICL_MAX_STEPS", "100"))
 
 
 def _create_step_callback(context: AgentContext, trajectory_log: list[dict]):
@@ -131,11 +135,14 @@ class ICICLTrainAgent(BaseAgent):
         k = _get_k()
         max_steps = _get_max_steps()
 
-        # Initialize the LLM provider
+        # Initialize the LLM provider with system prompt
+        # GPT-5 only supports temperature=1, use 0.3 for other models
+        temp = 1.0 if "gpt-5" in model.lower() else 0.3
         llm = LiteLLMProvider(
             model=model,
-            temperature=0.3,
-            max_tokens=1000,
+            temperature=temp,
+            max_tokens=4096,  # Enough tokens for complex reasoning
+            system_prompt=SYSTEM_PROMPT,
         )
 
         # Log for collecting trajectory steps
@@ -157,7 +164,7 @@ class ICICLTrainAgent(BaseAgent):
         adapter = HarborEnvironmentAdapter(
             environment=environment,
             max_actions=max_steps + 10,  # Allow some buffer
-            timeout_sec=120,
+            timeout_sec=180,  # Longer timeout for complex commands
         )
 
         # Run in training mode (stores successful trajectories)
@@ -225,11 +232,14 @@ class ICICLTestAgent(BaseAgent):
         k = _get_k()
         max_steps = _get_max_steps()
 
-        # Initialize the LLM provider
+        # Initialize the LLM provider with system prompt
+        # GPT-5 only supports temperature=1, use 0.3 for other models
+        temp = 1.0 if "gpt-5" in model.lower() else 0.3
         llm = LiteLLMProvider(
             model=model,
-            temperature=0.3,
-            max_tokens=1000,
+            temperature=temp,
+            max_tokens=4096,  # Enough tokens for complex reasoning
+            system_prompt=SYSTEM_PROMPT,
         )
 
         # Log for collecting trajectory steps
@@ -251,7 +261,7 @@ class ICICLTestAgent(BaseAgent):
         adapter = HarborEnvironmentAdapter(
             environment=environment,
             max_actions=max_steps + 10,
-            timeout_sec=120,
+            timeout_sec=180,  # Longer timeout for complex commands
         )
 
         # Record retrieved examples for analysis

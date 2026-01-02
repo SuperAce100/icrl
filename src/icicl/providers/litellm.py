@@ -19,6 +19,7 @@ class LiteLLMProvider:
         model: str = "gpt-4o-mini",
         temperature: float = 0.7,
         max_tokens: int | None = None,
+        system_prompt: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the LiteLLM provider.
@@ -27,11 +28,13 @@ class LiteLLMProvider:
             model: The model identifier (e.g., "gpt-4o-mini", "claude-3-sonnet").
             temperature: Sampling temperature.
             max_tokens: Maximum tokens to generate. None for model default.
+            system_prompt: Optional system prompt to prepend to all requests.
             **kwargs: Additional arguments passed to litellm.acompletion.
         """
         self._model = model
         self._temperature = temperature
         self._max_tokens = max_tokens
+        self._system_prompt = system_prompt
         self._kwargs = kwargs
 
     async def complete(self, messages: list[Message]) -> str:
@@ -46,7 +49,15 @@ class LiteLLMProvider:
         Raises:
             Exception: If the LLM call fails (user should handle retries).
         """
-        litellm_messages = [{"role": m.role, "content": m.content} for m in messages]
+        litellm_messages = []
+
+        # Add system prompt if configured
+        if self._system_prompt:
+            litellm_messages.append({"role": "system", "content": self._system_prompt})
+
+        litellm_messages.extend(
+            [{"role": m.role, "content": m.content} for m in messages]
+        )
 
         kwargs: dict[str, Any] = {
             "model": self._model,
@@ -69,7 +80,15 @@ class LiteLLMProvider:
         Returns:
             The generated completion as a string.
         """
-        litellm_messages = [{"role": m.role, "content": m.content} for m in messages]
+        litellm_messages = []
+
+        # Add system prompt if configured
+        if self._system_prompt:
+            litellm_messages.append({"role": "system", "content": self._system_prompt})
+
+        litellm_messages.extend(
+            [{"role": m.role, "content": m.content} for m in messages]
+        )
 
         kwargs: dict[str, Any] = {
             "model": self._model,
