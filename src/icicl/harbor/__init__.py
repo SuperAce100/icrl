@@ -17,12 +17,13 @@ Example usage with Harbor CLI:
 """
 
 from icicl.harbor.adapter import HarborEnvironmentAdapter
-from icicl.harbor.agents import ICICLTestAgent, ICICLTrainAgent
+from icicl.harbor.agents import ICICLTestAgent, ICICLTrainAgent, ICICLZeroShotAgent
 
 __all__ = [
     "HarborEnvironmentAdapter",
     "ICICLTrainAgent",
     "ICICLTestAgent",
+    "ICICLZeroShotAgent",
 ]
 
 

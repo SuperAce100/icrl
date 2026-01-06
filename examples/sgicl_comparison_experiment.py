@@ -1,0 +1,705 @@
+#!/usr/bin/env python3
+"""SGICL vs Zero-Shot Comparison Experiment.
+
+This script runs a direct comparison between:
+1. Zero-shot baseline: No retrieval, each task solved independently
+2. SGICL (train mode): Sequential with trajectory storage and retrieval
+
+The key insight: with SGICL, as the agent solves tasks, it stores successful
+trajectories. Later tasks can retrieve these as in-context examples, improving
+performance over time.
+
+Usage:
+    # Run with default settings (hello-world dataset, 10 tasks)
+    PYTHONPATH=. uv run python examples/sgicl_comparison_experiment.py
+
+    # Run on SWE-bench Django tasks
+    PYTHONPATH=. uv run python examples/sgicl_comparison_experiment.py --dataset django
+
+    # Run with more tasks
+    PYTHONPATH=. uv run python examples/sgicl_comparison_experiment.py --n-tasks 20
+
+Environment:
+    MODEL: LLM model to use (default: gpt-4o-mini)
+    OPENAI_API_KEY / ANTHROPIC_API_KEY: API credentials
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import os
+import tempfile
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+
+from dotenv import load_dotenv
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
+
+from icicl import Agent, LiteLLMProvider, Step, StepContext, Trajectory
+
+load_dotenv()
+
+console = Console()
+
+
+# =============================================================================
+# Simple Task Environment (for quick testing without Harbor)
+# =============================================================================
+
+
+@dataclass
+class SimpleTask:
+    """A simple verifiable task."""
+
+    goal: str
+    category: str
+    verify: callable
+    setup_files: dict[str, str] | None = None
+
+
+@dataclass
+class FileSystemState:
+    """Simple file system state for testing."""
+
+    cwd: str = "/workspace"
+    files: dict[str, str] = None
+    directories: set[str] = None
+    last_output: str = ""
+
+    def __post_init__(self):
+        if self.files is None:
+            self.files = {}
+        if self.directories is None:
+            self.directories = {"/", "/workspace", "/tmp"}
+
+    def file_exists(self, path: str) -> bool:
+        return self._normalize(path) in self.files
+
+    def dir_exists(self, path: str) -> bool:
+        return self._normalize(path) in self.directories
+
+    def get_file(self, path: str) -> str | None:
+        return self.files.get(self._normalize(path))
+
+    def write_file(self, path: str, content: str):
+        self.files[self._normalize(path)] = content
+
+    def _normalize(self, path: str) -> str:
+        if path.startswith("/"):
+            return path
+        return f"{self.cwd.rstrip('/')}/{path}"
+
+
+class SimpleEnvironment:
+    """Simple environment for testing SGICL without Harbor."""
+
+    def __init__(self, task: SimpleTask, max_steps: int = 20):
+        self._task = task
+        self._state = FileSystemState()
+        self._max_steps = max_steps
+        self._step_count = 0
+
+    def reset(self, goal: str) -> str:
+        """Reset environment."""
+        self._state = FileSystemState()
+        self._step_count = 0
+
+        # Set up initial files
+        if self._task.setup_files:
+            for path, content in self._task.setup_files.items():
+                self._state.files[path] = content
+                # Ensure parent directories exist
+                parent = "/".join(path.split("/")[:-1])
+                while parent and parent != "/":
+                    self._state.directories.add(parent)
+                    parent = "/".join(parent.split("/")[:-1])
+
+        return f"""You are working in a sandboxed Linux environment.
+Current directory: {self._state.cwd}
+
+Goal: {self._task.goal}
+
+Available commands: ls, cd, cat, grep, find, pwd, echo, sed, mkdir, cp, mv, rm
+"""
+
+    def step(self, action: str) -> tuple[str, bool, bool]:
+        """Execute action."""
+        self._step_count += 1
+        action = action.strip()
+
+        if self._step_count >= self._max_steps:
+            return "Max steps reached.", True, False
+
+        output = self._execute(action)
+        self._state.last_output = output
+
+        success = self._task.verify(self._state)
+        if success:
+            return output + "\n[SUCCESS]", True, True
+
+        return output, False, False
+
+    def _execute(self, cmd: str) -> str:
+        """Execute a simple command."""
+        parts = cmd.split(maxsplit=1)
+        if not parts:
+            return "Error: empty command"
+
+        command = parts[0].lower()
+        args = parts[1] if len(parts) > 1 else ""
+
+        if command == "ls":
+            path = args.strip() if args else self._state.cwd
+            normalized = self._state._normalize(path)
+            if normalized not in self._state.directories:
+                return f"ls: {path}: No such directory"
+            entries = []
+            for f in self._state.files:
+                if f.startswith(normalized + "/") or (
+                    normalized == "/" and f.count("/") == 1
+                ):
+                    rel = f[len(normalized) :].lstrip("/")
+                    if "/" not in rel:
+                        entries.append(rel)
+            for d in self._state.directories:
+                if d.startswith(normalized + "/") and d != normalized:
+                    rel = d[len(normalized) :].lstrip("/")
+                    if "/" not in rel:
+                        entries.append(rel + "/")
+            return "\n".join(sorted(set(entries))) or "(empty)"
+
+        elif command == "cd":
+            path = args.strip() if args else "/workspace"
+            normalized = self._state._normalize(path)
+            if normalized not in self._state.directories:
+                return f"cd: {path}: No such directory"
+            self._state.cwd = normalized
+            return f"Changed to {normalized}"
+
+        elif command == "cat":
+            path = args.strip()
+            content = self._state.get_file(path)
+            if content is None:
+                return f"cat: {path}: No such file"
+            return content
+
+        elif command == "pwd":
+            return self._state.cwd
+
+        elif command == "grep":
+            parts = args.split(maxsplit=1)
+            if len(parts) < 2:
+                return "Usage: grep PATTERN FILE"
+            pattern, filepath = parts[0].strip("'\""), parts[1]
+            content = self._state.get_file(filepath)
+            if content is None:
+                return f"grep: {filepath}: No such file"
+            matches = [l for l in content.split("\n") if pattern in l]
+            return "\n".join(matches) or f"(no matches for '{pattern}')"
+
+        elif command == "find":
+            pattern = args.strip().lower()
+            matches = [f for f in self._state.files if pattern in f.lower()]
+            return "\n".join(sorted(matches)) or f"No files matching '{pattern}'"
+
+        elif command == "echo":
+            if ">" in args:
+                text, filepath = args.split(">", 1)
+                text = text.strip().strip("'\"")
+                filepath = filepath.strip()
+                self._state.write_file(filepath, text)
+                return f"Wrote to {filepath}"
+            return args.strip().strip("'\"")
+
+        elif command == "mkdir":
+            path = args.strip().replace("-p", "").strip()
+            normalized = self._state._normalize(path)
+            self._state.directories.add(normalized)
+            return f"Created {normalized}"
+
+        elif command == "sed":
+            # Simple sed -i 's/old/new/g' file
+            if "-i" not in args:
+                return "Only sed -i supported"
+            args = args.replace("-i", "").strip()
+            if args.startswith("'s/"):
+                try:
+                    end = args.rfind("'")
+                    pattern = args[1:end]
+                    filepath = args[end + 1 :].strip()
+                    parts = pattern.split("/")
+                    old, new = parts[1], parts[2]
+                    content = self._state.get_file(filepath)
+                    if content is None:
+                        return f"sed: {filepath}: No such file"
+                    self._state.write_file(filepath, content.replace(old, new))
+                    return f"Modified {filepath}"
+                except Exception as e:
+                    return f"sed error: {e}"
+            return "Invalid sed pattern"
+
+        return f"Unknown command: {command}"
+
+
+# =============================================================================
+# Task Definitions
+# =============================================================================
+
+
+def create_coding_tasks() -> list[SimpleTask]:
+    """Create a set of related coding tasks for testing SGICL."""
+    return [
+        # === Bug Fix Tasks (similar pattern: find file, identify bug, fix) ===
+        SimpleTask(
+            goal="Fix the port configuration in config.py - change default from 8000 to 3000",
+            category="bugfix",
+            verify=lambda s: "port = 3000"
+            in (s.get_file("/workspace/src/config.py") or ""),
+            setup_files={
+                "/workspace/src/config.py": "# Config\nport = 8000\ndebug = False\n",
+                "/workspace/src/main.py": "from config import port\nprint(f'Running on {port}')\n",
+            },
+        ),
+        SimpleTask(
+            goal="Fix the timeout setting in settings.py - change from 30 to 60 seconds",
+            category="bugfix",
+            verify=lambda s: "timeout = 60"
+            in (s.get_file("/workspace/config/settings.py") or ""),
+            setup_files={
+                "/workspace/config/settings.py": "# Settings\ntimeout = 30\nmax_retries = 3\n",
+            },
+        ),
+        SimpleTask(
+            goal="Fix the max_connections value in db_config.py - change from 10 to 100",
+            category="bugfix",
+            verify=lambda s: "max_connections = 100"
+            in (s.get_file("/workspace/db_config.py") or ""),
+            setup_files={
+                "/workspace/db_config.py": "# Database Config\nmax_connections = 10\npool_size = 5\n",
+            },
+        ),
+        SimpleTask(
+            goal="Fix the log_level in logging.py - change from 'INFO' to 'DEBUG'",
+            category="bugfix",
+            verify=lambda s: "log_level = 'DEBUG'"
+            in (s.get_file("/workspace/src/logging.py") or "")
+            or 'log_level = "DEBUG"' in (s.get_file("/workspace/src/logging.py") or ""),
+            setup_files={
+                "/workspace/src/logging.py": "# Logging\nlog_level = 'INFO'\nlog_format = 'json'\n",
+            },
+        ),
+        # === Find Information Tasks (similar pattern: search and extract) ===
+        SimpleTask(
+            goal="Find and display the API key value in the secrets file",
+            category="find",
+            verify=lambda s: "sk-12345" in s.last_output,
+            setup_files={
+                "/workspace/.secrets": "API_KEY=sk-12345\nDB_PASS=secret\n",
+            },
+        ),
+        SimpleTask(
+            goal="Find the database password in the config files",
+            category="find",
+            verify=lambda s: "dbpass123" in s.last_output,
+            setup_files={
+                "/workspace/config/db.json": '{"host": "localhost", "password": "dbpass123"}\n',
+            },
+        ),
+        SimpleTask(
+            goal="Find the cache TTL value in the application config",
+            category="find",
+            verify=lambda s: "3600" in s.last_output,
+            setup_files={
+                "/workspace/app/config.yaml": "cache:\n  ttl: 3600\n  enabled: true\n",
+            },
+        ),
+        # === File Creation Tasks (similar pattern: create file with content) ===
+        SimpleTask(
+            goal="Create a new file called test.py with a simple hello world function",
+            category="create",
+            verify=lambda s: s.file_exists("/workspace/test.py")
+            and "def" in (s.get_file("/workspace/test.py") or "")
+            and "hello" in (s.get_file("/workspace/test.py") or "").lower(),
+            setup_files={},
+        ),
+        SimpleTask(
+            goal="Create a README.md file with a project description",
+            category="create",
+            verify=lambda s: s.file_exists("/workspace/README.md")
+            and len(s.get_file("/workspace/README.md") or "") > 10,
+            setup_files={},
+        ),
+        SimpleTask(
+            goal="Create a requirements.txt file with flask and requests packages",
+            category="create",
+            verify=lambda s: s.file_exists("/workspace/requirements.txt")
+            and "flask" in (s.get_file("/workspace/requirements.txt") or "").lower()
+            and "requests" in (s.get_file("/workspace/requirements.txt") or "").lower(),
+            setup_files={},
+        ),
+    ]
+
+
+# =============================================================================
+# Prompts
+# =============================================================================
+
+
+PLAN_PROMPT = """You are working in a Linux terminal environment.
+
+Goal: {goal}
+
+Successful approaches from similar tasks:
+{examples}
+
+Create a SHORT numbered plan (max 4 steps) to accomplish this goal."""
+
+REASON_PROMPT = """Goal: {goal}
+Plan: {plan}
+
+Previous steps:
+{history}
+
+Current output:
+{observation}
+
+Similar experiences:
+{examples}
+
+What did you learn? What's next?"""
+
+ACT_PROMPT = """Goal: {goal}
+
+Steps done:
+{history}
+
+Current output:
+{observation}
+
+Your thinking: {reasoning}
+
+Output ONLY the next shell command (no explanation):"""
+
+
+# =============================================================================
+# Experiment Runner
+# =============================================================================
+
+
+async def run_single_task(
+    agent: Agent,
+    task: SimpleTask,
+    task_idx: int,
+    mode: str,
+) -> tuple[bool, int, float, Trajectory]:
+    """Run a single task and return (success, steps, time, trajectory)."""
+    import time
+
+    env = SimpleEnvironment(task)
+    start = time.time()
+
+    if mode == "train":
+        trajectory = await agent.train(env, task.goal)
+    else:
+        trajectory = await agent.run(env, task.goal)
+
+    elapsed = time.time() - start
+    return trajectory.success, len(trajectory.steps), elapsed, trajectory
+
+
+async def run_experiment(
+    tasks: list[SimpleTask],
+    model: str,
+    max_steps: int = 15,
+    preload_db: bool = False,
+) -> dict:
+    """Run the full comparison experiment.
+    
+    Args:
+        tasks: List of tasks to run
+        model: LLM model name
+        max_steps: Max steps per task
+        preload_db: If True, pre-populate SGICL database with zero-shot successes
+    """
+
+    results = {
+        "model": model,
+        "n_tasks": len(tasks),
+        "timestamp": datetime.now().isoformat(),
+        "preload_db": preload_db,
+        "zero_shot": {"successes": [], "steps": [], "times": [], "trajectories": []},
+        "sgicl": {"successes": [], "steps": [], "times": [], "db_size": []},
+    }
+
+    # GPT-5 only supports temperature=1, use 0.7 for others (not 0)
+    temp = 1.0 if "gpt-5" in model.lower() else 0.7
+    llm = LiteLLMProvider(model=model, temperature=temp, max_tokens=1024)
+
+    # =========================================================================
+    # Run 1: Zero-shot baseline (no retrieval, no storage)
+    # =========================================================================
+    console.print("\n[bold cyan]═══ Run 1: Zero-Shot Baseline ═══[/bold cyan]")
+    console.print(
+        "[dim]Each task solved independently, no learning across tasks[/dim]\n"
+    )
+
+    zs_trajectories: list[Trajectory] = []
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        zs_db_path = f"{tmpdir}/zeroshot_db"
+
+        zs_agent = Agent(
+            llm=llm,
+            db_path=zs_db_path,
+            plan_prompt=PLAN_PROMPT,
+            reason_prompt=REASON_PROMPT,
+            act_prompt=ACT_PROMPT,
+            k=0,  # NO retrieval
+            max_steps=max_steps,
+        )
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            for i, task in enumerate(tasks):
+                task_id = progress.add_task(
+                    f"[{i + 1}/{len(tasks)}] {task.goal[:50]}...", total=1
+                )
+
+                success, steps, time_taken, trajectory = await run_single_task(
+                    zs_agent, task, i, mode="run"
+                )
+
+                results["zero_shot"]["successes"].append(success)
+                results["zero_shot"]["steps"].append(steps)
+                results["zero_shot"]["times"].append(time_taken)
+                
+                # Collect successful trajectories for potential pre-loading
+                if success:
+                    zs_trajectories.append(trajectory)
+
+                status = "[green]✓[/green]" if success else "[red]✗[/red]"
+                progress.update(
+                    task_id, completed=1, description=f"{status} {task.goal[:45]}..."
+                )
+
+    # =========================================================================
+    # Run 2: SGICL (with or without pre-loaded database)
+    # =========================================================================
+    if preload_db:
+        console.print("\n[bold cyan]═══ Run 2: SGICL (Pre-loaded Database) ═══[/bold cyan]")
+        console.print(
+            f"[dim]Database pre-populated with {len(zs_trajectories)} successful zero-shot trajectories[/dim]\n"
+        )
+    else:
+        console.print("\n[bold cyan]═══ Run 2: SGICL (Self-Generated ICL) ═══[/bold cyan]")
+        console.print(
+            "[dim]Sequential execution: successful trajectories stored & retrieved[/dim]\n"
+        )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        sgicl_db_path = f"{tmpdir}/sgicl_db"
+
+        # Pre-load with successful zero-shot trajectories if requested
+        seed_trajs = zs_trajectories if preload_db else None
+
+        sgicl_agent = Agent(
+            llm=llm,
+            db_path=sgicl_db_path,
+            plan_prompt=PLAN_PROMPT,
+            reason_prompt=REASON_PROMPT,
+            act_prompt=ACT_PROMPT,
+            k=3,  # Retrieve top 3 examples
+            max_steps=max_steps,
+            seed_trajectories=seed_trajs,
+        )
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            for i, task in enumerate(tasks):
+                db_size = len(sgicl_agent.database)
+                task_id = progress.add_task(
+                    f"[{i + 1}/{len(tasks)}] (db: {db_size}) {task.goal[:40]}...",
+                    total=1,
+                )
+
+                success, steps, time_taken, _ = await run_single_task(
+                    sgicl_agent, task, i, mode="train"
+                )
+
+                results["sgicl"]["successes"].append(success)
+                results["sgicl"]["steps"].append(steps)
+                results["sgicl"]["times"].append(time_taken)
+                results["sgicl"]["db_size"].append(len(sgicl_agent.database))
+
+                status = "[green]✓[/green]" if success else "[red]✗[/red]"
+                progress.update(
+                    task_id,
+                    completed=1,
+                    description=f"{status} (db: {len(sgicl_agent.database)}) {task.goal[:35]}...",
+                )
+
+    return results
+
+
+def print_results(results: dict):
+    """Print experiment results in a nice table."""
+    console.print("\n")
+    console.print(Panel.fit("[bold]Experiment Results[/bold]", border_style="cyan"))
+
+    # Summary table
+    table = Table(title="Zero-Shot vs SGICL Comparison")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Zero-Shot", justify="center")
+    table.add_column("SGICL", justify="center")
+    table.add_column("Δ", justify="center")
+
+    zs_success = sum(results["zero_shot"]["successes"])
+    sg_success = sum(results["sgicl"]["successes"])
+    n = results["n_tasks"]
+
+    table.add_row(
+        "Success Rate",
+        f"{zs_success}/{n} ({100 * zs_success / n:.0f}%)",
+        f"{sg_success}/{n} ({100 * sg_success / n:.0f}%)",
+        f"[green]+{sg_success - zs_success}[/green]"
+        if sg_success > zs_success
+        else f"{sg_success - zs_success}",
+    )
+
+    zs_avg_steps = sum(results["zero_shot"]["steps"]) / n
+    sg_avg_steps = sum(results["sgicl"]["steps"]) / n
+    table.add_row(
+        "Avg Steps",
+        f"{zs_avg_steps:.1f}",
+        f"{sg_avg_steps:.1f}",
+        f"[green]{sg_avg_steps - zs_avg_steps:+.1f}[/green]"
+        if sg_avg_steps < zs_avg_steps
+        else f"{sg_avg_steps - zs_avg_steps:+.1f}",
+    )
+
+    zs_avg_time = sum(results["zero_shot"]["times"]) / n
+    sg_avg_time = sum(results["sgicl"]["times"]) / n
+    table.add_row(
+        "Avg Time (s)",
+        f"{zs_avg_time:.1f}",
+        f"{sg_avg_time:.1f}",
+        f"{sg_avg_time - zs_avg_time:+.1f}",
+    )
+
+    final_db = results["sgicl"]["db_size"][-1] if results["sgicl"]["db_size"] else 0
+    table.add_row("Final DB Size", "0", str(final_db), f"+{final_db}")
+
+    console.print(table)
+
+    # Per-task breakdown
+    console.print("\n[bold]Per-Task Breakdown:[/bold]")
+    task_table = Table()
+    task_table.add_column("#", style="dim")
+    task_table.add_column("ZS", justify="center")
+    task_table.add_column("SGICL", justify="center")
+    task_table.add_column("DB Size", justify="center")
+
+    for i in range(n):
+        zs_ok = (
+            "[green]✓[/green]"
+            if results["zero_shot"]["successes"][i]
+            else "[red]✗[/red]"
+        )
+        sg_ok = (
+            "[green]✓[/green]" if results["sgicl"]["successes"][i] else "[red]✗[/red]"
+        )
+        db = results["sgicl"]["db_size"][i]
+        task_table.add_row(str(i + 1), zs_ok, sg_ok, str(db))
+
+    console.print(task_table)
+
+    # Highlight improvements
+    improved = []
+    for i in range(n):
+        if (
+            results["sgicl"]["successes"][i]
+            and not results["zero_shot"]["successes"][i]
+        ):
+            improved.append(i + 1)
+
+    if improved:
+        console.print(
+            f"\n[bold green]Tasks where SGICL succeeded but Zero-Shot failed: {improved}[/bold green]"
+        )
+
+    if sg_success > zs_success:
+        improvement = (sg_success - zs_success) / max(zs_success, 1) * 100
+        console.print(
+            f"\n[bold green]✓ SGICL improved success rate by {improvement:.0f}%![/bold green]"
+        )
+    elif sg_success == zs_success:
+        console.print(
+            "\n[yellow]Same success rate - try more/harder tasks for clearer signal[/yellow]"
+        )
+
+
+async def main():
+    parser = argparse.ArgumentParser(description="SGICL vs Zero-Shot Comparison")
+    parser.add_argument(
+        "--n-tasks", type=int, default=10, help="Number of tasks to run"
+    )
+    parser.add_argument("--model", type=str, default=None, help="Model to use")
+    parser.add_argument("--max-steps", type=int, default=15, help="Max steps per task")
+    parser.add_argument("--output", type=str, default=None, help="Output JSON file")
+    parser.add_argument(
+        "--preload-db", action="store_true",
+        help="Pre-populate SGICL database with successful zero-shot trajectories"
+    )
+    args = parser.parse_args()
+
+    model = args.model or os.environ.get("MODEL", "gpt-4o-mini")
+    preload_str = " | Preload DB: Yes" if args.preload_db else ""
+
+    console.print(
+        Panel.fit(
+            "[bold magenta]SGICL vs Zero-Shot Comparison Experiment[/bold magenta]\n"
+            f"Model: {model} | Tasks: {args.n_tasks} | Max Steps: {args.max_steps}{preload_str}",
+            border_style="magenta",
+        )
+    )
+
+    # Check for API key
+    if "OPENAI_API_KEY" not in os.environ and "ANTHROPIC_API_KEY" not in os.environ:
+        console.print("[red]Error: Set OPENAI_API_KEY or ANTHROPIC_API_KEY[/red]")
+        return
+
+    # Create tasks
+    all_tasks = create_coding_tasks()
+    tasks = (all_tasks * ((args.n_tasks // len(all_tasks)) + 1))[: args.n_tasks]
+
+    console.print(
+        f"[dim]Running {len(tasks)} tasks across {len(set(t.category for t in tasks))} categories[/dim]"
+    )
+
+    # Run experiment
+    results = await run_experiment(tasks, model, args.max_steps, preload_db=args.preload_db)
+
+    # Print results
+    print_results(results)
+
+    # Save results
+    if args.output:
+        output_path = Path(args.output)
+        output_path.write_text(json.dumps(results, indent=2, default=str))
+        console.print(f"\n[dim]Results saved to {output_path}[/dim]")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
