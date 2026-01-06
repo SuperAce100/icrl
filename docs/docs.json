@@ -12,6 +12,9 @@
     "light": "#4666FF",
     "dark": "#4666FF"
   },
+  "contextual": {
+    "options": ["copy", "view"]
+  },
   "fonts": {
     "heading": {
       "family": "JetBrains Mono",
