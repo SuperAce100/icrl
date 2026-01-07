@@ -355,28 +355,37 @@ PLAN_PROMPT = """You are working in a Linux terminal environment.
 
 Goal: {goal}
 
-Successful approaches from similar tasks:
+=== RETRIEVED FEW-SHOT EXAMPLES ===
+The following are successful demonstrations from SIMILAR PAST TASKS (not your current conversation).
+Study these examples to learn effective strategies, then apply them to your current goal.
+
 {examples}
 
-Create a SHORT numbered plan (max 4 steps) to accomplish this goal."""
+=== END EXAMPLES ===
+
+Create a SHORT numbered plan (max 4 steps) to accomplish this goal.
+Learn from the examples above if they are relevant."""
 
 REASON_PROMPT = """Goal: {goal}
 Plan: {plan}
 
-Previous steps:
+=== YOUR CURRENT TASK HISTORY ===
+Previous steps in THIS task:
 {history}
 
 Current output:
 {observation}
 
-Similar experiences:
+=== RETRIEVED FEW-SHOT EXAMPLES ===
+These are successful steps from SIMILAR PAST TASKS (for reference, not your history):
 {examples}
+=== END EXAMPLES ===
 
-What did you learn? What's next?"""
+Based on the examples and your current progress, what did you learn? What's next?"""
 
 ACT_PROMPT = """Goal: {goal}
 
-Steps done:
+Steps done in THIS task:
 {history}
 
 Current output:
@@ -417,24 +426,27 @@ async def run_experiment(
     tasks: list[SimpleTask],
     model: str,
     max_steps: int = 15,
-    preload_db: bool = False,
 ) -> dict:
-    """Run the full comparison experiment.
-    
+    """Run the full 3-way comparison experiment.
+
+    Runs 3 conditions:
+    1. Zero-shot: No examples (k=0)
+    2. SGICL Online: Examples accumulated on-the-fly
+    3. SGICL Full DB: All examples available from start (pre-loaded)
+
     Args:
         tasks: List of tasks to run
         model: LLM model name
         max_steps: Max steps per task
-        preload_db: If True, pre-populate SGICL database with zero-shot successes
     """
 
     results = {
         "model": model,
         "n_tasks": len(tasks),
         "timestamp": datetime.now().isoformat(),
-        "preload_db": preload_db,
-        "zero_shot": {"successes": [], "steps": [], "times": [], "trajectories": []},
-        "sgicl": {"successes": [], "steps": [], "times": [], "db_size": []},
+        "zero_shot": {"successes": [], "steps": [], "times": []},
+        "sgicl_online": {"successes": [], "steps": [], "times": [], "db_size": []},
+        "sgicl_full_db": {"successes": [], "steps": [], "times": [], "db_size": []},
     }
 
     # GPT-5 only supports temperature=1, use 0.7 for others (not 0)
@@ -442,12 +454,12 @@ async def run_experiment(
     llm = LiteLLMProvider(model=model, temperature=temp, max_tokens=1024)
 
     # =========================================================================
-    # Run 1: Zero-shot baseline (no retrieval, no storage)
+    # Condition 1: Zero-shot baseline (no retrieval, no storage)
     # =========================================================================
-    console.print("\n[bold cyan]═══ Run 1: Zero-Shot Baseline ═══[/bold cyan]")
     console.print(
-        "[dim]Each task solved independently, no learning across tasks[/dim]\n"
+        "\n[bold cyan]═══ Condition 1: Zero-Shot (No Examples) ═══[/bold cyan]"
     )
+    console.print("[dim]k=0, each task solved independently[/dim]\n")
 
     zs_trajectories: list[Trajectory] = []
 
@@ -481,8 +493,8 @@ async def run_experiment(
                 results["zero_shot"]["successes"].append(success)
                 results["zero_shot"]["steps"].append(steps)
                 results["zero_shot"]["times"].append(time_taken)
-                
-                # Collect successful trajectories for potential pre-loading
+
+                # Collect successful trajectories for full-db condition
                 if success:
                     zs_trajectories.append(trajectory)
 
@@ -492,34 +504,26 @@ async def run_experiment(
                 )
 
     # =========================================================================
-    # Run 2: SGICL (with or without pre-loaded database)
+    # Condition 2: SGICL Online (examples accumulated on-the-fly)
     # =========================================================================
-    if preload_db:
-        console.print("\n[bold cyan]═══ Run 2: SGICL (Pre-loaded Database) ═══[/bold cyan]")
-        console.print(
-            f"[dim]Database pre-populated with {len(zs_trajectories)} successful zero-shot trajectories[/dim]\n"
-        )
-    else:
-        console.print("\n[bold cyan]═══ Run 2: SGICL (Self-Generated ICL) ═══[/bold cyan]")
-        console.print(
-            "[dim]Sequential execution: successful trajectories stored & retrieved[/dim]\n"
-        )
+    console.print(
+        "\n[bold cyan]═══ Condition 2: SGICL Online (On-the-fly) ═══[/bold cyan]"
+    )
+    console.print(
+        "[dim]k=3, DB starts empty, accumulates successful trajectories[/dim]\n"
+    )
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        sgicl_db_path = f"{tmpdir}/sgicl_db"
+        online_db_path = f"{tmpdir}/online_db"
 
-        # Pre-load with successful zero-shot trajectories if requested
-        seed_trajs = zs_trajectories if preload_db else None
-
-        sgicl_agent = Agent(
+        online_agent = Agent(
             llm=llm,
-            db_path=sgicl_db_path,
+            db_path=online_db_path,
             plan_prompt=PLAN_PROMPT,
             reason_prompt=REASON_PROMPT,
             act_prompt=ACT_PROMPT,
             k=3,  # Retrieve top 3 examples
             max_steps=max_steps,
-            seed_trajectories=seed_trajs,
         )
 
         with Progress(
@@ -528,26 +532,78 @@ async def run_experiment(
             console=console,
         ) as progress:
             for i, task in enumerate(tasks):
-                db_size = len(sgicl_agent.database)
+                db_size = len(online_agent.database)
                 task_id = progress.add_task(
                     f"[{i + 1}/{len(tasks)}] (db: {db_size}) {task.goal[:40]}...",
                     total=1,
                 )
 
                 success, steps, time_taken, _ = await run_single_task(
-                    sgicl_agent, task, i, mode="train"
+                    online_agent, task, i, mode="train"
                 )
 
-                results["sgicl"]["successes"].append(success)
-                results["sgicl"]["steps"].append(steps)
-                results["sgicl"]["times"].append(time_taken)
-                results["sgicl"]["db_size"].append(len(sgicl_agent.database))
+                results["sgicl_online"]["successes"].append(success)
+                results["sgicl_online"]["steps"].append(steps)
+                results["sgicl_online"]["times"].append(time_taken)
+                results["sgicl_online"]["db_size"].append(len(online_agent.database))
 
                 status = "[green]✓[/green]" if success else "[red]✗[/red]"
                 progress.update(
                     task_id,
                     completed=1,
-                    description=f"{status} (db: {len(sgicl_agent.database)}) {task.goal[:35]}...",
+                    description=f"{status} (db: {len(online_agent.database)}) {task.goal[:35]}...",
+                )
+
+    # =========================================================================
+    # Condition 3: SGICL Full DB (all examples available from start)
+    # =========================================================================
+    console.print(
+        "\n[bold cyan]═══ Condition 3: SGICL Full DB (Pre-loaded) ═══[/bold cyan]"
+    )
+    console.print(
+        f"[dim]k=3, DB pre-loaded with {len(zs_trajectories)} successful trajectories[/dim]\n"
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        full_db_path = f"{tmpdir}/full_db"
+
+        full_db_agent = Agent(
+            llm=llm,
+            db_path=full_db_path,
+            plan_prompt=PLAN_PROMPT,
+            reason_prompt=REASON_PROMPT,
+            act_prompt=ACT_PROMPT,
+            k=3,  # Retrieve top 3 examples
+            max_steps=max_steps,
+            seed_trajectories=zs_trajectories,  # Pre-load all successful trajectories
+        )
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            for i, task in enumerate(tasks):
+                db_size = len(full_db_agent.database)
+                task_id = progress.add_task(
+                    f"[{i + 1}/{len(tasks)}] (db: {db_size}) {task.goal[:40]}...",
+                    total=1,
+                )
+
+                success, steps, time_taken, _ = await run_single_task(
+                    full_db_agent, task, i, mode="train"
+                )
+
+                results["sgicl_full_db"]["successes"].append(success)
+                results["sgicl_full_db"]["steps"].append(steps)
+                results["sgicl_full_db"]["times"].append(time_taken)
+                results["sgicl_full_db"]["db_size"].append(len(full_db_agent.database))
+
+                status = "[green]✓[/green]" if success else "[red]✗[/red]"
+                progress.update(
+                    task_id,
+                    completed=1,
+                    description=f"{status} (db: {len(full_db_agent.database)}) {task.goal[:35]}...",
                 )
 
     return results
@@ -556,60 +612,119 @@ async def run_experiment(
 def print_results(results: dict):
     """Print experiment results in a nice table."""
     console.print("\n")
-    console.print(Panel.fit("[bold]Experiment Results[/bold]", border_style="cyan"))
+    console.print(
+        Panel.fit("[bold]3-Way Comparison Results[/bold]", border_style="cyan")
+    )
 
-    # Summary table
-    table = Table(title="Zero-Shot vs SGICL Comparison")
-    table.add_column("Metric", style="cyan")
-    table.add_column("Zero-Shot", justify="center")
-    table.add_column("SGICL", justify="center")
-    table.add_column("Δ", justify="center")
-
-    zs_success = sum(results["zero_shot"]["successes"])
-    sg_success = sum(results["sgicl"]["successes"])
     n = results["n_tasks"]
 
+    # Extract success counts
+    zs_success = sum(results["zero_shot"]["successes"])
+    online_success = sum(results["sgicl_online"]["successes"])
+    full_success = sum(results["sgicl_full_db"]["successes"])
+
+    # Summary table
+    table = Table(title="Zero-Shot vs SGICL Online vs SGICL Full DB")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Zero-Shot\n(k=0)", justify="center")
+    table.add_column("SGICL Online\n(k=3, on-the-fly)", justify="center")
+    table.add_column("SGICL Full DB\n(k=3, pre-loaded)", justify="center")
+
+    # Success rates
     table.add_row(
         "Success Rate",
         f"{zs_success}/{n} ({100 * zs_success / n:.0f}%)",
-        f"{sg_success}/{n} ({100 * sg_success / n:.0f}%)",
-        f"[green]+{sg_success - zs_success}[/green]"
-        if sg_success > zs_success
-        else f"{sg_success - zs_success}",
+        f"{online_success}/{n} ({100 * online_success / n:.0f}%)",
+        f"{full_success}/{n} ({100 * full_success / n:.0f}%)",
     )
 
+    # Average steps
     zs_avg_steps = sum(results["zero_shot"]["steps"]) / n
-    sg_avg_steps = sum(results["sgicl"]["steps"]) / n
+    online_avg_steps = sum(results["sgicl_online"]["steps"]) / n
+    full_avg_steps = sum(results["sgicl_full_db"]["steps"]) / n
     table.add_row(
         "Avg Steps",
         f"{zs_avg_steps:.1f}",
-        f"{sg_avg_steps:.1f}",
-        f"[green]{sg_avg_steps - zs_avg_steps:+.1f}[/green]"
-        if sg_avg_steps < zs_avg_steps
-        else f"{sg_avg_steps - zs_avg_steps:+.1f}",
+        f"{online_avg_steps:.1f}",
+        f"{full_avg_steps:.1f}",
     )
 
+    # Average time
     zs_avg_time = sum(results["zero_shot"]["times"]) / n
-    sg_avg_time = sum(results["sgicl"]["times"]) / n
+    online_avg_time = sum(results["sgicl_online"]["times"]) / n
+    full_avg_time = sum(results["sgicl_full_db"]["times"]) / n
     table.add_row(
         "Avg Time (s)",
         f"{zs_avg_time:.1f}",
-        f"{sg_avg_time:.1f}",
-        f"{sg_avg_time - zs_avg_time:+.1f}",
+        f"{online_avg_time:.1f}",
+        f"{full_avg_time:.1f}",
     )
 
-    final_db = results["sgicl"]["db_size"][-1] if results["sgicl"]["db_size"] else 0
-    table.add_row("Final DB Size", "0", str(final_db), f"+{final_db}")
+    # Final DB sizes
+    online_final_db = (
+        results["sgicl_online"]["db_size"][-1]
+        if results["sgicl_online"]["db_size"]
+        else 0
+    )
+    full_final_db = (
+        results["sgicl_full_db"]["db_size"][-1]
+        if results["sgicl_full_db"]["db_size"]
+        else 0
+    )
+    table.add_row(
+        "Final DB Size",
+        "0",
+        str(online_final_db),
+        str(full_final_db),
+    )
 
     console.print(table)
+
+    # Delta table
+    console.print("\n[bold]Improvements vs Zero-Shot:[/bold]")
+    delta_table = Table()
+    delta_table.add_column("Condition", style="cyan")
+    delta_table.add_column("Δ Success", justify="center")
+    delta_table.add_column("Δ Steps", justify="center")
+
+    online_delta = online_success - zs_success
+    full_delta = full_success - zs_success
+    online_step_delta = online_avg_steps - zs_avg_steps
+    full_step_delta = full_avg_steps - zs_avg_steps
+
+    delta_table.add_row(
+        "SGICL Online",
+        f"[green]+{online_delta}[/green]"
+        if online_delta > 0
+        else f"[red]{online_delta}[/red]"
+        if online_delta < 0
+        else "0",
+        f"[green]{online_step_delta:+.1f}[/green]"
+        if online_step_delta < 0
+        else f"{online_step_delta:+.1f}",
+    )
+    delta_table.add_row(
+        "SGICL Full DB",
+        f"[green]+{full_delta}[/green]"
+        if full_delta > 0
+        else f"[red]{full_delta}[/red]"
+        if full_delta < 0
+        else "0",
+        f"[green]{full_step_delta:+.1f}[/green]"
+        if full_step_delta < 0
+        else f"{full_step_delta:+.1f}",
+    )
+    console.print(delta_table)
 
     # Per-task breakdown
     console.print("\n[bold]Per-Task Breakdown:[/bold]")
     task_table = Table()
     task_table.add_column("#", style="dim")
     task_table.add_column("ZS", justify="center")
-    task_table.add_column("SGICL", justify="center")
-    task_table.add_column("DB Size", justify="center")
+    task_table.add_column("Online", justify="center")
+    task_table.add_column("Full", justify="center")
+    task_table.add_column("Online DB", justify="center", style="dim")
+    task_table.add_column("Full DB", justify="center", style="dim")
 
     for i in range(n):
         zs_ok = (
@@ -617,60 +732,59 @@ def print_results(results: dict):
             if results["zero_shot"]["successes"][i]
             else "[red]✗[/red]"
         )
-        sg_ok = (
-            "[green]✓[/green]" if results["sgicl"]["successes"][i] else "[red]✗[/red]"
+        online_ok = (
+            "[green]✓[/green]"
+            if results["sgicl_online"]["successes"][i]
+            else "[red]✗[/red]"
         )
-        db = results["sgicl"]["db_size"][i]
-        task_table.add_row(str(i + 1), zs_ok, sg_ok, str(db))
+        full_ok = (
+            "[green]✓[/green]"
+            if results["sgicl_full_db"]["successes"][i]
+            else "[red]✗[/red]"
+        )
+        online_db = results["sgicl_online"]["db_size"][i]
+        full_db = results["sgicl_full_db"]["db_size"][i]
+        task_table.add_row(
+            str(i + 1), zs_ok, online_ok, full_ok, str(online_db), str(full_db)
+        )
 
     console.print(task_table)
 
-    # Highlight improvements
-    improved = []
-    for i in range(n):
-        if (
-            results["sgicl"]["successes"][i]
-            and not results["zero_shot"]["successes"][i]
-        ):
-            improved.append(i + 1)
-
-    if improved:
+    # Summary
+    console.print("\n[bold]Summary:[/bold]")
+    if full_success > zs_success:
+        improvement = (full_success - zs_success) / max(zs_success, 1) * 100
         console.print(
-            f"\n[bold green]Tasks where SGICL succeeded but Zero-Shot failed: {improved}[/bold green]"
+            f"[bold green]✓ SGICL Full DB improved by {full_success - zs_success} tasks ({improvement:.0f}% relative)[/bold green]"
         )
-
-    if sg_success > zs_success:
-        improvement = (sg_success - zs_success) / max(zs_success, 1) * 100
+    if online_success > zs_success:
+        improvement = (online_success - zs_success) / max(zs_success, 1) * 100
         console.print(
-            f"\n[bold green]✓ SGICL improved success rate by {improvement:.0f}%![/bold green]"
+            f"[bold green]✓ SGICL Online improved by {online_success - zs_success} tasks ({improvement:.0f}% relative)[/bold green]"
         )
-    elif sg_success == zs_success:
+    if full_success <= zs_success and online_success <= zs_success:
         console.print(
-            "\n[yellow]Same success rate - try more/harder tasks for clearer signal[/yellow]"
+            "[yellow]No improvement observed - try different tasks or more examples[/yellow]"
         )
 
 
 async def main():
-    parser = argparse.ArgumentParser(description="SGICL vs Zero-Shot Comparison")
+    parser = argparse.ArgumentParser(description="3-Way SGICL Comparison Experiment")
     parser.add_argument(
         "--n-tasks", type=int, default=10, help="Number of tasks to run"
     )
     parser.add_argument("--model", type=str, default=None, help="Model to use")
     parser.add_argument("--max-steps", type=int, default=15, help="Max steps per task")
     parser.add_argument("--output", type=str, default=None, help="Output JSON file")
-    parser.add_argument(
-        "--preload-db", action="store_true",
-        help="Pre-populate SGICL database with successful zero-shot trajectories"
-    )
     args = parser.parse_args()
 
     model = args.model or os.environ.get("MODEL", "gpt-4o-mini")
-    preload_str = " | Preload DB: Yes" if args.preload_db else ""
 
     console.print(
         Panel.fit(
-            "[bold magenta]SGICL vs Zero-Shot Comparison Experiment[/bold magenta]\n"
-            f"Model: {model} | Tasks: {args.n_tasks} | Max Steps: {args.max_steps}{preload_str}",
+            "[bold magenta]3-Way SGICL Comparison Experiment[/bold magenta]\n"
+            f"Model: {model} | Tasks: {args.n_tasks} | Max Steps: {args.max_steps}\n"
+            "[dim]Conditions: Zero-Shot | SGICL Online | SGICL Full DB[/dim]",
             border_style="magenta",
         )
     )
@@ -688,8 +802,8 @@ async def main():
         f"[dim]Running {len(tasks)} tasks across {len(set(t.category for t in tasks))} categories[/dim]"
     )
 
-    # Run experiment
-    results = await run_experiment(tasks, model, args.max_steps, preload_db=args.preload_db)
+    # Run 3-way experiment
+    results = await run_experiment(tasks, model, args.max_steps)
 
     # Print results
     print_results(results)
