@@ -82,22 +82,28 @@ def _create_step_callback(
         A callback function for each step.
     """
     # Initialize metadata immediately so we have something even on early timeout
+    # Note: Don't reference trajectory_log directly, it will be copied on each step
     context.metadata = {
         "icicl_success": False,  # Updated when agent finishes
         "icicl_plan": None,
         "icicl_steps": 0,
         "icicl_mode": mode,
-        "trajectory": trajectory_log,
+        "trajectory": [],  # Will be updated with copies in callback
     }
+    context.rollout_details = []  # Initialize empty, updated in callback
 
     def callback(step: Step, step_context: StepContext) -> None:
         """Record step information to the trajectory log."""
         step_data = {
-            "observation": step.observation[:500],  # Truncate for storage
-            "reasoning": step.reasoning,
-            "action": step.action,
+            "observation": step.observation[:500] if step.observation else "",
+            "reasoning": step.reasoning or "",
+            "action": step.action or "",
             "examples_used": len(step_context.examples),
         }
+        # Debug: print to verify callback is working
+        print(
+            f"[ICICL] Step {len(trajectory_log) + 1}: action={step.action[:30] if step.action else 'None'}... examples={len(step_context.examples)}"
+        )
         trajectory_log.append(step_data)
 
         # Update context incrementally so we capture data even on timeout
@@ -187,14 +193,16 @@ class ICICLTrainAgent(BaseAgent):
         trajectory = await agent.train(adapter, instruction)
 
         # Update metadata with final values (only runs if no timeout)
-        context.metadata.update({
-            "icicl_success": trajectory.success,
-            "icicl_plan": trajectory.plan,
-            "icicl_steps": len(trajectory.steps),
-            "icicl_db_trajectories": agent.get_stats()["total_trajectories"],
-            "icicl_stored": trajectory.success,
-            "trajectory": trajectory_log,
-        })
+        context.metadata.update(
+            {
+                "icicl_success": trajectory.success,
+                "icicl_plan": trajectory.plan,
+                "icicl_steps": len(trajectory.steps),
+                "icicl_db_trajectories": agent.get_stats()["total_trajectories"],
+                "icicl_stored": trajectory.success,
+                "trajectory": trajectory_log,
+            }
+        )
         context.rollout_details = trajectory_log
 
 
@@ -260,7 +268,9 @@ class ICICLZeroShotAgent(BaseAgent):
                 act_prompt=ACT_PROMPT,
                 k=0,  # NO retrieval - zero-shot baseline
                 max_steps=max_steps,
-                on_step=_create_step_callback(context, trajectory_log, mode="zero-shot"),
+                on_step=_create_step_callback(
+                    context, trajectory_log, mode="zero-shot"
+                ),
             )
 
             adapter = HarborEnvironmentAdapter(
@@ -272,12 +282,14 @@ class ICICLZeroShotAgent(BaseAgent):
             trajectory = await agent.run(adapter, instruction)
 
             # Update metadata with final values (only runs if no timeout)
-            context.metadata.update({
-                "icicl_success": trajectory.success,
-                "icicl_plan": trajectory.plan,
-                "icicl_steps": len(trajectory.steps),
-                "icicl_k": 0,
-            })
+            context.metadata.update(
+                {
+                    "icicl_success": trajectory.success,
+                    "icicl_plan": trajectory.plan,
+                    "icicl_steps": len(trajectory.steps),
+                    "icicl_k": 0,
+                }
+            )
             context.rollout_details = trajectory_log
 
 
@@ -365,11 +377,13 @@ class ICICLTestAgent(BaseAgent):
         trajectory = await agent.run(adapter, instruction)
 
         # Update metadata with final values (only runs if no timeout)
-        context.metadata.update({
-            "icicl_success": trajectory.success,
-            "icicl_plan": trajectory.plan,
-            "icicl_steps": len(trajectory.steps),
-            "icicl_db_trajectories": agent.get_stats()["total_trajectories"],
-            "icicl_retrieved_examples": retrieved_example_info,
-        })
+        context.metadata.update(
+            {
+                "icicl_success": trajectory.success,
+                "icicl_plan": trajectory.plan,
+                "icicl_steps": len(trajectory.steps),
+                "icicl_db_trajectories": agent.get_stats()["total_trajectories"],
+                "icicl_retrieved_examples": retrieved_example_info,
+            }
+        )
         context.rollout_details = trajectory_log
