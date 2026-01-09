@@ -4,7 +4,7 @@ import inspect
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from icicl.models import Message, Step, StepContext, Trajectory
+from icicl.models import Message, Step, StepContext, StepExample, Trajectory
 from icicl.protocols import Environment, LLMProvider
 from icicl.retriever import TrajectoryRetriever
 
@@ -120,12 +120,12 @@ class ReActLoop:
             success=success,
         )
 
-    async def _generate_plan(self, goal: str, examples: list[Trajectory]) -> str:
+    async def _generate_plan(self, goal: str, examples: list[StepExample]) -> str:
         """Generate the initial plan.
 
         Args:
             goal: The goal description.
-            examples: Retrieved example trajectories.
+            examples: Retrieved step examples.
 
         Returns:
             The generated plan.

@@ -7,7 +7,7 @@ import faiss
 import numpy as np
 
 from icicl.embedder import SentenceTransformerEmbedder
-from icicl.models import CurationMetadata, Trajectory
+from icicl.models import CurationMetadata, StepExample, Trajectory
 
 
 class TrajectoryDatabase:
@@ -35,9 +35,13 @@ class TrajectoryDatabase:
         self._embedder = embedder or SentenceTransformerEmbedder()
         self._trajectories: dict[str, Trajectory] = {}
         self._curation_metadata: dict[str, CurationMetadata] = {}
+        # Legacy trajectory-level index (kept for compatibility)
         self._index: faiss.IndexFlatIP | None = None  # type: ignore[assignment]
         self._id_to_idx: dict[str, int] = {}
         self._idx_to_id: dict[int, str] = {}
+        # Step-level index for fine-grained retrieval
+        self._step_index: faiss.IndexFlatIP | None = None  # type: ignore[assignment]
+        self._step_examples: list[StepExample] = []
 
         self._load()
 
@@ -97,13 +101,16 @@ class TrajectoryDatabase:
             json.dump(curation_data, f, indent=2)
 
     def _rebuild_index(self) -> None:
-        """Rebuild the FAISS index from all trajectories."""
+        """Rebuild both trajectory-level and step-level FAISS indexes."""
         if not self._trajectories:
             self._index = faiss.IndexFlatIP(self._embedder.dimension)  # type: ignore[assignment]
+            self._step_index = faiss.IndexFlatIP(self._embedder.dimension)  # type: ignore[assignment]
             self._id_to_idx = {}
             self._idx_to_id = {}
+            self._step_examples = []
             return
 
+        # Trajectory-level index (legacy)
         texts = []
         ids = []
         for traj_id, traj in self._trajectories.items():
@@ -119,6 +126,33 @@ class TrajectoryDatabase:
 
         self._id_to_idx = {id_: idx for idx, id_ in enumerate(ids)}
         self._idx_to_id = {idx: id_ for idx, id_ in enumerate(ids)}
+
+        # Step-level index for fine-grained retrieval
+        self._step_examples = []
+        step_texts = []
+        for traj_id, traj in self._trajectories.items():
+            for step_idx, step in enumerate(traj.steps):
+                step_ex = StepExample(
+                    goal=traj.goal,
+                    plan=traj.plan,
+                    observation=step.observation,
+                    reasoning=step.reasoning,
+                    action=step.action,
+                    trajectory_id=traj_id,
+                    step_index=step_idx,
+                )
+                self._step_examples.append(step_ex)
+                # Index on observation + reasoning for step-level similarity
+                step_texts.append(f"{step.observation}\n{step.reasoning}")
+
+        if step_texts:
+            step_embeddings = self._embedder.embed(step_texts)
+            step_embeddings_np = np.array(step_embeddings, dtype=np.float32)
+            faiss.normalize_L2(step_embeddings_np)
+            self._step_index = faiss.IndexFlatIP(step_embeddings_np.shape[1])  # type: ignore[assignment]
+            self._step_index.add(step_embeddings_np)  # type: ignore[call-arg]
+        else:
+            self._step_index = faiss.IndexFlatIP(self._embedder.dimension)  # type: ignore[assignment]
 
         self._save_index()
 
@@ -141,6 +175,7 @@ class TrajectoryDatabase:
             )
             self._save_curation()
 
+        # Add to trajectory-level index
         text = self._get_embedding_text(trajectory)
         embedding = self._embedder.embed_single(text)
         embedding_np = np.array([embedding], dtype=np.float32)
@@ -153,6 +188,27 @@ class TrajectoryDatabase:
         self._index.add(embedding_np)  # type: ignore[call-arg]
         self._id_to_idx[trajectory.id] = idx
         self._idx_to_id[idx] = trajectory.id
+
+        # Add steps to step-level index
+        if self._step_index is None:
+            self._step_index = faiss.IndexFlatIP(len(embedding))  # type: ignore[assignment]
+
+        for step_idx, step in enumerate(trajectory.steps):
+            step_ex = StepExample(
+                goal=trajectory.goal,
+                plan=trajectory.plan,
+                observation=step.observation,
+                reasoning=step.reasoning,
+                action=step.action,
+                trajectory_id=trajectory.id,
+                step_index=step_idx,
+            )
+            self._step_examples.append(step_ex)
+            step_text = f"{step.observation}\n{step.reasoning}"
+            step_emb = self._embedder.embed_single(step_text)
+            step_emb_np = np.array([step_emb], dtype=np.float32)
+            faiss.normalize_L2(step_emb_np)
+            self._step_index.add(step_emb_np)  # type: ignore[call-arg]
 
         self._save_index()
 
@@ -168,7 +224,7 @@ class TrajectoryDatabase:
         return self._trajectories.get(trajectory_id)
 
     def search(self, query: str, k: int = 3) -> list[Trajectory]:
-        """Search for similar trajectories.
+        """Search for similar trajectories (legacy, trajectory-level).
 
         Args:
             query: The query string to search for.
@@ -193,6 +249,33 @@ class TrajectoryDatabase:
                 traj_id = self._idx_to_id[idx]
                 if traj_id in self._trajectories:
                     results.append(self._trajectories[traj_id])
+
+        return results
+
+    def search_steps(self, query: str, k: int = 3) -> list[StepExample]:
+        """Search for similar steps (step-level retrieval).
+
+        Args:
+            query: The query string (typically observation or reasoning context).
+            k: Number of step examples to return.
+
+        Returns:
+            List of most similar step examples with their trajectory context.
+        """
+        if self._step_index is None or self._step_index.ntotal == 0:
+            return []
+
+        embedding = self._embedder.embed_single(query)
+        embedding_np = np.array([embedding], dtype=np.float32)
+        faiss.normalize_L2(embedding_np)
+
+        k = min(k, self._step_index.ntotal)
+        _, indices = self._step_index.search(embedding_np, k)  # type: ignore[call-arg]
+
+        results = []
+        for idx in indices[0]:
+            if 0 <= idx < len(self._step_examples):
+                results.append(self._step_examples[idx])
 
         return results
 

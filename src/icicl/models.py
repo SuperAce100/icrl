@@ -51,10 +51,10 @@ class StepContext(BaseModel):
     observation: str
     reasoning: str = ""
     history: list[Step] = Field(default_factory=list)
-    examples: list[Trajectory] = Field(default_factory=list)
+    examples: list["StepExample"] = Field(default_factory=list)
 
     def format_examples(self) -> str:
-        """Format retrieved examples as a string."""
+        """Format retrieved step examples as a string."""
         if not self.examples:
             return "No examples available."
         return "\n\n---\n\n".join(ex.to_example_string() for ex in self.examples)
@@ -67,6 +67,22 @@ class StepContext(BaseModel):
         for i, step in enumerate(self.history, 1):
             lines.append(f"Step {i}: {step.action} -> {step.observation}")
         return "\n".join(lines)
+
+
+class StepExample(BaseModel):
+    """A single step with its trajectory context, used for step-level retrieval."""
+
+    goal: str
+    plan: str
+    observation: str
+    reasoning: str
+    action: str
+    trajectory_id: str
+    step_index: int
+
+    def to_example_string(self) -> str:
+        """Format as in-context example."""
+        return f"Goal: {self.goal}\nPlan: {self.plan}\nObservation: {self.observation}\nReasoning: {self.reasoning}\nAction: {self.action}"
 
 
 class CurationMetadata(BaseModel):

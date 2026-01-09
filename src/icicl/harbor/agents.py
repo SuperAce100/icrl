@@ -100,10 +100,6 @@ def _create_step_callback(
             "action": step.action or "",
             "examples_used": len(step_context.examples),
         }
-        # Debug: print to verify callback is working
-        print(
-            f"[ICICL] Step {len(trajectory_log) + 1}: action={step.action[:30] if step.action else 'None'}... examples={len(step_context.examples)}"
-        )
         trajectory_log.append(step_data)
 
         # Update context incrementally so we capture data even on timeout
@@ -189,7 +185,7 @@ class ICICLTrainAgent(BaseAgent):
             timeout_sec=180,
         )
 
-        # Run in training mode - stores trajectories when agent signals completion
+        # Run in training mode - only stores when agent signals completion (submit)
         trajectory = await agent.train(adapter, instruction)
 
         # Update metadata with final values (only runs if no timeout)
@@ -199,7 +195,7 @@ class ICICLTrainAgent(BaseAgent):
                 "icicl_plan": trajectory.plan,
                 "icicl_steps": len(trajectory.steps),
                 "icicl_db_trajectories": agent.get_stats()["total_trajectories"],
-                "icicl_stored": trajectory.success,
+                "icicl_stored": trajectory.success,  # Only stored if agent submitted
                 "trajectory": trajectory_log,
             }
         )
