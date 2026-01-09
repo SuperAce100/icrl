@@ -57,25 +57,15 @@ class HarborEnvironmentAdapter:
         self._action_count = 0
         self._last_output = ""
 
-        return f"""You are a software engineer working in a sandboxed Linux environment.
-You have access to standard shell commands to complete coding tasks.
-
-Current directory: /workspace (the repository root)
+        return f"""You are in a sandboxed Linux environment to fix a bug.
 
 Goal: {goal}
 
-Available commands include:
-- ls, cd, pwd - navigate the filesystem
-- cat, head, tail, less - view file contents
-- grep, find, ag, rg - search for patterns and files
-- sed, awk - text processing and editing
-- echo "content" > file - write to files
-- git diff, git log, git status - version control
-- python, pytest - run Python code and tests
-- Any other standard Linux commands
+Commands:
+- Standard bash: ls, cat, grep, find, sed, python3, etc.
+- submit - Run this when you have completed the fix
 
-You can chain commands with && and use standard shell syntax.
-Start by exploring the codebase to understand its structure."""
+Start by exploring the codebase to find the relevant code."""
 
     async def step(self, action: str) -> tuple[str, bool, bool]:
         """Execute an action in the environment.
@@ -99,20 +89,13 @@ Start by exploring the codebase to understand its structure."""
                 False,
             )
 
+        # Handle submit command - signals task completion
+        if self._is_completion_signal(action):
+            return "Submitting solution. Task complete.", True, True
+
         try:
             result = await self._execute_command_async(action)
             self._last_output = result
-
-            # Check for common success indicators
-            # Note: Harbor's task verification handles actual success determination
-            # We return done=False to let the agent continue until it decides to stop
-            # or hits max_actions. The actual success is determined by Harbor's
-            # task verification after the run completes.
-
-            # Check if agent explicitly signals completion
-            if self._is_completion_signal(action):
-                return result, True, True
-
             return result, False, False
 
         except Exception as e:
@@ -189,14 +172,8 @@ Start by exploring the codebase to understand its structure."""
         Returns:
             True if the action indicates the agent believes it's done.
         """
-        completion_signals = [
-            "echo 'TASK_COMPLETE'",
-            'echo "TASK_COMPLETE"',
-            "echo TASK_COMPLETE",
-            "# DONE",
-            "# COMPLETE",
-        ]
-        return any(signal in action for signal in completion_signals)
+        action_lower = action.strip().lower()
+        return action_lower == "submit" or action_lower.startswith("submit ")
 
     @property
     def goal(self) -> str:

@@ -13,3 +13,6 @@ wheels/
 data/
 runs/
 harbor_jobs/
+*_db
+
+harbor_django_comp

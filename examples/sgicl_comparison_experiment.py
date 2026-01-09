@@ -422,12 +422,28 @@ async def run_single_task(
     return trajectory.success, len(trajectory.steps), elapsed, trajectory
 
 
+def load_checkpoint(checkpoint_path: Path) -> dict | None:
+    """Load existing checkpoint if it exists."""
+    if checkpoint_path.exists():
+        with open(checkpoint_path) as f:
+            return json.load(f)
+    return None
+
+
+def save_checkpoint(results: dict, checkpoint_path: Path) -> None:
+    """Save current results to checkpoint file."""
+    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(checkpoint_path, "w") as f:
+        json.dump(results, f, indent=2, default=str)
+
+
 async def run_experiment(
     tasks: list[SimpleTask],
     model: str,
     max_steps: int = 15,
+    checkpoint_path: Path | None = None,
 ) -> dict:
-    """Run the full 3-way comparison experiment.
+    """Run the full 3-way comparison experiment with resume support.
 
     Runs 3 conditions:
     1. Zero-shot: No examples (k=0)
@@ -438,87 +454,141 @@ async def run_experiment(
         tasks: List of tasks to run
         model: LLM model name
         max_steps: Max steps per task
+        checkpoint_path: Path to save/load checkpoints for resuming
     """
 
-    results = {
-        "model": model,
-        "n_tasks": len(tasks),
-        "timestamp": datetime.now().isoformat(),
-        "zero_shot": {"successes": [], "steps": [], "times": []},
-        "sgicl_online": {"successes": [], "steps": [], "times": [], "db_size": []},
-        "sgicl_full_db": {"successes": [], "steps": [], "times": [], "db_size": []},
-    }
+    # Try to load existing checkpoint
+    existing_results = None
+    if checkpoint_path:
+        existing_results = load_checkpoint(checkpoint_path)
+        if existing_results:
+            console.print(
+                f"[yellow]Resuming from checkpoint with "
+                f"{len(existing_results.get('zero_shot', {}).get('successes', []))} zero-shot, "
+                f"{len(existing_results.get('sgicl_online', {}).get('successes', []))} online, "
+                f"{len(existing_results.get('sgicl_full_db', {}).get('successes', []))} full-db "
+                f"tasks completed[/yellow]\n"
+            )
+
+    # Initialize or restore results
+    if existing_results:
+        results = existing_results
+        # Ensure n_tasks matches current run
+        results["n_tasks"] = len(tasks)
+    else:
+        results = {
+            "model": model,
+            "n_tasks": len(tasks),
+            "timestamp": datetime.now().isoformat(),
+            "zero_shot": {"successes": [], "steps": [], "times": []},
+            "sgicl_online": {"successes": [], "steps": [], "times": [], "db_size": []},
+            "sgicl_full_db": {"successes": [], "steps": [], "times": [], "db_size": []},
+        }
 
     # GPT-5 only supports temperature=1, use 0.7 for others (not 0)
     temp = 1.0 if "gpt-5" in model.lower() else 0.7
     llm = LiteLLMProvider(model=model, temperature=temp, max_tokens=1024)
 
+    # Track where we left off for each condition
+    zs_start = len(results["zero_shot"]["successes"])
+    online_start = len(results["sgicl_online"]["successes"])
+    full_start = len(results["sgicl_full_db"]["successes"])
+
     # =========================================================================
     # Condition 1: Zero-shot baseline (no retrieval, no storage)
     # =========================================================================
-    console.print(
-        "\n[bold cyan]═══ Condition 1: Zero-Shot (No Examples) ═══[/bold cyan]"
-    )
-    console.print("[dim]k=0, each task solved independently[/dim]\n")
-
-    zs_trajectories: list[Trajectory] = []
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        zs_db_path = f"{tmpdir}/zeroshot_db"
-
-        zs_agent = Agent(
-            llm=llm,
-            db_path=zs_db_path,
-            plan_prompt=PLAN_PROMPT,
-            reason_prompt=REASON_PROMPT,
-            act_prompt=ACT_PROMPT,
-            k=0,  # NO retrieval
-            max_steps=max_steps,
+    if zs_start < len(tasks):
+        console.print(
+            "\n[bold cyan]═══ Condition 1: Zero-Shot (No Examples) ═══[/bold cyan]"
         )
+        if zs_start > 0:
+            console.print(f"[yellow]Resuming from task {zs_start + 1}[/yellow]")
+        console.print("[dim]k=0, each task solved independently[/dim]\n")
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            for i, task in enumerate(tasks):
-                task_id = progress.add_task(
-                    f"[{i + 1}/{len(tasks)}] {task.goal[:50]}...", total=1
-                )
+        zs_trajectories: list[Trajectory] = []
 
-                success, steps, time_taken, trajectory = await run_single_task(
-                    zs_agent, task, i, mode="run"
-                )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            zs_db_path = f"{tmpdir}/zeroshot_db"
 
-                results["zero_shot"]["successes"].append(success)
-                results["zero_shot"]["steps"].append(steps)
-                results["zero_shot"]["times"].append(time_taken)
+            zs_agent = Agent(
+                llm=llm,
+                db_path=zs_db_path,
+                plan_prompt=PLAN_PROMPT,
+                reason_prompt=REASON_PROMPT,
+                act_prompt=ACT_PROMPT,
+                k=0,  # NO retrieval
+                max_steps=max_steps,
+            )
 
-                # Collect successful trajectories for full-db condition
-                if success:
-                    zs_trajectories.append(trajectory)
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                for i, task in enumerate(tasks):
+                    # Skip already completed tasks
+                    if i < zs_start:
+                        continue
 
-                status = "[green]✓[/green]" if success else "[red]✗[/red]"
-                progress.update(
-                    task_id, completed=1, description=f"{status} {task.goal[:45]}..."
-                )
+                    task_id = progress.add_task(
+                        f"[{i + 1}/{len(tasks)}] {task.goal[:50]}...", total=1
+                    )
+
+                    success, steps, time_taken, trajectory = await run_single_task(
+                        zs_agent, task, i, mode="run"
+                    )
+
+                    results["zero_shot"]["successes"].append(success)
+                    results["zero_shot"]["steps"].append(steps)
+                    results["zero_shot"]["times"].append(time_taken)
+
+                    # Collect successful trajectories for full-db condition
+                    if success:
+                        zs_trajectories.append(trajectory)
+
+                    status = "[green]✓[/green]" if success else "[red]✗[/red]"
+                    progress.update(
+                        task_id,
+                        completed=1,
+                        description=f"{status} {task.goal[:45]}...",
+                    )
+
+                    # Save checkpoint after each task
+                    if checkpoint_path:
+                        # Store trajectories as serializable data
+                        results["_zs_trajectories"] = [
+                            {"goal": t.goal, "plan": t.plan, "success": t.success}
+                            for t in zs_trajectories
+                        ]
+                        save_checkpoint(results, checkpoint_path)
+    else:
+        console.print("[dim]Zero-shot condition already complete, skipping...[/dim]")
+        zs_trajectories = []  # Will be loaded from online results if needed
 
     # =========================================================================
     # Condition 2: SGICL Online (examples accumulated on-the-fly)
     # =========================================================================
-    console.print(
-        "\n[bold cyan]═══ Condition 2: SGICL Online (On-the-fly) ═══[/bold cyan]"
-    )
-    console.print(
-        "[dim]k=3, DB starts empty, accumulates successful trajectories[/dim]\n"
-    )
+    if online_start < len(tasks):
+        console.print(
+            "\n[bold cyan]═══ Condition 2: SGICL Online (On-the-fly) ═══[/bold cyan]"
+        )
+        if online_start > 0:
+            console.print(f"[yellow]Resuming from task {online_start + 1}[/yellow]")
+        console.print(
+            "[dim]k=3, DB starts empty, accumulates successful trajectories[/dim]\n"
+        )
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        online_db_path = f"{tmpdir}/online_db"
+        # Use persistent DB path for online condition (to support resume)
+        online_db_path = (
+            checkpoint_path.parent / "online_db"
+            if checkpoint_path
+            else Path(tempfile.mkdtemp()) / "online_db"
+        )
+        online_db_path.parent.mkdir(parents=True, exist_ok=True)
 
         online_agent = Agent(
             llm=llm,
-            db_path=online_db_path,
+            db_path=str(online_db_path),
             plan_prompt=PLAN_PROMPT,
             reason_prompt=REASON_PROMPT,
             act_prompt=ACT_PROMPT,
@@ -532,6 +602,10 @@ async def run_experiment(
             console=console,
         ) as progress:
             for i, task in enumerate(tasks):
+                # Skip already completed tasks
+                if i < online_start:
+                    continue
+
                 db_size = len(online_agent.database)
                 task_id = progress.add_task(
                     f"[{i + 1}/{len(tasks)}] (db: {db_size}) {task.goal[:40]}...",
@@ -554,28 +628,44 @@ async def run_experiment(
                     description=f"{status} (db: {len(online_agent.database)}) {task.goal[:35]}...",
                 )
 
+                # Save checkpoint after each task
+                if checkpoint_path:
+                    save_checkpoint(results, checkpoint_path)
+    else:
+        console.print("[dim]SGICL Online condition already complete, skipping...[/dim]")
+
     # =========================================================================
     # Condition 3: SGICL Full DB (all examples available from start)
     # =========================================================================
-    console.print(
-        "\n[bold cyan]═══ Condition 3: SGICL Full DB (Pre-loaded) ═══[/bold cyan]"
-    )
-    console.print(
-        f"[dim]k=3, DB pre-loaded with {len(zs_trajectories)} successful trajectories[/dim]\n"
-    )
+    if full_start < len(tasks):
+        console.print(
+            "\n[bold cyan]═══ Condition 3: SGICL Full DB (Pre-loaded) ═══[/bold cyan]"
+        )
+        if full_start > 0:
+            console.print(f"[yellow]Resuming from task {full_start + 1}[/yellow]")
+        console.print(
+            f"[dim]k=3, DB pre-loaded with {len(zs_trajectories)} successful trajectories[/dim]\n"
+        )
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        full_db_path = f"{tmpdir}/full_db"
+        # Use persistent DB path for full-db condition (to support resume)
+        full_db_path = (
+            checkpoint_path.parent / "full_db"
+            if checkpoint_path
+            else Path(tempfile.mkdtemp()) / "full_db"
+        )
+        full_db_path.parent.mkdir(parents=True, exist_ok=True)
 
         full_db_agent = Agent(
             llm=llm,
-            db_path=full_db_path,
+            db_path=str(full_db_path),
             plan_prompt=PLAN_PROMPT,
             reason_prompt=REASON_PROMPT,
             act_prompt=ACT_PROMPT,
             k=3,  # Retrieve top 3 examples
             max_steps=max_steps,
-            seed_trajectories=zs_trajectories,  # Pre-load all successful trajectories
+            seed_trajectories=zs_trajectories
+            if full_start == 0
+            else None,  # Only seed on fresh start
         )
 
         with Progress(
@@ -584,6 +674,10 @@ async def run_experiment(
             console=console,
         ) as progress:
             for i, task in enumerate(tasks):
+                # Skip already completed tasks
+                if i < full_start:
+                    continue
+
                 db_size = len(full_db_agent.database)
                 task_id = progress.add_task(
                     f"[{i + 1}/{len(tasks)}] (db: {db_size}) {task.goal[:40]}...",
@@ -605,6 +699,19 @@ async def run_experiment(
                     completed=1,
                     description=f"{status} (db: {len(full_db_agent.database)}) {task.goal[:35]}...",
                 )
+
+                # Save checkpoint after each task
+                if checkpoint_path:
+                    save_checkpoint(results, checkpoint_path)
+    else:
+        console.print(
+            "[dim]SGICL Full DB condition already complete, skipping...[/dim]"
+        )
+
+    # Final save
+    if checkpoint_path:
+        save_checkpoint(results, checkpoint_path)
+        console.print(f"\n[dim]Results saved to {checkpoint_path}[/dim]")
 
     return results
 
@@ -776,18 +883,44 @@ async def main():
     parser.add_argument("--model", type=str, default=None, help="Model to use")
     parser.add_argument("--max-steps", type=int, default=15, help="Max steps per task")
     parser.add_argument("--output", type=str, default=None, help="Output JSON file")
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        default=None,
+        help="Checkpoint file for resume support (e.g., experiment_checkpoint.json)",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume from existing checkpoint (requires --checkpoint)",
+    )
     args = parser.parse_args()
 
     model = args.model or os.environ.get("MODEL", "gpt-4o-mini")
 
+    # Setup checkpoint path
+    checkpoint_path = None
+    if args.checkpoint:
+        checkpoint_path = Path(args.checkpoint)
+    elif args.resume:
+        # Default checkpoint location
+        checkpoint_path = Path("sgicl_experiment_checkpoint.json")
+
+    resume_str = ""
+    if checkpoint_path and checkpoint_path.exists():
+        resume_str = " | [yellow]RESUMING[/yellow]"
+
     console.print(
         Panel.fit(
             "[bold magenta]3-Way SGICL Comparison Experiment[/bold magenta]\n"
-            f"Model: {model} | Tasks: {args.n_tasks} | Max Steps: {args.max_steps}\n"
+            f"Model: {model} | Tasks: {args.n_tasks} | Max Steps: {args.max_steps}{resume_str}\n"
             "[dim]Conditions: Zero-Shot | SGICL Online | SGICL Full DB[/dim]",
             border_style="magenta",
         )
     )
+
+    if checkpoint_path:
+        console.print(f"[dim]Checkpoint: {checkpoint_path}[/dim]")
 
     # Check for API key
     if "OPENAI_API_KEY" not in os.environ and "ANTHROPIC_API_KEY" not in os.environ:
@@ -802,17 +935,19 @@ async def main():
         f"[dim]Running {len(tasks)} tasks across {len(set(t.category for t in tasks))} categories[/dim]"
     )
 
-    # Run 3-way experiment
-    results = await run_experiment(tasks, model, args.max_steps)
+    # Run 3-way experiment with checkpoint support
+    results = await run_experiment(
+        tasks, model, args.max_steps, checkpoint_path=checkpoint_path
+    )
 
     # Print results
     print_results(results)
 
-    # Save results
+    # Save final results
     if args.output:
         output_path = Path(args.output)
         output_path.write_text(json.dumps(results, indent=2, default=str))
-        console.print(f"\n[dim]Results saved to {output_path}[/dim]")
+        console.print(f"\n[dim]Final results saved to {output_path}[/dim]")
 
 
 if __name__ == "__main__":
