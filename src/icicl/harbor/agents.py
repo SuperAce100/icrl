@@ -160,7 +160,7 @@ class ICICLTrainAgent(BaseAgent):
         llm = LiteLLMProvider(
             model=model,
             temperature=temp,
-            max_tokens=4096,
+            max_tokens=8192,  # GPT-5 output limit
             system_prompt=SYSTEM_PROMPT,
         )
 
@@ -246,7 +246,7 @@ class ICICLZeroShotAgent(BaseAgent):
             llm = LiteLLMProvider(
                 model=model,
                 temperature=temp,
-                max_tokens=4096,
+                max_tokens=8192,  # GPT-5 output limit
                 system_prompt=SYSTEM_PROMPT,
             )
 
@@ -331,7 +331,7 @@ class ICICLTestAgent(BaseAgent):
         llm = LiteLLMProvider(
             model=model,
             temperature=temp,
-            max_tokens=4096,
+            max_tokens=8192,  # GPT-5 output limit
             system_prompt=SYSTEM_PROMPT,
         )
 
