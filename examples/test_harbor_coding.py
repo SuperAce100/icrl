@@ -319,25 +319,23 @@ class TestAgentIntegration:
             max_steps=5,
         )
 
-    @pytest.mark.asyncio
-    async def test_agent_train_creates_trajectory(self, agent):
+    def test_agent_train_creates_trajectory(self, agent):
         """Test that training creates a trajectory."""
         task = CODING_TASKS["training"][2]  # List Python files (easy)
         env = CodingEnvironment(task)
 
-        trajectory = await agent.train(env, task.goal)
+        trajectory = asyncio.run(agent.train(env, task.goal))
 
         assert trajectory is not None
         assert len(trajectory.steps) > 0
         assert trajectory.goal == task.goal
 
-    @pytest.mark.asyncio
-    async def test_agent_run_creates_trajectory(self, agent):
+    def test_agent_run_creates_trajectory(self, agent):
         """Test that inference creates a trajectory."""
         task = CODING_TASKS["evaluation"][0]
         env = CodingEnvironment(task)
 
-        trajectory = await agent.run(env, task.goal)
+        trajectory = asyncio.run(agent.run(env, task.goal))
 
         assert trajectory is not None
         assert len(trajectory.steps) > 0

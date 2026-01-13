@@ -57,8 +57,9 @@ class TrajectoryRetriever:
             List of relevant step examples.
         """
         k = k or self._k
-        # Query based on current observation for step-level similarity
-        query = f"{observation}"
+        # Query based on the current task + observation for step-level similarity.
+        # (The plan string can be very long/noisy; the database layer truncates.)
+        query = f"{goal}\n{observation}"
         steps = self._database.search_steps(query, k=k)
         self._track_retrieved_steps(steps)
         return steps

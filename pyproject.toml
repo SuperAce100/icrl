@@ -28,3 +28,9 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+# Avoid collecting Harbor/SWE-bench verifier logs as doctests.
+addopts = "-p no:doctest"
+norecursedirs = ["harbor_jobs", ".venv", "docs", "build", "dist"]
+python_files = ["test_*.py"]

@@ -21,7 +21,6 @@ Example usage:
 
 from __future__ import annotations
 
-import asyncio
 import os
 import tempfile
 from pathlib import Path
@@ -32,14 +31,19 @@ from dotenv import load_dotenv
 from harbor.agents.base import BaseAgent
 
 from icicl import Agent, LiteLLMProvider, Step, StepContext
+from icicl.harbor.adapter import HarborEnvironmentAdapter
+from icicl.harbor.prompts import (
+    ACT_PROMPT,
+    PLAN_PROMPT,
+    REASON_PROMPT,
+    SYSTEM_PROMPT,
+)
 
 # Drop unsupported params for newer models like GPT-5
 litellm.drop_params = True
-from icicl.harbor.adapter import HarborEnvironmentAdapter
-from icicl.harbor.prompts import ACT_PROMPT, PLAN_PROMPT, REASON_PROMPT, SYSTEM_PROMPT
 
 if TYPE_CHECKING:
-    from harbor.agents.context import AgentContext
+    from harbor.models.agent.context import AgentContext
     from harbor.environments.base import BaseEnvironment
 
 load_dotenv()
@@ -58,7 +62,15 @@ def _get_model() -> str:
 
 def _get_k() -> int:
     """Get the number of examples to retrieve from environment or default."""
-    return int(os.environ.get("ICICL_K", "3"))
+    # Keep default small to reduce prompt size / embedding overhead.
+    return int(os.environ.get("ICICL_K", "1"))
+
+
+def _get_max_completion_tokens() -> int:
+    """Get the maximum completion tokens per LLM call (output budget)."""
+    # ReAct prompts expect short outputs (plans/reasoning/commands), so keep this
+    # conservative by default to avoid provider-side validation errors.
+    return int(os.environ.get("ICICL_MAX_COMPLETION_TOKENS", "2048"))
 
 
 def _get_max_steps() -> int:
@@ -90,7 +102,6 @@ def _create_step_callback(
         "icicl_mode": mode,
         "trajectory": [],  # Will be updated with copies in callback
     }
-    context.rollout_details = []  # Initialize empty, updated in callback
 
     def callback(step: Step, step_context: StepContext) -> None:
         """Record step information to the trajectory log."""
@@ -103,9 +114,10 @@ def _create_step_callback(
         trajectory_log.append(step_data)
 
         # Update context incrementally so we capture data even on timeout
-        context.rollout_details = trajectory_log.copy()
-        context.metadata["icicl_steps"] = len(trajectory_log)
-        context.metadata["trajectory"] = trajectory_log.copy()
+        meta = context.metadata or {}
+        meta["icicl_steps"] = len(trajectory_log)
+        meta["trajectory"] = trajectory_log.copy()
+        context.metadata = meta
 
     return callback
 
@@ -162,7 +174,7 @@ class ICICLTrainAgent(BaseAgent):
         llm = LiteLLMProvider(
             model=model,
             temperature=temp,
-            max_tokens=32768,  # GPT-5 output limit
+            max_tokens=_get_max_completion_tokens(),
             system_prompt=SYSTEM_PROMPT,
         )
 
@@ -189,6 +201,8 @@ class ICICLTrainAgent(BaseAgent):
         trajectory = await agent.train(adapter, instruction)
 
         # Update metadata with final values (only runs if no timeout)
+        if context.metadata is None:
+            context.metadata = {}
         context.metadata.update(
             {
                 "icicl_success": trajectory.success,
@@ -199,7 +213,6 @@ class ICICLTrainAgent(BaseAgent):
                 "trajectory": trajectory_log,
             }
         )
-        context.rollout_details = trajectory_log
 
 
 class ICICLZeroShotAgent(BaseAgent):
@@ -250,7 +263,7 @@ class ICICLZeroShotAgent(BaseAgent):
             llm = LiteLLMProvider(
                 model=model,
                 temperature=temp,
-                max_tokens=32768,  # GPT-5 output limit
+                max_tokens=_get_max_completion_tokens(),
                 system_prompt=SYSTEM_PROMPT,
             )
 
@@ -278,6 +291,8 @@ class ICICLZeroShotAgent(BaseAgent):
             trajectory = await agent.run(adapter, instruction)
 
             # Update metadata with final values (only runs if no timeout)
+            if context.metadata is None:
+                context.metadata = {}
             context.metadata.update(
                 {
                     "icicl_success": trajectory.success,
@@ -286,7 +301,6 @@ class ICICLZeroShotAgent(BaseAgent):
                     "icicl_k": 0,
                 }
             )
-            context.rollout_details = trajectory_log
 
 
 class ICICLTestAgent(BaseAgent):
@@ -339,7 +353,7 @@ class ICICLTestAgent(BaseAgent):
         llm = LiteLLMProvider(
             model=model,
             temperature=temp,
-            max_tokens=32768,  # GPT-5 output limit
+            max_tokens=_get_max_completion_tokens(),
             system_prompt=SYSTEM_PROMPT,
         )
 
@@ -373,6 +387,8 @@ class ICICLTestAgent(BaseAgent):
         trajectory = await agent.run(adapter, instruction)
 
         # Update metadata with final values (only runs if no timeout)
+        if context.metadata is None:
+            context.metadata = {}
         context.metadata.update(
             {
                 "icicl_success": trajectory.success,
@@ -382,4 +398,3 @@ class ICICLTestAgent(BaseAgent):
                 "icicl_retrieved_examples": retrieved_example_info,
             }
         )
-        context.rollout_details = trajectory_log

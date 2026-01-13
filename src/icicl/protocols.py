@@ -1,5 +1,6 @@
 """Protocol definitions for ICICL components."""
 
+from collections.abc import Awaitable
 from typing import Protocol, runtime_checkable
 
 from icicl.models import Message
@@ -23,7 +24,9 @@ class Environment(Protocol):
         """
         ...
 
-    def step(self, action: str) -> tuple[str, bool, bool]:
+    def step(
+        self, action: str
+    ) -> tuple[str, bool, bool] | Awaitable[tuple[str, bool, bool]]:
         """Execute an action in the environment.
 
         Args:
@@ -81,4 +84,9 @@ class Embedder(Protocol):
         Returns:
             Embedding vector.
         """
+        ...
+
+    @property
+    def dimension(self) -> int:
+        """Embedding dimensionality."""
         ...

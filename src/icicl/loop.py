@@ -1,7 +1,8 @@
 """ReAct-style agent loop implementation."""
 
 import inspect
-from collections.abc import Awaitable, Callable
+import os
+from collections.abc import Callable
 from typing import Any
 
 from icicl.models import Message, Step, StepContext, StepExample, Trajectory
@@ -68,7 +69,11 @@ class ReActLoop:
 
         observation = env.reset(goal)
 
-        examples = self._retriever.retrieve_for_plan(goal)
+        plan_uses_examples = "{examples}" in self._plan_prompt
+        reason_uses_examples = "{examples}" in self._reason_prompt
+        act_uses_examples = "{examples}" in self._act_prompt
+
+        examples = self._retriever.retrieve_for_plan(goal) if plan_uses_examples else []
         plan = await self._generate_plan(goal, examples)
 
         steps: list[Step] = []
@@ -81,17 +86,15 @@ class ReActLoop:
                 plan=plan,
                 observation=observation,
                 history=steps.copy(),
-                examples=examples,
+                examples=[],
             )
 
-            examples = self._retriever.retrieve_for_step(goal, plan, observation)
-            context.examples = examples
+            if reason_uses_examples or act_uses_examples:
+                examples = self._retriever.retrieve_for_step(goal, plan, observation)
+                context.examples = examples
 
             reasoning = await self._generate_reasoning(context)
             context.reasoning = reasoning
-
-            examples = self._retriever.retrieve_for_step(goal, plan, reasoning)
-            context.examples = examples
 
             action = await self._generate_action(context)
 
@@ -171,11 +174,23 @@ class ReActLoop:
         Returns:
             The formatted prompt.
         """
+        max_goal = int(os.environ.get("ICICL_MAX_GOAL_CHARS", "4000"))
+        max_plan = int(os.environ.get("ICICL_MAX_PLAN_CHARS", "2000"))
+        max_obs = int(os.environ.get("ICICL_MAX_OBS_CHARS", "5000"))
+        max_reason = int(os.environ.get("ICICL_MAX_REASONING_CHARS", "2000"))
+
+        def _cap(text: str, limit: int) -> str:
+            if limit <= 0:
+                return ""
+            if len(text) <= limit:
+                return text
+            return text[:limit] + "\n...[truncated]..."
+
         return template.format(
-            goal=context.goal,
-            plan=context.plan,
-            observation=context.observation,
-            reasoning=context.reasoning,
+            goal=_cap(context.goal, max_goal),
+            plan=_cap(context.plan, max_plan),
+            observation=_cap(context.observation, max_obs),
+            reasoning=_cap(context.reasoning, max_reason),
             history=context.format_history(),
             examples=context.format_examples(),
         )

@@ -4,6 +4,8 @@ These prompts are optimized for software engineering tasks like those
 found in SWE-bench and Terminal-Bench benchmarks.
 """
 
+# ruff: noqa: E501
+
 SYSTEM_PROMPT = """You are an expert software engineer debugging code in a Linux terminal.
 
 *** IMPORTANT: When you have fixed the bug, you MUST run the command: submit ***

@@ -1,13 +1,15 @@
 """Trajectory database with filesystem storage and FAISS indexing."""
 
 import json
+import os
 from pathlib import Path
 
 import faiss
 import numpy as np
 
-from icicl.embedder import SentenceTransformerEmbedder
+from icicl.embedder import default_embedder
 from icicl.models import CurationMetadata, StepExample, Trajectory
+from icicl.protocols import Embedder
 
 
 class TrajectoryDatabase:
@@ -20,7 +22,7 @@ class TrajectoryDatabase:
     def __init__(
         self,
         path: str | Path,
-        embedder: SentenceTransformerEmbedder | None = None,
+        embedder: Embedder | None = None,
     ) -> None:
         """Initialize the trajectory database.
 
@@ -32,7 +34,13 @@ class TrajectoryDatabase:
         self._path = Path(path)
         self._path.mkdir(parents=True, exist_ok=True)
 
-        self._embedder = embedder or SentenceTransformerEmbedder()
+        self._embedder = embedder or default_embedder()
+        self._embedder_meta = {
+            "id": (
+                f"{type(self._embedder).__module__}:{type(self._embedder).__qualname__}"
+            ),
+            "dimension": int(self._embedder.dimension),
+        }
         self._trajectories: dict[str, Trajectory] = {}
         self._curation_metadata: dict[str, CurationMetadata] = {}
         # Legacy trajectory-level index (kept for compatibility)
@@ -44,6 +52,15 @@ class TrajectoryDatabase:
         self._step_examples: list[StepExample] = []
 
         self._load()
+
+    def _truncate_for_embedding(self, text: str) -> str:
+        """Truncate text before embedding to keep compute bounded."""
+        max_chars = int(os.environ.get("ICICL_EMBED_TEXT_CHARS", "2000"))
+        if max_chars <= 0:
+            return ""
+        if len(text) <= max_chars:
+            return text
+        return text[:max_chars]
 
     def _load(self) -> None:
         """Load trajectories and index from disk."""
@@ -63,9 +80,26 @@ class TrajectoryDatabase:
                     meta = CurationMetadata.model_validate(item)
                     self._curation_metadata[meta.trajectory_id] = meta
 
+        # Load embedder metadata (if present) to decide whether persisted
+        # indexes are valid.
+        meta_file = self._path / "embedder.json"
+        stored_meta: dict[str, object] | None = None
+        if meta_file.exists():
+            try:
+                with open(meta_file) as f:
+                    stored_meta = json.load(f)
+            except Exception:
+                stored_meta = None
+
+        meta_matches = (
+            isinstance(stored_meta, dict)
+            and stored_meta.get("id") == self._embedder_meta["id"]
+            and stored_meta.get("dimension") == self._embedder_meta["dimension"]
+        )
+
         index_file = self._path / "index.faiss"
         ids_file = self._path / "index_ids.json"
-        if index_file.exists() and ids_file.exists():
+        if index_file.exists() and ids_file.exists() and meta_matches:
             self._index = faiss.read_index(str(index_file))  # type: ignore[assignment]
             with open(ids_file) as f:
                 id_list = json.load(f)
@@ -95,6 +129,11 @@ class TrajectoryDatabase:
             with open(ids_file, "w") as f:
                 json.dump(id_list, f)
 
+            # Persist which embedder produced this index so we can detect mismatches.
+            meta_file = self._path / "embedder.json"
+            with open(meta_file, "w") as f:
+                json.dump(self._embedder_meta, f, indent=2)
+
     def _save_curation(self) -> None:
         """Save curation metadata to disk."""
         curation_file = self._path / "curation.json"
@@ -118,7 +157,9 @@ class TrajectoryDatabase:
                     step_index=step_idx,
                 )
                 self._step_examples.append(step_ex)
-                step_texts.append(f"{step.observation}\n{step.reasoning}")
+                step_texts.append(
+                    self._truncate_for_embedding(f"{step.observation}\n{step.reasoning}")
+                )
 
         if step_texts:
             step_embeddings = self._embedder.embed(step_texts)
@@ -143,7 +184,7 @@ class TrajectoryDatabase:
         texts = []
         ids = []
         for traj_id, traj in self._trajectories.items():
-            texts.append(self._get_embedding_text(traj))
+            texts.append(self._truncate_for_embedding(self._get_embedding_text(traj)))
             ids.append(traj_id)
 
         embeddings = self._embedder.embed(texts)
@@ -172,7 +213,9 @@ class TrajectoryDatabase:
                 )
                 self._step_examples.append(step_ex)
                 # Index on observation + reasoning for step-level similarity
-                step_texts.append(f"{step.observation}\n{step.reasoning}")
+                step_texts.append(
+                    self._truncate_for_embedding(f"{step.observation}\n{step.reasoning}")
+                )
 
         if step_texts:
             step_embeddings = self._embedder.embed(step_texts)
@@ -206,7 +249,7 @@ class TrajectoryDatabase:
 
         # Add to trajectory-level index
         text = self._get_embedding_text(trajectory)
-        embedding = self._embedder.embed_single(text)
+        embedding = self._embedder.embed_single(self._truncate_for_embedding(text))
         embedding_np = np.array([embedding], dtype=np.float32)
         faiss.normalize_L2(embedding_np)
 
@@ -233,7 +276,9 @@ class TrajectoryDatabase:
                 step_index=step_idx,
             )
             self._step_examples.append(step_ex)
-            step_text = f"{step.observation}\n{step.reasoning}"
+            step_text = self._truncate_for_embedding(
+                f"{step.observation}\n{step.reasoning}"
+            )
             step_emb = self._embedder.embed_single(step_text)
             step_emb_np = np.array([step_emb], dtype=np.float32)
             faiss.normalize_L2(step_emb_np)
@@ -265,7 +310,7 @@ class TrajectoryDatabase:
         if self._index is None or self._index.ntotal == 0:
             return []
 
-        embedding = self._embedder.embed_single(query)
+        embedding = self._embedder.embed_single(self._truncate_for_embedding(query))
         embedding_np = np.array([embedding], dtype=np.float32)
         faiss.normalize_L2(embedding_np)
 
@@ -294,7 +339,7 @@ class TrajectoryDatabase:
         if self._step_index is None or self._step_index.ntotal == 0:
             return []
 
-        embedding = self._embedder.embed_single(query)
+        embedding = self._embedder.embed_single(self._truncate_for_embedding(query))
         embedding_np = np.array([embedding], dtype=np.float32)
         faiss.normalize_L2(embedding_np)
 

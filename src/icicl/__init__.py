@@ -45,7 +45,11 @@ __all__ = [
 
 # Optional Harbor integration exports
 try:
-    from icicl.harbor import HarborEnvironmentAdapter, ICICLTestAgent, ICICLTrainAgent
+    from icicl.harbor import (  # noqa: F401
+        HarborEnvironmentAdapter,
+        ICICLTestAgent,
+        ICICLTrainAgent,
+    )
 
     __all__.extend(
         [

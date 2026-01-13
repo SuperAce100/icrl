@@ -89,28 +89,32 @@ Start by exploring the codebase to find the relevant code."""
                 False,
             )
 
-        # Handle submit command - signals task completion
-        if self._is_completion_signal(action):
-            return "Submitting solution. Task complete.", True, True
-
         try:
-            result = await self._execute_command_async(action)
-            self._last_output = result
-            return result, False, False
+            output, return_code = await self._execute_command_async(action)
+            self._last_output = output
+
+            # Handle submit command - signals task completion.
+            # IMPORTANT: We still execute it in the Harbor environment so the harness
+            # can record the final state / patch and run verification.
+            if self._is_completion_signal(action):
+                return output, True, return_code == 0
+
+            return output, False, False
 
         except Exception as e:
             error_msg = f"Error executing command: {e}"
             self._last_output = error_msg
             return error_msg, False, False
 
-    async def _execute_command_async(self, command: str) -> str:
+    async def _execute_command_async(self, command: str) -> tuple[str, int]:
         """Execute a command via Harbor's environment asynchronously.
 
         Args:
             command: The shell command to execute.
 
         Returns:
-            The command output (combined stdout and stderr), truncated if too long.
+            Tuple of (formatted output, return_code). Output combines stdout/stderr
+            and is truncated if too long.
         """
         try:
             result = await self._environment.exec(
@@ -125,7 +129,10 @@ Start by exploring the codebase to find the relevant code."""
                 if len(stdout) > 3000:
                     stdout = (
                         stdout[:1500]
-                        + "\n\n... [output truncated, showing first 1500 and last 1500 chars] ...\n\n"
+                        + (
+                            "\n\n... [output truncated; showing first 1500"
+                            " and last 1500 chars] ...\n\n"
+                        )
                         + stdout[-1500:]
                     )
                 output_parts.append(stdout)
@@ -137,12 +144,13 @@ Start by exploring the codebase to find the relevant code."""
             if result.return_code != 0:
                 output_parts.append(f"[exit code: {result.return_code}]")
 
-            return "\n".join(output_parts) if output_parts else "(no output)"
+            output = "\n".join(output_parts) if output_parts else "(no output)"
+            return output, result.return_code
 
         except TimeoutError:
-            return f"Command timed out after {self._timeout_sec} seconds"
+            return f"Command timed out after {self._timeout_sec} seconds", 124
         except Exception as e:
-            return f"Execution error: {e}"
+            return f"Execution error: {e}", 1
 
     def _clean_command(self, action: str) -> str:
         """Clean and extract the actual command from agent output.

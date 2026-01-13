@@ -1,5 +1,6 @@
 """Pydantic models for ICICL trajectories and messages."""
 
+import os
 import uuid
 from typing import Any
 
@@ -57,7 +58,31 @@ class StepContext(BaseModel):
         """Format retrieved step examples as a string."""
         if not self.examples:
             return "No examples available."
-        return "\n\n---\n\n".join(ex.to_example_string() for ex in self.examples)
+
+        # Hard cap to prevent prompt explosions (esp. when actions contain patches).
+        max_examples = int(os.environ.get("ICICL_MAX_EXAMPLES", "3"))
+        max_chars = int(os.environ.get("ICICL_MAX_EXAMPLES_CHARS", "4000"))
+        if max_examples <= 0 or max_chars <= 0:
+            return "No examples available."
+
+        parts: list[str] = []
+        total = 0
+        omitted = 0
+
+        considered = min(len(self.examples), max_examples)
+        for ex in self.examples[:considered]:
+            s = ex.to_example_string()
+            if total + len(s) > max_chars:
+                omitted += 1
+                continue
+            parts.append(s)
+            total += len(s)
+
+        omitted += max(0, len(self.examples) - considered)
+        if omitted > 0:
+            parts.append(f"[{omitted} example(s) omitted to fit context budget]")
+
+        return "\n\n---\n\n".join(parts)
 
     def format_history(self) -> str:
         """Format step history as a string (truncated for context window)."""
@@ -71,8 +96,15 @@ class StepContext(BaseModel):
             lines.append(f"[{len(self.history) - 5} earlier steps omitted]")
         for i, step in enumerate(recent, start_idx):
             # Truncate observation in history
-            obs = step.observation[:300] + "..." if len(step.observation) > 300 else step.observation
-            lines.append(f"Step {i}: {step.action} -> {obs}")
+            obs = step.observation.replace("\n", " ")
+            if len(obs) > 300:
+                obs = obs[:300] + "..."
+
+            action = step.action.replace("\n", " ").strip()
+            if len(action) > 200:
+                action = action[:200] + "..."
+
+            lines.append(f"Step {i}: {action} -> {obs}")
         return "\n".join(lines)
 
 
@@ -90,9 +122,19 @@ class StepExample(BaseModel):
     def to_example_string(self) -> str:
         """Format as in-context example with truncated observation."""
         # Truncate observation aggressively (full obs can be 8000+ chars)
-        obs = self.observation[:500] + "..." if len(self.observation) > 500 else self.observation
-        reasoning = self.reasoning[:300] + "..." if len(self.reasoning) > 300 else self.reasoning
-        return f"Observation: {obs}\nReasoning: {reasoning}\nAction: {self.action}"
+        obs = self.observation.replace("\n", " ")
+        if len(obs) > 500:
+            obs = obs[:500] + "..."
+
+        reasoning = self.reasoning.replace("\n", " ").strip()
+        if len(reasoning) > 300:
+            reasoning = reasoning[:300] + "..."
+
+        action = self.action.replace("\n", " ").strip()
+        if len(action) > 250:
+            action = action[:250] + "..."
+
+        return f"Observation: {obs}\nReasoning: {reasoning}\nAction: {action}"
 
 
 class CurationMetadata(BaseModel):
