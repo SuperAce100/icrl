@@ -60,12 +60,19 @@ class StepContext(BaseModel):
         return "\n\n---\n\n".join(ex.to_example_string() for ex in self.examples)
 
     def format_history(self) -> str:
-        """Format step history as a string."""
+        """Format step history as a string (truncated for context window)."""
         if not self.history:
             return "No previous steps."
         lines = []
-        for i, step in enumerate(self.history, 1):
-            lines.append(f"Step {i}: {step.action} -> {step.observation}")
+        # Only show last 5 steps to keep context manageable
+        recent = self.history[-5:] if len(self.history) > 5 else self.history
+        start_idx = len(self.history) - len(recent) + 1
+        if len(self.history) > 5:
+            lines.append(f"[{len(self.history) - 5} earlier steps omitted]")
+        for i, step in enumerate(recent, start_idx):
+            # Truncate observation in history
+            obs = step.observation[:300] + "..." if len(step.observation) > 300 else step.observation
+            lines.append(f"Step {i}: {step.action} -> {obs}")
         return "\n".join(lines)
 
 
@@ -81,8 +88,11 @@ class StepExample(BaseModel):
     step_index: int
 
     def to_example_string(self) -> str:
-        """Format as in-context example."""
-        return f"Goal: {self.goal}\nPlan: {self.plan}\nObservation: {self.observation}\nReasoning: {self.reasoning}\nAction: {self.action}"
+        """Format as in-context example with truncated observation."""
+        # Truncate observation aggressively (full obs can be 8000+ chars)
+        obs = self.observation[:500] + "..." if len(self.observation) > 500 else self.observation
+        reasoning = self.reasoning[:300] + "..." if len(self.reasoning) > 300 else self.reasoning
+        return f"Observation: {obs}\nReasoning: {reasoning}\nAction: {self.action}"
 
 
 class CurationMetadata(BaseModel):

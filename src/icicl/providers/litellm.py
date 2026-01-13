@@ -3,6 +3,7 @@
 from typing import Any
 
 import litellm
+from litellm.exceptions import BadRequestError
 
 from icicl.models import Message
 
@@ -66,10 +67,24 @@ class LiteLLMProvider:
             **self._kwargs,
         }
         if self._max_tokens is not None:
-            kwargs["max_tokens"] = self._max_tokens
+            # GPT-5 models use max_completion_tokens instead of max_tokens
+            if "gpt-5" in self._model.lower():
+                kwargs["max_completion_tokens"] = self._max_tokens
+            else:
+                kwargs["max_tokens"] = self._max_tokens
 
-        response = await litellm.acompletion(**kwargs)
-        return response.choices[0].message.content or ""
+        try:
+            response = await litellm.acompletion(**kwargs)
+            return response.choices[0].message.content or ""
+        except BadRequestError as e:
+            if "max_tokens" in str(e):
+                # Retry with truncated input
+                for msg in kwargs["messages"]:
+                    if len(msg["content"]) > 4000:
+                        msg["content"] = msg["content"][:2000] + "\n...[truncated]...\n" + msg["content"][-2000:]
+                response = await litellm.acompletion(**kwargs)
+                return response.choices[0].message.content or ""
+            raise
 
     def complete_sync(self, messages: list[Message]) -> str:
         """Synchronous version of complete.
@@ -97,7 +112,11 @@ class LiteLLMProvider:
             **self._kwargs,
         }
         if self._max_tokens is not None:
-            kwargs["max_tokens"] = self._max_tokens
+            # GPT-5 models use max_completion_tokens instead of max_tokens
+            if "gpt-5" in self._model.lower():
+                kwargs["max_completion_tokens"] = self._max_tokens
+            else:
+                kwargs["max_tokens"] = self._max_tokens
 
         response = litellm.completion(**kwargs)
         return response.choices[0].message.content or ""

@@ -12,7 +12,7 @@ class TrajectoryRetriever:
     for fine-grained similarity matching.
     """
 
-    def __init__(self, database: TrajectoryDatabase, k: int = 3) -> None:
+    def __init__(self, database: TrajectoryDatabase, k: int = 2) -> None:
         """Initialize the retriever.
 
         Args:

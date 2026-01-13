@@ -110,7 +110,7 @@ Start by exploring the codebase to find the relevant code."""
             command: The shell command to execute.
 
         Returns:
-            The command output (combined stdout and stderr).
+            The command output (combined stdout and stderr), truncated if too long.
         """
         try:
             result = await self._environment.exec(
@@ -120,9 +120,20 @@ Start by exploring the codebase to find the relevant code."""
 
             output_parts = []
             if result.stdout:
-                output_parts.append(result.stdout)
+                stdout = result.stdout
+                # Truncate very long outputs to keep context manageable
+                if len(stdout) > 3000:
+                    stdout = (
+                        stdout[:1500]
+                        + "\n\n... [output truncated, showing first 1500 and last 1500 chars] ...\n\n"
+                        + stdout[-1500:]
+                    )
+                output_parts.append(stdout)
             if result.stderr:
-                output_parts.append(f"[stderr]: {result.stderr}")
+                stderr = result.stderr
+                if len(stderr) > 2000:
+                    stderr = stderr[:2000] + "\n... [stderr truncated] ..."
+                output_parts.append(f"[stderr]: {stderr}")
             if result.return_code != 0:
                 output_parts.append(f"[exit code: {result.return_code}]")
 
@@ -189,4 +200,3 @@ Start by exploring the codebase to find the relevant code."""
     def last_output(self) -> str:
         """Get the last command output."""
         return self._last_output
-

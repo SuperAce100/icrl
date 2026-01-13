@@ -71,6 +71,8 @@ class TrajectoryDatabase:
                 id_list = json.load(f)
                 self._id_to_idx = {id_: idx for idx, id_ in enumerate(id_list)}
                 self._idx_to_id = {idx: id_ for idx, id_ in enumerate(id_list)}
+            # Always rebuild step index from trajectories (not persisted)
+            self._build_step_index()
         else:
             self._rebuild_index()
 
@@ -99,6 +101,33 @@ class TrajectoryDatabase:
         curation_data = [meta.model_dump() for meta in self._curation_metadata.values()]
         with open(curation_file, "w") as f:
             json.dump(curation_data, f, indent=2)
+
+    def _build_step_index(self) -> None:
+        """Build the step-level index from loaded trajectories."""
+        self._step_examples = []
+        step_texts = []
+        for traj_id, traj in self._trajectories.items():
+            for step_idx, step in enumerate(traj.steps):
+                step_ex = StepExample(
+                    goal=traj.goal,
+                    plan=traj.plan,
+                    observation=step.observation,
+                    reasoning=step.reasoning,
+                    action=step.action,
+                    trajectory_id=traj_id,
+                    step_index=step_idx,
+                )
+                self._step_examples.append(step_ex)
+                step_texts.append(f"{step.observation}\n{step.reasoning}")
+
+        if step_texts:
+            step_embeddings = self._embedder.embed(step_texts)
+            step_embeddings_np = np.array(step_embeddings, dtype=np.float32)
+            faiss.normalize_L2(step_embeddings_np)
+            self._step_index = faiss.IndexFlatIP(step_embeddings_np.shape[1])  # type: ignore[assignment]
+            self._step_index.add(step_embeddings_np)  # type: ignore[call-arg]
+        else:
+            self._step_index = faiss.IndexFlatIP(self._embedder.dimension)  # type: ignore[assignment]
 
     def _rebuild_index(self) -> None:
         """Rebuild both trajectory-level and step-level FAISS indexes."""
