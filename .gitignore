@@ -16,3 +16,6 @@ harbor_jobs/
 *_db
 
 harbor_django_comp
+harbor_*
+
+sgicl_v*

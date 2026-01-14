@@ -22,6 +22,7 @@ from typing import Final
 
 import numpy as np
 
+from icicl._debug import log as _debug_log
 from icicl.protocols import Embedder
 
 _TOKEN_RE: Final[re.Pattern[str]] = re.compile(r"[A-Za-z0-9_]+")
@@ -123,6 +124,19 @@ def default_embedder() -> Embedder:
       - ICICL_EMBEDDER_ALLOW_DOWNLOAD: "1" to allow HF downloads (ST only)
     """
     kind = os.environ.get("ICICL_EMBEDDER", "hash").strip().lower()
+    # region agent log (debug-mode)
+    _debug_log(
+        hypothesis_id="H2",
+        location="src/icicl/embedder.py:default_embedder",
+        message="embedder_select",
+        data={
+            "kind": kind,
+            "TOKENIZERS_PARALLELISM": os.environ.get("TOKENIZERS_PARALLELISM"),
+            "HF_HUB_OFFLINE": os.environ.get("HF_HUB_OFFLINE"),
+            "TRANSFORMERS_OFFLINE": os.environ.get("TRANSFORMERS_OFFLINE"),
+        },
+    )
+    # endregion agent log (debug-mode)
     if kind in {"sentence-transformers", "sentence_transformers", "st"}:
         try:
             return SentenceTransformerEmbedder()

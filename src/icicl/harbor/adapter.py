@@ -6,7 +6,13 @@ enabling ICICL agents to work with Harbor's sandboxed execution environment.
 
 from __future__ import annotations
 
+import asyncio
+import os
+import time
+from pathlib import Path
 from typing import TYPE_CHECKING
+
+from icicl._debug import log as _debug_log
 
 if TYPE_CHECKING:
     from harbor.environments.base import BaseEnvironment
@@ -44,6 +50,34 @@ class HarborEnvironmentAdapter:
         self._goal = ""
         self._last_output = ""
 
+        # Harness behavior flags (env-configurable)
+        self._trace_steps = os.environ.get("ICICL_TRACE_STEPS", "0").lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        self._enforce_single_command = os.environ.get(
+            "ICICL_ENFORCE_SINGLE_COMMAND", "1"
+        ).lower() in {"1", "true", "yes"}
+        self._verify_on_submit = os.environ.get(
+            "ICICL_HARBOR_VERIFY_ON_SUBMIT", "1"
+        ).lower() in {"1", "true", "yes"}
+        try:
+            self._verify_timeout_sec = int(
+                os.environ.get("ICICL_HARBOR_VERIFY_TIMEOUT_SEC", "900")
+            )
+        except ValueError:
+            self._verify_timeout_sec = 900
+        try:
+            self._verifier_tail_chars = int(
+                os.environ.get("ICICL_HARBOR_VERIFIER_TAIL_CHARS", "4000")
+            )
+        except ValueError:
+            self._verifier_tail_chars = 4000
+
+        # Used to avoid log spam and to correlate verification output.
+        self._last_verify_started_at: float | None = None
+
     def reset(self, goal: str) -> str:
         """Reset the environment for a new episode.
 
@@ -63,7 +97,7 @@ Goal: {goal}
 
 Commands:
 - Standard bash: ls, cat, grep, find, sed, python3, etc.
-- submit - Run this when you have completed the fix
+- submit - Run this to verify and finish (submit may fail; keep fixing and re-submit)
 
 Start by exploring the codebase to find the relevant code."""
 
@@ -90,14 +124,16 @@ Start by exploring the codebase to find the relevant code."""
             )
 
         try:
+            if self._is_completion_signal(action):
+                observation, done, success = await self._handle_submit()
+                self._last_output = observation
+                return observation, done, success
+
             output, return_code = await self._execute_command_async(action)
             self._last_output = output
 
-            # Handle submit command - signals task completion.
-            # IMPORTANT: We still execute it in the Harbor environment so the harness
-            # can record the final state / patch and run verification.
-            if self._is_completion_signal(action):
-                return output, True, return_code == 0
+            self._maybe_trace_step(action, output)
+            self._maybe_write_agent_log(action, output, return_code)
 
             return output, False, False
 
@@ -105,6 +141,160 @@ Start by exploring the codebase to find the relevant code."""
             error_msg = f"Error executing command: {e}"
             self._last_output = error_msg
             return error_msg, False, False
+
+    async def _handle_submit(self) -> tuple[str, bool, bool]:
+        """Handle the `submit` meta-action.
+
+        In Harbor, official verification normally runs AFTER the agent exits, so the
+        agent would never see failing test output. To make the harness interactive,
+        we optionally run the official Harbor verifier here and only finish when
+        it passes.
+        """
+        if not self._verify_on_submit:
+            return "submit", True, True
+
+        started_at = time.time()
+        self._last_verify_started_at = started_at
+        if self._trace_steps:
+            print("[icicl.verify] Running official Harbor verifier...")
+
+        try:
+            passed, summary = await asyncio.wait_for(
+                self._run_official_verifier(),
+                timeout=max(1, self._verify_timeout_sec),
+            )
+        except TimeoutError:
+            return (
+                "submit: verifier timed out. Try running a smaller, targeted test "
+                "subset, then submit again.",
+                False,
+                False,
+            )
+        except Exception as e:
+            return (
+                f"submit: verifier failed to run ({e}). "
+                "Keep working, then submit again.",
+                False,
+                False,
+            )
+        finally:
+            if self._trace_steps:
+                elapsed = time.time() - started_at
+                print(f"[icicl.verify] Done in {elapsed:.1f}s")
+
+        if passed:
+            self._maybe_trace_step("submit", summary)
+            self._maybe_write_agent_log("submit", summary, 0)
+            return summary, True, True
+        self._maybe_trace_step("submit", summary)
+        self._maybe_write_agent_log("submit", summary, 1)
+        return summary, False, False
+
+    async def _run_official_verifier(self) -> tuple[bool, str]:
+        """Run Harbor's official verifier against the current environment state."""
+        # Lazy imports: keep non-Harbor usage light.
+        from harbor.models.task.task import Task
+        from harbor.verifier.verifier import Verifier
+
+        task_dir = Path(self._environment.environment_dir).parent
+        task = Task(task_dir)
+
+        verifier = Verifier(
+            task=task,
+            trial_paths=self._environment.trial_paths,
+            environment=self._environment,
+        )
+        verifier_result = await verifier.verify()
+
+        rewards = verifier_result.rewards or {}
+        reward_val = None
+        if "reward" in rewards:
+            reward_val = rewards["reward"]
+        elif rewards:
+            reward_val = next(iter(rewards.values()))
+        else:
+            reward_val = 0.0
+
+        passed = float(reward_val) > 0.0
+
+        stdout_tail = self._read_file_tail(
+            self._environment.trial_paths.test_stdout_path,
+            max_chars=self._verifier_tail_chars,
+        )
+        stderr_tail = self._read_file_tail(
+            self._environment.trial_paths.test_stderr_path,
+            max_chars=min(self._verifier_tail_chars, 2000),
+        )
+
+        status = "PASSED" if passed else "FAILED"
+        lines: list[str] = [
+            f"submit: VERIFIER {status} (reward={reward_val})",
+            "",
+            "To reproduce locally in this environment:",
+            f"- bash /tests/{task.paths.test_path.relative_to(task.paths.tests_dir)}",
+        ]
+        if stdout_tail:
+            lines.extend(["", "[verifier stdout tail]", stdout_tail])
+        if stderr_tail:
+            lines.extend(["", "[verifier stderr tail]", stderr_tail])
+
+        if not passed:
+            lines.extend(
+                [
+                    "",
+                    "Fix the failures above, then run: submit",
+                ]
+            )
+        return passed, "\n".join(lines)
+
+    def _read_file_tail(self, path: Path, *, max_chars: int) -> str | None:
+        """Read the tail of a text file (best-effort)."""
+        if max_chars <= 0:
+            return None
+        try:
+            if not path.exists():
+                return None
+            max_bytes = max_chars * 4
+            with path.open("rb") as f:
+                f.seek(0, os.SEEK_END)
+                size = f.tell()
+                start = max(0, size - max_bytes)
+                f.seek(start)
+                data = f.read()
+            text = data.decode("utf-8", errors="replace")
+            text = text[-max_chars:] if len(text) > max_chars else text
+            if start > 0:
+                return "...\n" + text
+            return text
+        except Exception:
+            return None
+
+    def _maybe_trace_step(self, command: str, output: str) -> None:
+        if not self._trace_steps:
+            return
+        out = output.replace("\n", "\\n")
+        if len(out) > 400:
+            out = out[:400] + "...[truncated]"
+        print(f"[icicl.step] cmd={command!r} out={out}")
+
+    def _maybe_write_agent_log(
+        self, command: str, output: str, return_code: int
+    ) -> None:
+        """Write step logs to the trial's mounted agent dir (best-effort)."""
+        try:
+            agent_dir = self._environment.trial_paths.agent_dir
+            agent_dir.mkdir(parents=True, exist_ok=True)
+            log_path = agent_dir / "icicl_steps.log"
+            ts = time.strftime("%Y-%m-%d %H:%M:%S")
+            with log_path.open("a", encoding="utf-8") as f:
+                f.write(f"\n[{ts}]$ {command}\n")
+                if output:
+                    f.write(output)
+                    if not output.endswith("\n"):
+                        f.write("\n")
+                f.write(f"[exit code: {return_code}]\n")
+        except Exception:
+            return
 
     async def _execute_command_async(self, command: str) -> tuple[str, int]:
         """Execute a command via Harbor's environment asynchronously.
@@ -150,6 +340,20 @@ Start by exploring the codebase to find the relevant code."""
         except TimeoutError:
             return f"Command timed out after {self._timeout_sec} seconds", 124
         except Exception as e:
+            # region agent log (debug-mode)
+            _debug_log(
+                hypothesis_id="H4",
+                location="src/icicl/harbor/adapter.py:HarborEnvironmentAdapter._execute_command_async",
+                message="harbor_exec_exception",
+                data={
+                    "pid": os.getpid(),
+                    "timeout_sec": self._timeout_sec,
+                    "command_prefix": command[:120],
+                    "exc_type": type(e).__name__,
+                    "exc": str(e)[:800],
+                },
+            )
+            # endregion agent log (debug-mode)
             return f"Execution error: {e}", 1
 
     def _clean_command(self, action: str) -> str:
@@ -180,7 +384,140 @@ Start by exploring the codebase to find the relevant code."""
         if action.startswith("`") and action.endswith("`"):
             action = action[1:-1].strip()
 
-        return action
+        # Strip common tool/trace artifacts that sometimes leak into model output.
+        # These are not valid shell syntax and can cause confusing failures.
+        action = action.replace("<meta_sep>", " ").strip()
+        for marker in ("commentary to=submit", "analysis to=submit", "to=submit"):
+            if marker in action:
+                action = action.replace(marker, " ").strip()
+
+        if not self._enforce_single_command:
+            return action
+
+        # Enforce "one command per step", but allow common multi-line *single-command*
+        # blocks (heredocs, python -c blocks). If extra commands are present after
+        # a block, they are dropped.
+        raw_lines = action.splitlines()
+        while raw_lines and not raw_lines[0].strip():
+            raw_lines.pop(0)
+        while raw_lines and not raw_lines[-1].strip():
+            raw_lines.pop()
+
+        if not raw_lines:
+            return ""
+        if len(raw_lines) == 1:
+            return raw_lines[0].strip()
+
+        first = raw_lines[0].strip()
+
+        if "<<" in first:
+            return self._extract_heredoc_block(raw_lines)
+
+        if first.startswith(("python ", "python3 ")) and " -c" in first:
+            return self._extract_python_c_block(raw_lines)
+
+        if first.startswith(("bash ", "sh ")) and (" -c" in first or " -lc" in first):
+            return self._extract_quoted_block(raw_lines)
+
+        # Fallback: only execute the first non-empty line to keep the loop interactive.
+        # The agent can chain with `&&` or use a heredoc for multi-line scripts.
+        return first
+
+    def _extract_heredoc_block(self, lines: list[str]) -> str:
+        """Extract a heredoc command block from multi-line output."""
+        first = lines[0]
+        idx = first.find("<<")
+        if idx == -1:
+            return first.strip()
+
+        after = first[idx + 2 :].strip()
+        if not after:
+            return "\n".join(lines).strip()
+
+        token = after.split()[0]
+        delim = token.strip("'\"")
+        if not delim:
+            return "\n".join(lines).strip()
+
+        for i in range(1, len(lines)):
+            if lines[i].strip() == delim:
+                return "\n".join(lines[: i + 1]).strip()
+
+        return "\n".join(lines).strip()
+
+    def _extract_python_c_block(self, lines: list[str]) -> str:
+        """Extract a `python -c "<multi-line>"` block, dropping trailing commands."""
+        first = lines[0]
+        parts = first.split("-c", 1)
+        if len(parts) != 2:
+            return first.strip()
+
+        rest = parts[1].lstrip()
+        if not rest:
+            return first.strip()
+
+        quote = rest[0]
+        if quote not in ("'", '"'):
+            return first.strip()
+
+        # Common pattern: python3 -c " ... \n ... \n"
+        for i in range(1, len(lines)):
+            if lines[i].strip() == quote:
+                return "\n".join(lines[: i + 1]).strip()
+
+        # Fallback: keep full block (best-effort).
+        return "\n".join(lines).strip()
+
+    def _extract_quoted_block(self, lines: list[str]) -> str:
+        """Extract a `bash -c "<...>"` block, dropping trailing commands.
+
+        The model sometimes emits multi-line actions like:
+            bash -lc "<script...>"
+            submit
+
+        We must only execute the *first* shell command, not the trailing lines.
+        This implementation finds the closing quote of the -c/-lc argument and
+        truncates everything after it.
+        """
+        full = "\n".join(lines)
+
+        # Find the -c/-lc argument start (near the beginning).
+        idx_lc = full.find(" -lc")
+        idx_c = full.find(" -c")
+        idxs = [i for i in (idx_lc, idx_c) if i != -1]
+        if not idxs:
+            return lines[0].strip()
+
+        start = min(idxs)
+        token = " -lc" if start == idx_lc else " -c"
+
+        i = start + len(token)
+        while i < len(full) and full[i].isspace():
+            i += 1
+        if i >= len(full):
+            return lines[0].strip()
+
+        quote = full[i]
+        if quote not in ("'", '"'):
+            # Unquoted -c argument; fall back to first line only.
+            return lines[0].strip()
+
+        # Scan for the matching closing quote (best-effort, handles backslash escapes).
+        i += 1
+        escaped = False
+        while i < len(full):
+            ch = full[i]
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == quote:
+                end = i + 1
+                return full[:end].strip()
+            i += 1
+
+        # If we can't find a closing quote, keep the whole block.
+        return full.strip()
 
     def _is_completion_signal(self, action: str) -> bool:
         """Check if the action signals task completion.

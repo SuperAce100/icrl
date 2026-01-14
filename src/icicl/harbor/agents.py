@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -31,6 +32,9 @@ from dotenv import load_dotenv
 from harbor.agents.base import BaseAgent
 
 from icicl import Agent, LiteLLMProvider, Step, StepContext
+from icicl._debug import log as _debug_log
+from icicl._debug import set_run_id as _set_debug_run_id
+from icicl.harbor import docker_workarounds as _docker_workarounds  # noqa: F401
 from icicl.harbor.adapter import HarborEnvironmentAdapter
 from icicl.harbor.prompts import (
     ACT_PROMPT,
@@ -43,8 +47,8 @@ from icicl.harbor.prompts import (
 litellm.drop_params = True
 
 if TYPE_CHECKING:
-    from harbor.models.agent.context import AgentContext
     from harbor.environments.base import BaseEnvironment
+    from harbor.models.agent.context import AgentContext
 
 load_dotenv()
 
@@ -62,20 +66,29 @@ def _get_model() -> str:
 
 def _get_k() -> int:
     """Get the number of examples to retrieve from environment or default."""
-    # Keep default small to reduce prompt size / embedding overhead.
-    return int(os.environ.get("ICICL_K", "1"))
+    # Default to 3 (paper-style) and never allow K=1 (too brittle).
+    try:
+        k = int(os.environ.get("ICICL_K", "3"))
+    except ValueError:
+        k = 3
+    return max(2, k)
 
 
 def _get_max_completion_tokens() -> int:
     """Get the maximum completion tokens per LLM call (output budget)."""
-    # ReAct prompts expect short outputs (plans/reasoning/commands), so keep this
-    # conservative by default to avoid provider-side validation errors.
-    return int(os.environ.get("ICICL_MAX_COMPLETION_TOKENS", "2048"))
+    # Keep this reasonably large; the provider will clamp dynamically based on
+    # model context window and prompt length.
+    return int(os.environ.get("ICICL_MAX_COMPLETION_TOKENS", "32768"))
 
 
 def _get_max_steps() -> int:
     """Get the maximum steps per episode from environment or default."""
     return int(os.environ.get("ICICL_MAX_STEPS", "100"))
+
+
+def _is_smoke_mode() -> bool:
+    """Run no-op agent logic (env start/stop smoke test)."""
+    return os.environ.get("ICICL_HARBOR_SMOKE", "0").lower() in {"1", "true", "yes"}
 
 
 def _create_step_callback(
@@ -163,10 +176,47 @@ class ICICLTrainAgent(BaseAgent):
             environment: The Harbor environment.
             context: The Harbor agent context to populate.
         """
+        run_id = f"harbor:{os.getpid()}:{int(time.time() * 1000)}"
+        _set_debug_run_id(run_id)
+        # region agent log (debug-mode)
+        _env_dir = getattr(environment, "environment_dir", None)
+        _trial_paths = getattr(environment, "trial_paths", None)
+        _agent_dir = getattr(_trial_paths, "agent_dir", None) if _trial_paths else None
+        _debug_log(
+            hypothesis_id="H1",
+            location="src/icicl/harbor/agents.py:ICICLTrainAgent.run",
+            message="agent_run_start",
+            data={
+                "mode": "train",
+                "pid": os.getpid(),
+                "db_path": _get_db_path(),
+                "model": _get_model(),
+                "k": _get_k(),
+                "max_steps": _get_max_steps(),
+                "env_dir": str(_env_dir) if _env_dir is not None else None,
+                "trial_agent_dir": str(_agent_dir) if _agent_dir is not None else None,
+                "instruction_prefix": instruction[:120],
+            },
+        )
+        # endregion agent log (debug-mode)
+
         db_path = _get_db_path()
         model = _get_model()
         k = _get_k()
         max_steps = _get_max_steps()
+
+        if _is_smoke_mode():
+            if context.metadata is None:
+                context.metadata = {}
+            context.metadata.update(
+                {
+                    "icicl_success": False,
+                    "icicl_plan": None,
+                    "icicl_steps": 0,
+                    "icicl_mode": "train-smoke",
+                }
+            )
+            return
 
         # Initialize the LLM provider with system prompt
         # GPT-5 only supports temperature=1, use 0.3 for other models
@@ -211,6 +261,8 @@ class ICICLTrainAgent(BaseAgent):
                 "icicl_db_trajectories": agent.get_stats()["total_trajectories"],
                 "icicl_stored": trajectory.success,  # Only stored if agent submitted
                 "trajectory": trajectory_log,
+                "icicl_llm_tokens": llm.get_token_profile(),
+                "icicl_llm_last_call": llm.get_last_call_profile(),
             }
         )
 
@@ -252,8 +304,41 @@ class ICICLZeroShotAgent(BaseAgent):
             environment: The Harbor environment.
             context: The Harbor agent context to populate.
         """
+        run_id = f"harbor:{os.getpid()}:{int(time.time() * 1000)}"
+        _set_debug_run_id(run_id)
+        # region agent log (debug-mode)
+        _env_dir = getattr(environment, "environment_dir", None)
+        _debug_log(
+            hypothesis_id="H1",
+            location="src/icicl/harbor/agents.py:ICICLZeroShotAgent.run",
+            message="agent_run_start",
+            data={
+                "mode": "zero-shot",
+                "pid": os.getpid(),
+                "model": _get_model(),
+                "k": 0,
+                "max_steps": _get_max_steps(),
+                "env_dir": str(_env_dir) if _env_dir is not None else None,
+                "instruction_prefix": instruction[:120],
+            },
+        )
+        # endregion agent log (debug-mode)
+
         model = _get_model()
         max_steps = _get_max_steps()
+
+        if _is_smoke_mode():
+            if context.metadata is None:
+                context.metadata = {}
+            context.metadata.update(
+                {
+                    "icicl_success": False,
+                    "icicl_plan": None,
+                    "icicl_steps": 0,
+                    "icicl_mode": "zero-shot-smoke",
+                }
+            )
+            return
 
         # Use a temporary empty database (no retrieval)
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -299,6 +384,8 @@ class ICICLZeroShotAgent(BaseAgent):
                     "icicl_plan": trajectory.plan,
                     "icicl_steps": len(trajectory.steps),
                     "icicl_k": 0,
+                    "icicl_llm_tokens": llm.get_token_profile(),
+                    "icicl_llm_last_call": llm.get_last_call_profile(),
                 }
             )
 
@@ -344,10 +431,44 @@ class ICICLTestAgent(BaseAgent):
             environment: The Harbor environment.
             context: The Harbor agent context to populate.
         """
+        run_id = f"harbor:{os.getpid()}:{int(time.time() * 1000)}"
+        _set_debug_run_id(run_id)
+        # region agent log (debug-mode)
+        _env_dir = getattr(environment, "environment_dir", None)
+        _debug_log(
+            hypothesis_id="H1",
+            location="src/icicl/harbor/agents.py:ICICLTestAgent.run",
+            message="agent_run_start",
+            data={
+                "mode": "test",
+                "pid": os.getpid(),
+                "db_path": _get_db_path(),
+                "model": _get_model(),
+                "k": _get_k(),
+                "max_steps": _get_max_steps(),
+                "env_dir": str(_env_dir) if _env_dir is not None else None,
+                "instruction_prefix": instruction[:120],
+            },
+        )
+        # endregion agent log (debug-mode)
+
         db_path = _get_db_path()
         model = _get_model()
         k = _get_k()
         max_steps = _get_max_steps()
+
+        if _is_smoke_mode():
+            if context.metadata is None:
+                context.metadata = {}
+            context.metadata.update(
+                {
+                    "icicl_success": False,
+                    "icicl_plan": None,
+                    "icicl_steps": 0,
+                    "icicl_mode": "test-smoke",
+                }
+            )
+            return
 
         temp = 1.0 if "gpt-5" in model.lower() else 0.3
         llm = LiteLLMProvider(
@@ -396,5 +517,7 @@ class ICICLTestAgent(BaseAgent):
                 "icicl_steps": len(trajectory.steps),
                 "icicl_db_trajectories": agent.get_stats()["total_trajectories"],
                 "icicl_retrieved_examples": retrieved_example_info,
+                "icicl_llm_tokens": llm.get_token_profile(),
+                "icicl_llm_last_call": llm.get_last_call_profile(),
             }
         )

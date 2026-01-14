@@ -7,6 +7,7 @@ from pathlib import Path
 import faiss
 import numpy as np
 
+from icicl._debug import log as _debug_log
 from icicl.embedder import default_embedder
 from icicl.models import CurationMetadata, StepExample, Trajectory
 from icicl.protocols import Embedder
@@ -121,6 +122,19 @@ class TrajectoryDatabase:
     def _save_index(self) -> None:
         """Save the FAISS index to disk."""
         if self._index is not None:
+            # region agent log (debug-mode)
+            _debug_log(
+                hypothesis_id="H1",
+                location="src/icicl/database.py:TrajectoryDatabase._save_index",
+                message="db_save_index",
+                data={
+                    "pid": os.getpid(),
+                    "db_path": str(self._path),
+                    "index_ntotal": int(getattr(self._index, "ntotal", 0)),
+                    "ids_count": len(self._idx_to_id),
+                },
+            )
+            # endregion agent log (debug-mode)
             index_file = self._path / "index.faiss"
             faiss.write_index(self._index, str(index_file))  # type: ignore[assignment]
 
@@ -136,6 +150,18 @@ class TrajectoryDatabase:
 
     def _save_curation(self) -> None:
         """Save curation metadata to disk."""
+        # region agent log (debug-mode)
+        _debug_log(
+            hypothesis_id="H1",
+            location="src/icicl/database.py:TrajectoryDatabase._save_curation",
+            message="db_save_curation",
+            data={
+                "pid": os.getpid(),
+                "db_path": str(self._path),
+                "curation_count": len(self._curation_metadata),
+            },
+        )
+        # endregion agent log (debug-mode)
         curation_file = self._path / "curation.json"
         curation_data = [meta.model_dump() for meta in self._curation_metadata.values()]
         with open(curation_file, "w") as f:
