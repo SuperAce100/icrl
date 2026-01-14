@@ -227,11 +227,13 @@ Start by exploring the codebase to find the relevant code."""
         )
 
         status = "PASSED" if passed else "FAILED"
+        test_rel = task.paths.test_path.relative_to(task.paths.tests_dir)
         lines: list[str] = [
             f"submit: VERIFIER {status} (reward={reward_val})",
             "",
-            "To reproduce locally in this environment:",
-            f"- bash /tests/{task.paths.test_path.relative_to(task.paths.tests_dir)}",
+            "To reproduce / run tests in this environment:",
+            "- submit   (recommended; runs the official verifier)",
+            f"- bash /tests/{test_rel}   (only if /tests is available)",
         ]
         if stdout_tail:
             lines.extend(["", "[verifier stdout tail]", stdout_tail])
@@ -391,6 +393,13 @@ Start by exploring the codebase to find the relevant code."""
             if marker in action:
                 action = action.replace(marker, " ").strip()
 
+        # Some models try to keep commands "single-line" by emitting literal "\n"
+        # sequences inside shell strings (e.g., a heredoc inside `bash -lc "..."`).
+        # That breaks heredocs because bash treats "\n" as characters, not a newline.
+        # When we detect a heredoc, normalize these sequences back to real newlines.
+        if "\\n" in action and "<<" in action:
+            action = action.replace("\\n", "\n")
+
         if not self._enforce_single_command:
             return action
 
@@ -410,16 +419,84 @@ Start by exploring the codebase to find the relevant code."""
 
         first = raw_lines[0].strip()
 
-        if "<<" in first:
-            return self._extract_heredoc_block(raw_lines)
-
         if first.startswith(("python ", "python3 ")) and " -c" in first:
             return self._extract_python_c_block(raw_lines)
 
         if first.startswith(("bash ", "sh ")) and (" -c" in first or " -lc" in first):
             return self._extract_quoted_block(raw_lines)
 
-        # Fallback: only execute the first non-empty line to keep the loop interactive.
+        # IMPORTANT: check quoted bash/sh blocks *before* generic heredocs.
+        #
+        # Many SWE-bench fixes use a nested heredoc inside a quoted `bash -lc "..."`,
+        # e.g.:
+        #   bash -lc "python3 - <<'PY'\n...\nPY"
+        #   submit
+        #
+        # If we treat that as an outer heredoc, we fail to find the delimiter (it is
+        # typically `PY"` with the closing quote) and we end up executing the entire
+        # multi-line action including a trailing `submit` as a shell command.
+        if "<<" in first:
+            return self._extract_heredoc_block(raw_lines)
+
+        # Fallback: the model sometimes emits a brief sentence before the command.
+        # Prefer the first line that *looks like* a shell command.
+        def _strip_bullets(s: str) -> str:
+            s = s.strip()
+            if s.startswith(("- ", "* ")):
+                return s[2:].lstrip()
+            # Strip simple enumerations like "1. cmd" or "2) cmd".
+            i = 0
+            while i < len(s) and s[i].isdigit():
+                i += 1
+            if i and i < len(s) and s[i] in {".", ")"}:
+                rest = s[i + 1 :].lstrip()
+                if rest:
+                    return rest
+            return s
+
+        allowed_prefixes = (
+            "submit",
+            "ls",
+            "cd",
+            "pwd",
+            "cat",
+            "grep",
+            "find",
+            "sed",
+            "python",
+            "python3",
+            "bash",
+            "sh",
+            "git",
+            "./",
+            "/",
+            "echo",
+            "export",
+            "mkdir",
+            "cp",
+            "mv",
+            "rm",
+            "touch",
+            "chmod",
+        )
+
+        for raw in raw_lines:
+            cand = _strip_bullets(raw)
+            if not cand or cand.startswith("#"):
+                continue
+            for prefix in allowed_prefixes:
+                # Path-like prefixes should match literally (/, ./)
+                if prefix in {"/", "./"}:
+                    if cand.startswith(prefix):
+                        return cand
+                    continue
+
+                # Word-like commands: require a token boundary to avoid matching
+                # accidental prose like "bash:" or "submit:".
+                if cand == prefix or cand.startswith(prefix + " "):
+                    return cand
+
+        # If nothing matches, fall back to executing only the first non-empty line.
         # The agent can chain with `&&` or use a heredoc for multi-line scripts.
         return first
 

@@ -7,15 +7,15 @@ This module provides agents for use with the Harbor CLI:
 
 Example usage:
     # Training
-    harbor run -d "swebench-verified@1.0.0" \
+    uv run harbor run -d "swebench-verified@1.0" \
         --agent-import-path icicl.harbor.agents:ICICLTrainAgent
 
     # Evaluation
-    harbor run -d "swebench-verified@1.0.0" \
+    uv run harbor run -d "swebench-verified@1.0" \
         --agent-import-path icicl.harbor.agents:ICICLTestAgent
 
     # Zero-shot baseline
-    harbor run -d "swebench-verified@1.0.0" \
+    uv run harbor run -d "swebench-verified@1.0" \
         --agent-import-path icicl.harbor.agents:ICICLZeroShotAgent
 """
 

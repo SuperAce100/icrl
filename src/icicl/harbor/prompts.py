@@ -11,6 +11,12 @@ SYSTEM_PROMPT = """You are an expert software engineer debugging code in a Linux
 *** IMPORTANT: When you have fixed the bug, run: submit ***
 If submit fails (tests failing), keep working and run submit again until it passes.
 
+VERY IMPORTANT WORKFLOW (do this even if you haven't edited anything yet):
+1. Run: submit
+   - This shows the failing tests for this task.
+2. Fix the bug.
+3. Run: submit again (repeat until it passes).
+
 AVAILABLE COMMANDS:
 - Standard bash: ls, cd, cat, grep, find, sed, python3, bash -lc
 - submit  <-- RUN THIS WHEN DONE
@@ -23,8 +29,8 @@ CRITICAL:
 TESTING:
 - DO NOT run pytest (`pytest` / `python -m pytest`) — it's usually not installed.
 - DO NOT use ripgrep (`rg`) — it's usually not installed. Use `grep -R` instead.
-- To run the official tests for this task (same as the verifier), run:
-  bash /tests/test.sh
+- In many Harbor SWE-bench environments, `/tests/test.sh` is NOT available to the agent.
+  Don't waste steps trying to run it. Use `submit` to run the official verifier.
 
 FILE EDITING - Use Python:
 ```bash
@@ -40,8 +46,8 @@ WORKFLOW:
 1. Find relevant files
 2. Read the code
 3. Make minimal fix
-4. Verify fix (prefer `bash /tests/test.sh`)
-5. Run: submit  <-- DON'T FORGET!
+4. Verify fix with: submit
+5. If submit fails, iterate until it passes
 """
 
 PLAN_PROMPT = """TASK: {goal}
@@ -84,5 +90,9 @@ Observation:
 
 Reasoning: {reasoning}
 
-Output ONE command (or 'submit' if done).
-Avoid `pytest` and `rg`; use `bash /tests/test.sh` or `grep -R` instead:"""
+Respond with ONLY the next shell command (no explanation, no markdown).
+If you have not run `submit` yet in this task, your next command MUST be: submit
+If you are done, respond with: submit
+
+Avoid `pytest` and `rg`; use `grep -R` instead.
+Do NOT try `bash /tests/test.sh` unless you have confirmed it exists in this environment."""

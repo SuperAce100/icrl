@@ -11,13 +11,15 @@ and SWE-bench tasks.
 
 Usage:
     # Run on Django tasks from SWE-bench
-    python examples/harbor_comparison.py --filter "*django*"
+    ICICL_HARBOR_SMOKE=1 uv run python examples/harbor_comparison.py \
+        --filter "*django*" --disable-verification
 
     # Run on specific tasks
-    python examples/harbor_comparison.py --tasks django__django-11885 django__django-13590
+    uv run python examples/harbor_comparison.py \
+        --tasks django__django-11885 django__django-13590
 
     # Resume from checkpoint
-    python examples/harbor_comparison.py --checkpoint harbor_experiment.json --resume
+    uv run python examples/harbor_comparison.py --checkpoint harbor_experiment.json --resume
 
 Requirements:
     - Harbor CLI installed and configured
@@ -35,11 +37,12 @@ import argparse
 import asyncio
 import json
 import os
+import shutil
 import subprocess
 import sys
+import uuid
 from datetime import datetime
 from pathlib import Path
-import shutil
 
 from dotenv import load_dotenv
 from rich.console import Console
@@ -53,6 +56,30 @@ console = Console()
 # Default paths
 DEFAULT_CHECKPOINT = Path("harbor_comparison_checkpoint.json")
 DEFAULT_DB_DIR = Path.home() / ".icicl" / "harbor_comparison"
+DEFAULT_JOBS_DIR = Path("harbor_jobs")
+
+
+def _unique_job_name(job_name: str, jobs_dir: Path) -> str:
+    """Return a job name that won't collide with existing job dirs.
+
+    Newer Harbor versions treat an existing job directory as a "resume" attempt.
+    If the config differs, Harbor exits with FileExistsError. To make this script
+    re-runnable without manual cleanup, we auto-suffix job names when needed.
+    """
+    job_dir = jobs_dir / job_name
+    if not job_dir.exists():
+        return job_name
+
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    while True:
+        suffix = uuid.uuid4().hex[:6]
+        candidate = f"{job_name}-{stamp}-{suffix}"
+        if not (jobs_dir / candidate).exists():
+            console.print(
+                f"[yellow]Job directory {job_dir} exists; using job name "
+                f"{candidate}[/yellow]"
+            )
+            return candidate
 
 
 def load_checkpoint(path: Path) -> dict | None:
@@ -76,9 +103,11 @@ def run_harbor_command(
     task_filter: str | None = None,
     task_names: list[str] | None = None,
     job_name: str = "sgicl-run",
+    jobs_dir: Path = DEFAULT_JOBS_DIR,
     db_path: str | None = None,
     extra_env: dict | None = None,
     n_parallel: int = 1,
+    disable_verification: bool = False,
 ) -> dict:
     """Run Harbor CLI and return results.
     
@@ -88,20 +117,28 @@ def run_harbor_command(
         task_filter: Optional glob filter for tasks (e.g., "*django*")
         task_names: Optional specific task names to run
         job_name: Name for the Harbor job
+        jobs_dir: Directory where Harbor writes job artifacts
         db_path: Path to ICICL database
         extra_env: Additional environment variables
+        disable_verification: Skip verifier/tests (useful for fast smoke runs)
     
     Returns:
         Dictionary with results from the Harbor run
     """
+    jobs_dir = Path(jobs_dir)
+    job_name = _unique_job_name(job_name, jobs_dir)
+
     cmd = [
         "uv", "run", "harbor", "run",
         "-d", dataset,
         "--agent-import-path", agent_import_path,
         "--job-name", job_name,
-        "--jobs-dir", "harbor_jobs",
+        "--jobs-dir", str(jobs_dir),
         "-n", str(n_parallel),
     ]
+
+    if disable_verification:
+        cmd.append("--disable-verification")
     
     if task_filter:
         cmd.extend(["-t", task_filter])
@@ -128,14 +165,29 @@ def run_harbor_command(
         )
         
         console.print(f"[dim]Harbor exit code: {result.returncode}[/dim]")
-        
+
+        if result.returncode != 0:
+            return {
+                "error": "harbor failed",
+                "returncode": result.returncode,
+                "job_name": job_name,
+                "jobs_dir": str(jobs_dir),
+                "command": " ".join(cmd),
+            }
+
         # Parse results from job directory
-        job_dir = Path("harbor_jobs") / job_name
+        job_dir = jobs_dir / job_name
         result_file = job_dir / "result.json"
         
         if result_file.exists():
             with open(result_file) as f:
-                return json.load(f)
+                data = json.load(f)
+            # Attach a few convenience fields for debugging/scripted analysis.
+            if isinstance(data, dict):
+                data["_icicl_job_name"] = job_name
+                data["_icicl_jobs_dir"] = str(jobs_dir)
+                data["_icicl_command"] = " ".join(cmd)
+            return data
         else:
             console.print(f"[red]No result file found at {result_file}[/red]")
             # List what's in the job directory
@@ -182,6 +234,8 @@ async def run_comparison(
     model: str = "gpt-4o-mini",
     max_steps: int = 50,
     n_parallel: int = 1,
+    jobs_dir: Path = DEFAULT_JOBS_DIR,
+    disable_verification: bool = False,
 ) -> dict:
     """Run the 3-way Harbor comparison.
     
@@ -192,6 +246,7 @@ async def run_comparison(
         checkpoint_path: Path for saving progress
         model: LLM model to use
         max_steps: Max steps per task
+        disable_verification: Skip verifier/tests (fast smoke runs)
     
     Returns:
         Results dictionary
@@ -239,9 +294,11 @@ async def run_comparison(
             task_filter=task_filter,
             task_names=task_names,
             job_name="sgicl-zeroshot",
+            jobs_dir=jobs_dir,
             db_path=str(zs_db),
             extra_env={**common_env, "ICICL_K": "0"},
             n_parallel=n_parallel,  # Zero-shot can run in parallel
+            disable_verification=disable_verification,
         )
         
         results["zero_shot"] = zs_result
@@ -263,9 +320,11 @@ async def run_comparison(
             task_filter=task_filter,
             task_names=task_names,
             job_name="sgicl-online",
+            jobs_dir=jobs_dir,
             db_path=str(online_db),
             extra_env={**common_env, "ICICL_K": "3"},
             n_parallel=min(n_parallel, 8),  # Cap at 8 for online learning
+            disable_verification=disable_verification,
         )
         
         results["sgicl_online"] = online_result
@@ -333,7 +392,15 @@ def main():
     )
     parser.add_argument(
         "--n-tasks", type=int, default=None,
-        help="Limit number of tasks (uses --limit in Harbor)"
+        help="(deprecated/no-op) Harbor no longer supports --limit; use --tasks/-t"
+    )
+    parser.add_argument(
+        "--jobs-dir", type=str, default=str(DEFAULT_JOBS_DIR),
+        help="Directory to store Harbor job results (default: harbor_jobs)"
+    )
+    parser.add_argument(
+        "--disable-verification", action="store_true",
+        help="Skip task verification/tests (useful for fast smoke runs)"
     )
     parser.add_argument(
         "--model", type=str, default=None,
@@ -387,6 +454,12 @@ def main():
     if shutil.which("uv") is None:
         console.print("[red]Error: uv not found[/red]")
         sys.exit(1)
+
+    if args.n_tasks is not None:
+        console.print(
+            "[yellow]Warning: --n-tasks is currently ignored. "
+            "Use --tasks or --filter to select tasks.[/yellow]"
+        )
     
     # Run comparison
     results = asyncio.run(run_comparison(
@@ -397,6 +470,8 @@ def main():
         model=model,
         max_steps=args.max_steps,
         n_parallel=args.parallel,
+        jobs_dir=Path(args.jobs_dir),
+        disable_verification=args.disable_verification,
     ))
     
     # Print results

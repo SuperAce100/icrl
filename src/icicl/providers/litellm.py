@@ -545,8 +545,13 @@ class LiteLLMProvider:
         if max_context is not None and prompt_tokens is not None:
             safe = min(safe, max(1, int(max_context) - prompt_tokens - safety))
 
-        # Set both; LiteLLM will route/drop as appropriate per provider.
-        return {"max_tokens": safe, "max_completion_tokens": safe}
+        # IMPORTANT: Do NOT set both `max_tokens` and `max_completion_tokens`.
+        #
+        # OpenAI's Chat Completions API rejects requests that include both
+        # parameters (400 invalid_parameter_combination). LiteLLM can map the
+        # OpenAI-style `max_tokens` across providers, so we stick to `max_tokens`
+        # only for broad compatibility.
+        return {"max_tokens": safe}
 
     def complete_sync(self, messages: list[Message]) -> str:
         """Synchronous version of complete.
