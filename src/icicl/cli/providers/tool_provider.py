@@ -1,10 +1,18 @@
 """LLM provider with native tool calling support."""
 
 import json
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
 import litellm
+
+# Disable LiteLLM's async logging worker to avoid event loop issues
+# when asyncio.run() is called multiple times (e.g., in chat mode)
+litellm.disable_logging_worker = True
+
+# Suppress the async client cleanup warning
+warnings.filterwarnings("ignore", message="coroutine 'close_litellm_async_clients'")
 
 from icicl.cli.tools.base import ToolRegistry
 from icicl.models import Message
