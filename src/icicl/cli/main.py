@@ -1,18 +1,33 @@
 """ICICL CLI - Main entry point."""
 
-import asyncio
-from pathlib import Path
-from typing import Annotated
+# Configure litellm BEFORE any other imports to avoid event loop issues
+import litellm  # noqa: E402
 
-import typer
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
+litellm.disable_logging_worker = True
 
-from icicl import __version__
-from icicl.cli.config import Config, get_config_dir, get_default_db_path
-from icicl.cli.runner import AgentRunner, SimpleCallbacks
-from icicl.cli.tools.base import ToolResult
+import asyncio  # noqa: E402
+import warnings  # noqa: E402
+from pathlib import Path  # noqa: E402
+from typing import Annotated  # noqa: E402
+
+# Better interactive input editing (e.g., backspace across wrapped lines)
+try:  # pragma: no cover
+    import readline  # noqa: F401
+except Exception:  # pragma: no cover
+    readline = None  # type: ignore
+
+# Suppress litellm async client cleanup warning
+warnings.filterwarnings("ignore", message="coroutine 'close_litellm_async_clients'")
+
+import typer  # noqa: E402
+from rich.console import Console  # noqa: E402
+from rich.panel import Panel  # noqa: E402
+from rich.table import Table  # noqa: E402
+
+from icicl import __version__  # noqa: E402
+from icicl.cli.config import Config, get_config_dir, get_default_db_path  # noqa: E402
+from icicl.cli.runner import AgentRunner, SimpleCallbacks  # noqa: E402
+from icicl.cli.tools.base import ToolResult  # noqa: E402
 
 app = typer.Typer(
     name="icicl",
@@ -189,85 +204,14 @@ def chat(
     ] = None,
 ) -> None:
     """Start an interactive chat session."""
+    from icicl.cli.tui import run_tui
+
     config = Config.load()
     if model:
         config.model = model
 
     work_dir = working_dir or Path.cwd()
-
-    console.print(
-        Panel(
-            f"[bold]ICICL Interactive Mode[/]\n\n"
-            f"Model: {config.model}\n"
-            f"Working directory: {work_dir}\n\n"
-            f"Type your task and press Enter. Type 'exit' or 'quit' to exit.",
-            title="[bold blue]Welcome[/]",
-            border_style="blue",
-        )
-    )
-
-    def on_thinking(text: str) -> None:
-        lines = text.strip().split("\n")
-        if lines:
-            preview = lines[0][:100]
-            suffix = "..." if len(lines[0]) > 100 else ""
-            console.print(f"[dim]{preview}{suffix}[/]")
-
-    def on_tool_start(tool: str, params: dict) -> None:
-        if tool == "Bash":
-            cmd = params.get("command", "")
-            if len(cmd) > 60:
-                cmd = cmd[:60] + "..."
-            console.print(f"[magenta]Running[/] {cmd}")
-        else:
-            first_val = list(params.values())[0] if params else ""
-            console.print(f"[cyan]{tool}[/] {first_val}")
-
-    def on_tool_end(tool: str, result: ToolResult) -> None:
-        pass  # Keep chat mode quiet
-
-    def on_complete(trajectory) -> None:
-        if trajectory.metadata.get("final_response"):
-            console.print(
-                Panel(
-                    trajectory.metadata["final_response"],
-                    border_style="green",
-                )
-            )
-        console.print(f"[dim]({len(trajectory.steps)} steps)[/]\n")
-
-    def ask_user(question: str, options: list[str] | None) -> str:
-        console.print(f"\n[bold yellow]Question:[/] {question}")
-        if options:
-            for i, opt in enumerate(options, 1):
-                console.print(f"  [cyan]{i}.[/] {opt}")
-            return typer.prompt("Your choice")
-        return typer.prompt("Your answer")
-
-    callbacks = SimpleCallbacks(
-        on_thinking=on_thinking,
-        on_tool_start=on_tool_start,
-        on_tool_end=on_tool_end,
-        on_complete=on_complete,
-        ask_user=ask_user,
-    )
-
-    runner = AgentRunner(config=config, callbacks=callbacks, working_dir=work_dir)
-
-    while True:
-        try:
-            goal = typer.prompt("\n[bold]Task[/]")
-            if goal.lower() in ("exit", "quit", "q"):
-                console.print("[dim]Goodbye![/]")
-                break
-            if not goal.strip():
-                continue
-
-            asyncio.run(runner.run(goal, train=True))
-
-        except KeyboardInterrupt:
-            console.print("\n[yellow]Interrupted. Type 'exit' to quit.[/]")
-            continue
+    run_tui(config=config, working_dir=work_dir)
 
 
 # Config subcommands

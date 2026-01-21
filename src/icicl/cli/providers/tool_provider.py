@@ -14,8 +14,8 @@ litellm.disable_logging_worker = True
 # Suppress the async client cleanup warning
 warnings.filterwarnings("ignore", message="coroutine 'close_litellm_async_clients'")
 
-from icicl.cli.tools.base import ToolRegistry
-from icicl.models import Message
+from icicl.cli.tools.base import ToolRegistry  # noqa: E402
+from icicl.models import Message  # noqa: E402
 
 
 @dataclass

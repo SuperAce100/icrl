@@ -97,6 +97,10 @@ class AgentRunner:
         self._cancelled = False
         self._loop: ToolLoop | None = None
 
+        # For UI (e.g., chat prompt bar)
+        self.last_examples_count: int = 0
+        self.last_db_size: int = 0
+
         # Initialize database
         db_path = config.db_path or str(get_default_db_path())
         self._database = TrajectoryDatabase(db_path)
@@ -129,10 +133,12 @@ class AgentRunner:
         )
 
         # Retrieve examples from database
+        self.last_db_size = len(self._database)
         examples: list[str] = []
-        if len(self._database) > 0:
+        if self.last_db_size > 0:
             similar = self._database.search(goal, k=self._config.k)
             examples = [traj.to_example_string() for traj in similar]
+        self.last_examples_count = len(examples)
 
         # Create and run loop
         self._loop = ToolLoop(
