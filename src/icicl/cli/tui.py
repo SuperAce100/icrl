@@ -62,9 +62,7 @@ async def run_task(
 
         if tool == "Bash":
             cmd = params.get("command", "")
-            if len(cmd) > 60:
-                cmd = cmd[:60] + "..."
-            console.print(f"  Bash {_dim(cmd)}")
+            console.print(f"[white]$ {cmd}[/]")
         elif tool == "Read":
             console.print(f"  Read {_dim(params.get('path', ''))}")
         elif tool == "Write":
@@ -79,7 +77,10 @@ async def run_task(
             console.print(f"  {tool}")
 
     def on_tool_end(tool: str, result: ToolResult) -> None:
-        pass
+        if tool == "Bash":
+            output = result.output.rstrip("\n")
+            if output:
+                console.print(f"[dim]{output}[/]")
 
     def ask_user(question: str, options: list[str] | None) -> str:
         console.print(f"\n[bold]{question}[/]")

@@ -94,20 +94,27 @@ def run(
                 suffix = "..." if len(lines[0]) > 100 else ""
                 console.print(f"[dim]{preview}{suffix}[/]")
 
+    _last_bash_command: str | None = None
+
     def on_tool_start(tool: str, params: dict) -> None:
         # Prefer past-tense action verbs in logs (matches the user's mental model of
         # "what happened"), while still being emitted at tool start.
+        nonlocal _last_bash_command
+
+        if tool == "Bash":
+            # Print like a terminal: command (white) prefixed with `$`, then print the
+            # result dimmed in `on_tool_end`.
+            cmd = params.get("command", "")
+            _last_bash_command = cmd
+            console.print(f"[white]$ {cmd}[/]")
+            return
+
         if tool == "Read":
             console.print(f"[cyan]Read[/] {params.get('path', '')}")
         elif tool == "Write":
             console.print(f"[green]Wrote[/] {params.get('path', '')}")
         elif tool == "Edit":
             console.print(f"[yellow]Edited[/] {params.get('path', '')}")
-        elif tool == "Bash":
-            cmd = params.get("command", "")
-            if len(cmd) > 60:
-                cmd = cmd[:60] + "..."
-            console.print(f"[magenta]Ran[/] {cmd}")
         elif tool == "Glob":
             console.print(f"[cyan]Globbed[/] {params.get('pattern', '')}")
         elif tool == "Grep":
@@ -120,6 +127,15 @@ def run(
             console.print(f"[dim]Used tool: {tool}[/]")
 
     def on_tool_end(tool: str, result: ToolResult) -> None:
+        nonlocal _last_bash_command
+
+        if tool == "Bash":
+            output = result.output.rstrip("\n")
+            if output:
+                console.print(f"[dim]{output}[/]")
+            _last_bash_command = None
+            return
+
         if verbose:
             output = result.output
             if len(output) > 500:
