@@ -164,18 +164,26 @@ def run(
         console.print(f"[dim]Steps taken: {len(trajectory.steps)}[/]")
 
     def ask_user(question: str, options: list[str] | None) -> str:
-        # Use Rich prompts for better UX in terminal.
+        """Cleaner AskUserQuestion UI (matches the rest of the app)."""
+
         # Special-case yes/no prompts (used by human verification gates).
         if options and {o.strip().lower() for o in options} <= {"yes", "no", "y", "n"}:
-            approved = Confirm.ask(question, default=True)
+            approved = Confirm.ask(f"{question}\n\nAccept?", default=True)
             return "yes" if approved else "no"
 
-        console.print(f"\n[bold yellow]Question:[/] {question}")
+        console.print()
+        console.print(f"[bold]Question[/]  {question}")
+
         if options:
             for i, opt in enumerate(options, 1):
                 console.print(f"  [cyan]{i}.[/] {opt}")
-            return typer.prompt("Your choice")
-        return typer.prompt("Your answer")
+            console.print(
+                "[dim]Select 1-{n}, or type the option text.[/]".format(n=len(options))
+            )
+            # Return the raw selection so the caller can interpret it.
+            return typer.prompt("→", default="1")
+
+        return typer.prompt("→")
 
     callbacks = SimpleCallbacks(
         on_thinking=on_thinking,

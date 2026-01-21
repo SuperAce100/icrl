@@ -5,7 +5,6 @@ from __future__ import annotations
 import difflib
 
 from rich.console import Console
-from rich.panel import Panel
 from rich.syntax import Syntax
 
 
@@ -43,12 +42,7 @@ def build_edit_prompt(path: str, old_text: str, new_text: str) -> str:
     # `diff` lexer colors +/-, headers, and hunk markers nicely.
     console = Console(width=100)
     syntax = Syntax(diff_text, "diff", theme="ansi_dark", word_wrap=True)
-    panel = Panel(
-        syntax,
-        title=f"[bold yellow]Review edit[/] [dim]{path}[/dim]",
-        border_style="yellow",
-    )
 
     with console.capture() as capture:
-        console.print(panel)
+        console.print(syntax)
     return capture.get()

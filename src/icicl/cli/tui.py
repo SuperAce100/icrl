@@ -87,12 +87,17 @@ async def run_task(
                 console.print(f"[dim]{tail}[/]")
 
     def ask_user(question: str, options: list[str] | None) -> str:
+        """Cleaner AskUserQuestion UI (matches the rest of the TUI)."""
+        console.print()
+        console.print(f"[bold]{question}[/]")
+
         if options:
-            console.print(f"\n[bold]{question}[/]")
             for i, opt in enumerate(options, 1):
-                console.print(f"  {i}. {opt}")
-            return Prompt.ask(">")
-        return Prompt.ask(f"\n[bold]{question}[/]")
+                console.print(f"  [cyan]{i}.[/] {opt}")
+            # Return the raw selection so the caller can interpret it.
+            return Prompt.ask("→", default="1")
+
+        return Prompt.ask("→")
 
     registry = create_default_registry(
         working_dir=working_dir,
