@@ -2,26 +2,26 @@
   "$schema": "https://mintlify.com/docs.json",
   "name": "ICRL",
   "logo": {
-    "dark": "/logo/dark.svg",
-    "light": "/logo/light.svg"
+    "dark": "/logo/logo_dark.png",
+    "light": "/logo/logo_light.png"
   },
   "theme": "linden",
-  "favicon": "/favicon.svg",
+  "favicon": "/icon.png",
   "colors": {
-    "primary": "#4666FF",
-    "light": "#4666FF",
-    "dark": "#4666FF"
+    "primary": "#F88D39",
+    "light": "#F88D39",
+    "dark": "#F88D39"
   },
   "contextual": {
     "options": ["copy", "view"]
   },
   "fonts": {
     "heading": {
-      "family": "JetBrains Mono",
+      "family": "Archivo",
       "weight": 600
     },
     "body": {
-      "family": "IBM Plex Sans",
+      "family": "TikTok Sans",
       "weight": 400
     }
   },
@@ -56,6 +56,7 @@
           {
             "group": "Guides",
             "pages": [
+              "guides/cli",
               "guides/prompt-templates",
               "guides/custom-environments",
               "guides/custom-llm-providers",

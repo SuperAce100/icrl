@@ -1,0 +1,250 @@
+---
+title: "CLI"
+description: "Use the icrl command-line interface to run tasks, manage configuration, and inspect your trajectory database"
+---
+
+ICRL ships with a Typer-based CLI called `icrl`.
+
+This page documents the available commands, how configuration is resolved, and how to work with the on-disk trajectory database.
+
+## Install
+
+If you installed the Python package, you should have the `icrl` executable available:
+
+```bash
+icrl --help
+```
+
+If you are working from source (or if your environment doesn’t put console scripts on PATH), you can also run it as a module:
+
+```bash
+python -m icrl.cli.main --help
+```
+
+## Quick usage
+
+Run a single goal in the current directory:
+
+```bash
+icrl run "refactor this repo to use ruff"
+```
+
+Use a specific model:
+
+```bash
+icrl run "add tests for the parser" -m gpt-4o-mini
+```
+
+Run without saving the trajectory to your database:
+
+```bash
+icrl run "try to reproduce and fix issue #123" --no-train
+```
+
+Use a different working directory:
+
+```bash
+icrl run "update the README" -d /path/to/project
+```
+
+## Command reference
+
+### `icrl version`
+
+Print the installed ICRL version.
+
+```bash
+icrl version
+```
+
+### `icrl run <goal>`
+
+Run a coding task end-to-end with the agent.
+
+```bash
+icrl run "<your goal here>" [OPTIONS]
+```
+
+**Arguments**
+
+- `goal` (required): The task you want the agent to accomplish.
+
+**Options**
+
+- `--model, -m TEXT`: Override the configured model for this run.
+- `--no-train`: Do not store the resulting trajectory in the database.
+- `--dir, -d PATH`: Working directory to operate in (defaults to current directory).
+- `--verbose, -v`: Show detailed “thinking” output and tool results.
+
+**What happens during a run**
+
+- The CLI loads configuration (see [Configuration](#configuration)).
+- The agent interacts with tools (Bash, file operations, web search, etc.) and prints a concise log.
+- On completion, the CLI prints success/failure and (when available) a final summary.
+- Unless `--no-train` is set, successful trajectories are stored to disk (see [Trajectory database](#trajectory-database)).
+
+**Output modes**
+
+- Default mode shows a short preview of the agent’s “thinking” and tails the last few lines of Bash output.
+- `--verbose` prints full “thinking” panels and tool outputs (truncated for very large outputs).
+
+### `icrl tui`
+
+Start the interactive terminal UI.
+
+```bash
+icrl tui [--model MODEL] [--dir PATH]
+```
+
+Notes:
+
+- `tui` uses the same config resolution as `run`.
+- `--model` overrides the configured model for the session.
+
+### `icrl chat`
+
+Start an interactive chat session.
+
+```bash
+icrl chat [--model MODEL] [--dir PATH]
+```
+
+Currently `chat` uses the same underlying TUI entrypoint as `tui`.
+
+## Configuration
+
+The CLI reads and writes a JSON config file stored under your user config directory.
+
+- `icrl config show` prints the resolved settings and the config file location.
+- `icrl config set` updates a single value.
+- `icrl config reset` restores defaults.
+
+### Show configuration
+
+```bash
+icrl config show
+```
+
+### Set configuration values
+
+```bash
+icrl config set <key> <value>
+```
+
+Supported keys:
+
+- `model` (string)
+- `temperature` (float)
+- `max_tokens` (int)
+- `max_steps` (int)
+- `k` (int) — number of trajectories to retrieve as in-context examples
+- `db_path` (string) — directory path for the trajectory database
+
+Examples:
+
+```bash
+icrl config set model gpt-4o-mini
+icrl config set temperature 0.2
+icrl config set max_steps 40
+icrl config set k 3
+icrl config set db_path ./my_trajectories
+```
+
+### Reset configuration
+
+```bash
+icrl config reset
+```
+
+## Trajectory database
+
+ICRL persists trajectories (task attempts) to a local on-disk database directory.
+
+- The location is controlled by `db_path` in your config.
+- If `db_path` is not set, ICRL uses a platform-specific default.
+
+You can manage and inspect the database via `icrl db ...`.
+
+### `icrl db stats`
+
+Show basic statistics:
+
+```bash
+icrl db stats
+```
+
+Outputs:
+
+- Database path
+- Number of stored trajectories
+- Successful trajectories count
+- Total steps and average steps per trajectory
+
+### `icrl db list`
+
+List recent trajectories:
+
+```bash
+icrl db list --limit 10
+```
+
+- `--limit, -n`: maximum items to show (default: 10)
+
+### `icrl db show <id-or-prefix>`
+
+Display details for a specific trajectory by full ID or prefix:
+
+```bash
+icrl db show 1f61a54
+```
+
+The CLI prints the goal, plan, success flag, step count, and a brief view of each step.
+
+### `icrl db search <query>`
+
+Search the database for similar trajectories:
+
+```bash
+icrl db search "fix failing tests" --k 5
+```
+
+- `--k, -k`: number of results to return (default: 5)
+
+### `icrl db clear`
+
+Delete the database directory.
+
+```bash
+icrl db clear
+```
+
+Use `--force, -f` to skip confirmation:
+
+```bash
+icrl db clear --force
+```
+
+<Warning>
+This removes all stored trajectories at the configured database path.
+</Warning>
+
+## Shell completion
+
+Typer can generate completion scripts.
+
+```bash
+icrl --install-completion
+# or
+icrl --show-completion
+```
+
+## Troubleshooting
+
+### The `icrl` command is not found
+
+- Ensure your environment’s bin directory is on PATH.
+- Try running as a module: `python -m icrl.cli.main --help`.
+
+### Model/provider errors
+
+`icrl` uses LiteLLM. Confirm that the relevant provider environment variables are set (for example `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.). See [Installation](/installation) for examples.
