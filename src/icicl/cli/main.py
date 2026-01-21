@@ -132,7 +132,9 @@ def run(
         if tool == "Bash":
             output = result.output.rstrip("\n")
             if output:
-                console.print(f"[dim]{output}[/]")
+                lines = output.splitlines()
+                tail = "\n".join(lines[-5:])
+                console.print(f"[dim]{tail}[/]")
             _last_bash_command = None
             return
 

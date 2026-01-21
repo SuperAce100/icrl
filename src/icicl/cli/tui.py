@@ -80,7 +80,9 @@ async def run_task(
         if tool == "Bash":
             output = result.output.rstrip("\n")
             if output:
-                console.print(f"[dim]{output}[/]")
+                lines = output.splitlines()
+                tail = "\n".join(lines[-5:])
+                console.print(f"[dim]{tail}[/]")
 
     def ask_user(question: str, options: list[str] | None) -> str:
         console.print(f"\n[bold]{question}[/]")
@@ -155,7 +157,7 @@ def run_tui(config: Config | None = None, working_dir: Path | None = None) -> No
             " |___\\____|___\\____|_____|\n"
             "[/]"
         )
-        console.print("[dim]Type a task and press Enter. 'exit' to quit.[/]\n")
+        console.print("Type a task and press Enter. 'exit' to quit.\n")
 
     db_path = config.db_path or str(get_default_db_path())
     database = TrajectoryDatabase(db_path)
@@ -168,32 +170,32 @@ def run_tui(config: Config | None = None, working_dir: Path | None = None) -> No
     except ValueError:
         cwd_display = str(working_dir)
 
-    while True:
-        try:
-            # Info line: model · cwd · examples
-            db_count = len(database)
-            console.print(
-                f"\n[dim]{model_display} · {cwd_display} · {db_count} examples[/]"
-            )
+    # Reuse a single event loop to avoid cross-loop async logging issues.
+    with asyncio.Runner() as runner:
+        while True:
+            try:
+                # Info line: model · cwd · examples
+                db_count = len(database)
+                console.print(f"\n{model_display} · {cwd_display} · {db_count} examples")
 
-            # Prompt
-            console.print("→ ", end="")
-            goal = console.input()
+                # Prompt
+                console.print("→ ", end="")
+                goal = console.input()
 
-            if not goal.strip():
+                if not goal.strip():
+                    continue
+
+                if goal.strip().lower() in ("exit", "quit", "q"):
+                    break
+
+                console.print()
+                runner.run(run_task(goal, config, working_dir, database, console))
+
+            except KeyboardInterrupt:
+                console.print("\n^C")
                 continue
-
-            if goal.strip().lower() in ("exit", "quit", "q"):
+            except EOFError:
                 break
 
-            console.print()
-            asyncio.run(run_task(goal, config, working_dir, database, console))
-
-        except KeyboardInterrupt:
-            console.print("\n[dim]^C[/]")
-            continue
-        except EOFError:
-            break
-
-    console.print("[dim]bye[/]")
+    console.print("bye")
     sys.exit(0)
