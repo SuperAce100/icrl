@@ -5,7 +5,7 @@ description: "Learn how the Plan-Reason-Act execution loop enables systematic ta
 
 ## Overview
 
-ICICL uses a **ReAct-style** (Reasoning + Acting) loop for agent execution. Each episode follows a structured pattern of planning, reasoning, and acting that enables systematic task completion.
+ICRL uses a **ReAct-style** (Reasoning + Acting) loop for agent execution. Each episode follows a structured pattern of planning, reasoning, and acting that enables systematic task completion.
 
 ## Execution flow
 
@@ -133,7 +133,7 @@ ICICL uses a **ReAct-style** (Reasoning + Acting) loop for agent execution. Each
 Each step is recorded as a `Step` object:
 
 ```python
-from icicl import Step
+from icrl import Step
 
 step = Step(
     observation=observation,  # What the agent observed
@@ -145,7 +145,7 @@ step = Step(
 The complete trajectory captures the entire episode:
 
 ```python
-from icicl import Trajectory
+from icrl import Trajectory
 
 trajectory = Trajectory(
     goal=goal,
@@ -160,7 +160,7 @@ trajectory = Trajectory(
 Monitor the loop in real-time with callbacks:
 
 ```python callbacks.py
-from icicl import Step, StepContext
+from icrl import Step, StepContext
 
 def on_step(step: Step, context: StepContext) -> None:
     print(f"Step {len(context.history) + 1}")

@@ -1,10 +1,10 @@
-"""Mock LLM provider for testing icicl without API calls."""
+"""Mock LLM provider for testing icrl without API calls."""
 
 from __future__ import annotations
 
 import re
 
-from icicl.models import Message
+from icrl.models import Message
 
 
 class MockLLMProvider:

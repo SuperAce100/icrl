@@ -8,7 +8,7 @@ description: "Embedding generation for semantic search"
 `SentenceTransformerEmbedder` generates embeddings for trajectories using Sentence Transformers. These embeddings power the semantic similarity search in the trajectory database.
 
 ```python
-from icicl.embedder import SentenceTransformerEmbedder
+from icrl.embedder import SentenceTransformerEmbedder
 ```
 
 ## Constructor
@@ -22,7 +22,7 @@ SentenceTransformerEmbedder(
 ### Parameters
 
 <ParamField path="model_name" type="str" default="all-MiniLM-L6-v2">
-  Name of the sentence-transformers model to use. The default `all-MiniLM-L6-v2` is the same model used in the original SGICL paper.
+  Name of the sentence-transformers model to use. The default `all-MiniLM-L6-v2` is the same model used in the original ICRL paper.
 </ParamField>
 
 ## Properties
@@ -113,7 +113,7 @@ See [Sentence Transformers Models](https://www.sbert.net/docs/pretrained_models.
 ### Basic Usage
 
 ```python
-from icicl.embedder import SentenceTransformerEmbedder
+from icrl.embedder import SentenceTransformerEmbedder
 
 embedder = SentenceTransformerEmbedder()
 
@@ -140,8 +140,8 @@ print(f"Dimension: {embedder.dimension}")  # 768
 ### With Database
 
 ```python
-from icicl.database import TrajectoryDatabase
-from icicl.embedder import SentenceTransformerEmbedder
+from icrl.database import TrajectoryDatabase
+from icrl.embedder import SentenceTransformerEmbedder
 
 # Use custom embedder with database
 embedder = SentenceTransformerEmbedder(
@@ -242,7 +242,7 @@ model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
 The embedder follows the `Embedder` protocol:
 
 ```python
-from icicl.protocols import Embedder
+from icrl.protocols import Embedder
 
 embedder = SentenceTransformerEmbedder()
 print(isinstance(embedder, Embedder))  # True

@@ -8,7 +8,7 @@ description: "Automatic pruning of low-utility trajectories"
 `CurationManager` handles automatic pruning of trajectories that don't contribute to successful episodes. It tracks utility scores and removes trajectories that fall below the threshold.
 
 ```python
-from icicl.curation import CurationManager
+from icrl.curation import CurationManager
 ```
 
 ## Constructor
@@ -134,8 +134,8 @@ A trajectory is pruned when:
 ### Basic Usage
 
 ```python
-from icicl.database import TrajectoryDatabase
-from icicl.curation import CurationManager
+from icrl.database import TrajectoryDatabase
+from icrl.curation import CurationManager
 
 db = TrajectoryDatabase("./trajectories")
 curation = CurationManager(
@@ -156,7 +156,7 @@ removed = curation.curate()
 The agent manages curation automatically:
 
 ```python
-from icicl import Agent
+from icrl import Agent
 
 agent = Agent(
     llm=llm,
@@ -235,7 +235,7 @@ for goal in training_goals[50:]:
 Each trajectory has associated metadata:
 
 ```python
-from icicl.models import CurationMetadata
+from icrl.models import CurationMetadata
 
 # The database stores this for each trajectory
 metadata = CurationMetadata(

@@ -1,6 +1,6 @@
-"""Harbor Coding Agent Example with ICICL Performance Improvement.
+"""Harbor Coding Agent Example with ICRL Performance Improvement.
 
-This example demonstrates how to create a coding agent using the ICICL framework
+This example demonstrates how to create a coding agent using the ICRL framework
 that is compatible with Harbor/Terminal-Bench 2.0. It shows how trajectory-based
 learning improves agent performance on realistic coding tasks.
 
@@ -34,7 +34,7 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 
-from icicl import Agent, LiteLLMProvider, Step, StepContext, Trajectory
+from icrl import Agent, LiteLLMProvider, Step, StepContext, Trajectory
 
 load_dotenv()
 
@@ -285,7 +285,7 @@ class Database:
 
 
 class CodingEnvironment:
-    """Coding environment compatible with ICICL Environment protocol.
+    """Coding environment compatible with ICRL Environment protocol.
 
     This simulates a Harbor sandbox environment where a coding agent
     can execute shell commands to complete software engineering tasks.
@@ -712,7 +712,7 @@ async def run_demo() -> None:
         "\n[bold magenta]╔═══════════════════════════════════════════════════════════╗[/bold magenta]"
     )
     console.print(
-        "[bold magenta]║  Harbor Coding Agent with ICICL Performance Improvement   ║[/bold magenta]"
+        "[bold magenta]║  Harbor Coding Agent with ICRL Performance Improvement   ║[/bold magenta]"
     )
     console.print(
         "[bold magenta]║  Terminal-Bench 2.0 Compatible Agent Framework            ║[/bold magenta]"
@@ -722,7 +722,7 @@ async def run_demo() -> None:
     )
     console.print(f"\n[dim]Using model: {model}[/dim]")
     console.print(
-        "[dim]This demo shows how ICICL's trajectory learning improves "
+        "[dim]This demo shows how ICRL's trajectory learning improves "
         "coding agent performance.[/dim]\n"
     )
 
@@ -737,7 +737,7 @@ async def run_demo() -> None:
 
         llm = LiteLLMProvider(model=model, temperature=0.3, max_tokens=500)
 
-        # Create agent with ICICL learning enabled
+        # Create agent with ICRL learning enabled
         agent = Agent(
             llm=llm,
             db_path=str(db_path),
@@ -793,7 +793,7 @@ async def run_demo() -> None:
         table = Table(title="Evaluation Results")
         table.add_column("Task", style="cyan")
         table.add_column("Baseline", justify="center")
-        table.add_column("With ICICL", justify="center")
+        table.add_column("With ICRL", justify="center")
         table.add_column("Improvement", justify="center")
 
         for i, task in enumerate(CODING_TASKS["evaluation"]):
@@ -822,7 +822,7 @@ async def run_demo() -> None:
 
         console.print(f"\n[bold]Summary:[/bold]")
         console.print(f"  Baseline success rate: [yellow]{baseline_success}/{len(CODING_TASKS['evaluation'])}[/yellow]")
-        console.print(f"  ICICL success rate:    [green]{improved_success}/{len(CODING_TASKS['evaluation'])}[/green]")
+        console.print(f"  ICRL success rate:    [green]{improved_success}/{len(CODING_TASKS['evaluation'])}[/green]")
 
         improvement_pct = ((improved_success - baseline_success) / max(len(CODING_TASKS['evaluation']), 1)) * 100
         if improvement_pct > 0:

@@ -1,15 +1,15 @@
-# ICICL
+# ICRL
 
-**Self-Generated In-Context Learning for LLM Agents**
+**In-Context Reinforcement Learning for LLM Agents**
 
-ICICL implements the Self-Generated In-Context Learning algorithm, enabling LLM agents to bootstrap their own performance by learning from successful trajectories. The agent accumulates successful experiences and retrieves relevant examples at each decision point to improve future task completion.
+ICRL implements the In-Context Reinforcement Learning algorithm, enabling LLM agents to bootstrap their own performance by learning from successful trajectories. The agent accumulates successful experiences and retrieves relevant examples at each decision point to improve future task completion.
 
 ## Installation
 
 ```bash
-pip install icicl
+pip install icrl
 # or with uv
-uv add icicl
+uv add icrl
 ```
 
 **Dependencies**: `pydantic`, `litellm`, `sentence-transformers`, `faiss-cpu`, `aiofiles`, `rich`, `python-dotenv`
@@ -18,7 +18,7 @@ uv add icicl
 
 ```python
 import asyncio
-from icicl import Agent, LiteLLMProvider
+from icrl import Agent, LiteLLMProvider
 
 # Create the agent
 agent = Agent(
@@ -40,7 +40,7 @@ trajectory = asyncio.run(agent.run(env, goal="Complete another task"))
 
 ## Core Concepts
 
-### The SGICL Algorithm
+### The ICRL Algorithm
 
 1. **Bootstrap Phase**: The agent attempts tasks, storing successful trajectories
 2. **Retrieval**: At each decision point, semantically similar examples are retrieved
@@ -68,10 +68,10 @@ Each episode follows a **Plan → Reason → Act** loop:
 
 ### `Agent`
 
-The main class for training and running the ICICL agent.
+The main class for training and running the ICRL agent.
 
 ```python
-from icicl import Agent
+from icrl import Agent
 
 agent = Agent(
     llm: LLMProvider,              # LLM for generating completions
@@ -106,7 +106,7 @@ agent = Agent(
 Built-in LLM provider supporting 100+ models via [LiteLLM](https://github.com/BerriAI/litellm).
 
 ```python
-from icicl import LiteLLMProvider
+from icrl import LiteLLMProvider
 
 llm = LiteLLMProvider(
     model: str = "gpt-4o-mini",    # Model identifier
@@ -127,7 +127,7 @@ llm = LiteLLMProvider(
 Implement this protocol for your custom environment:
 
 ```python
-from icicl import Environment
+from icrl import Environment
 
 class MyEnvironment:
     def reset(self, goal: str) -> str:
@@ -166,7 +166,7 @@ class MyEnvironment:
 Implement for custom LLM integrations:
 
 ```python
-from icicl import LLMProvider, Message
+from icrl import LLMProvider, Message
 
 class MyLLMProvider:
     async def complete(self, messages: list[Message]) -> str:
@@ -191,7 +191,7 @@ All models are Pydantic `BaseModel` classes for type safety and serialization.
 A complete episode trajectory:
 
 ```python
-from icicl import Trajectory, Step
+from icrl import Trajectory, Step
 
 trajectory = Trajectory(
     id: str,                    # Auto-generated UUID
@@ -211,7 +211,7 @@ example_str = trajectory.to_example_string()
 A single step in a trajectory:
 
 ```python
-from icicl import Step
+from icrl import Step
 
 step = Step(
     observation: str,  # What the agent observed
@@ -225,7 +225,7 @@ step = Step(
 Context available during prompt formatting:
 
 ```python
-from icicl import StepContext
+from icrl import StepContext
 
 context = StepContext(
     goal: str,
@@ -246,7 +246,7 @@ context.format_history()   # → "Step 1: action -> observation\n..."
 A chat message:
 
 ```python
-from icicl import Message
+from icrl import Message
 
 message = Message(role="user", content="Hello")
 ```
@@ -307,7 +307,7 @@ What is the next action? Respond with only the action."""
 Monitor agent progress with step callbacks:
 
 ```python
-from icicl import Step, StepContext
+from icrl import Step, StepContext
 
 def my_callback(step: Step, context: StepContext) -> None:
     print(f"Observation: {step.observation[:100]}...")
@@ -377,7 +377,7 @@ agent = Agent(
 Initialize with pre-existing examples:
 
 ```python
-from icicl import Trajectory, Step
+from icrl import Trajectory, Step
 
 seed = Trajectory(
     goal="Example task",
@@ -417,8 +417,8 @@ trajectories = await agent.run_batch(make_env, goals)
 The database uses `sentence-transformers` with `all-MiniLM-L6-v2` by default (as used in the paper). For custom embeddings, subclass the database:
 
 ```python
-from icicl.embedder import SentenceTransformerEmbedder
-from icicl.database import TrajectoryDatabase
+from icrl.embedder import SentenceTransformerEmbedder
+from icrl.database import TrajectoryDatabase
 
 embedder = SentenceTransformerEmbedder(model_name="your-model")
 db = TrajectoryDatabase(path="./trajectories", embedder=embedder)
@@ -455,14 +455,14 @@ See `examples/harbor_coding_agent.py` for a coding agent example compatible with
 
 - A sandboxed coding environment with shell commands (ls, cat, grep, sed, etc.)
 - Realistic software engineering tasks (debugging, refactoring, testing)
-- Performance improvement tracking before/after ICICL training
+- Performance improvement tracking before/after ICRL training
 
 ```bash
 export OPENAI_API_KEY=your-key
 uv run python examples/harbor_coding_agent.py
 ```
 
-The Harbor example shows how ICICL improves agent performance on coding tasks:
+The Harbor example shows how ICRL improves agent performance on coding tasks:
 
 1. **Baseline Evaluation**: Agent attempts tasks without learned examples
 2. **Training Phase**: Agent learns from successful coding task trajectories
@@ -470,13 +470,13 @@ The Harbor example shows how ICICL improves agent performance on coding tasks:
 
 This pattern integrates with Harbor's agent evaluation framework, allowing you to:
 - Benchmark coding agents on Terminal-Bench 2.0 tasks
-- Use ICICL's self-generated examples to improve agent performance
+- Use ICRL's self-generated examples to improve agent performance
 - Track improvements across training iterations
 
 ## Architecture
 
 ```
-icicl/
+icrl/
 ├── agent.py        # Main Agent class
 ├── loop.py         # ReAct loop implementation
 ├── database.py     # FAISS-backed trajectory storage

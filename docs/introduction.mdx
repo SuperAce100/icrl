@@ -1,26 +1,26 @@
 ---
-title: "Introduction to ICICL"
-description: "Build self-improving LLM agents that learn from their own successful experiences using Self-Generated In-Context Learning"
+title: "Introduction to ICRL"
+description: "Build self-improving LLM agents that learn from their own successful experiences using In-Context Reinforcement Learning"
 ---
 
 <Frame>
   <img
     className="block dark:hidden"
     src="/images/hero-light.svg"
-    alt="ICICL architecture diagram showing Bootstrap, Retrieve, Generate, and Curate phases"
+    alt="ICRL architecture diagram showing Bootstrap, Retrieve, Generate, and Curate phases"
   />
   <img
     className="hidden dark:block"
     src="/images/hero-dark.svg"
-    alt="ICICL architecture diagram showing Bootstrap, Retrieve, Generate, and Curate phases"
+    alt="ICRL architecture diagram showing Bootstrap, Retrieve, Generate, and Curate phases"
   />
 </Frame>
 
-## What is ICICL?
+## What is ICRL?
 
-ICICL implements the **Self-Generated In-Context Learning** (SGICL) algorithm, enabling your LLM agents to bootstrap their own performance by learning from successful task completions.
+ICRL implements the **In-Context Reinforcement Learning** (ICRL) algorithm, enabling your LLM agents to bootstrap their own performance by learning from successful task completions.
 
-Instead of requiring you to craft examples manually, ICICL agents:
+Instead of requiring you to craft examples manually, ICRL agents:
 
 1. **Attempt tasks** and record successful trajectories automatically
 2. **Retrieve relevant examples** at each decision point using semantic search
@@ -29,10 +29,10 @@ Instead of requiring you to craft examples manually, ICICL agents:
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Get your first ICICL agent running in under 5 minutes
+    Get your first ICRL agent running in under 5 minutes
   </Card>
-  <Card title="Core Concepts" icon="book" href="/core-concepts/sgicl-algorithm">
-    Understand how the SGICL algorithm works
+  <Card title="Core Concepts" icon="book" href="/core-concepts/icrl-algorithm">
+    Understand how the ICRL algorithm works
   </Card>
   <Card title="API Reference" icon="code" href="/api-reference/overview">
     Explore the complete API documentation
@@ -49,7 +49,7 @@ Instead of requiring you to craft examples manually, ICICL agents:
     Your agents automatically learn from successful experiences. Each completed task becomes a potential example for future similar tasks, improving performance without manual intervention.
   </Accordion>
   <Accordion title="Semantic retrieval" icon="magnifying-glass">
-    ICICL uses FAISS-backed vector similarity search with sentence transformers to find the most relevant examples for each situation. You configure how many examples to retrieve with the `k` parameter.
+    ICRL uses FAISS-backed vector similarity search with sentence transformers to find the most relevant examples for each situation. You configure how many examples to retrieve with the `k` parameter.
   </Accordion>
   <Accordion title="Automatic curation" icon="wand-magic-sparkles">
     Low-utility trajectories are automatically pruned based on their contribution to successful outcomes. You control the aggressiveness of curation through threshold settings.
@@ -64,11 +64,11 @@ Instead of requiring you to craft examples manually, ICICL agents:
 
 ## How it works
 
-The SGICL algorithm follows four phases:
+The ICRL algorithm follows four phases:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      SGICL Algorithm                            │
+│                      ICRL Algorithm                             │
 ├─────────────────────────────────────────────────────────────────┤
 │  1. BOOTSTRAP: Agent attempts tasks, stores successes           │
 │  2. RETRIEVE: Semantic search finds relevant examples           │
@@ -96,7 +96,7 @@ Each episode follows a **Plan → Reason → Act** loop:
 
 ## Research foundation
 
-ICICL implements the algorithm described in:
+ICRL implements the algorithm described in:
 
 > **Self-Generated In-Context Examples Improve LLM Agents for Sequential Decision-Making Tasks**
 
@@ -108,7 +108,7 @@ The research demonstrates that self-generated examples can match or exceed the p
 
 ```python quickstart.py
 import asyncio
-from icicl import Agent, LiteLLMProvider
+from icrl import Agent, LiteLLMProvider
 
 # Create your agent
 agent = Agent(

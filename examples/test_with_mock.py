@@ -1,4 +1,4 @@
-"""Test example demonstrating icicl with a mock LLM.
+"""Test example demonstrating icrl with a mock LLM.
 
 This script runs without requiring any API keys, demonstrating:
 - Basic training loop with trajectory accumulation
@@ -20,7 +20,7 @@ from rich.console import Console
 from examples.file_api_env import FileSystemEnvironment, Task
 from examples.mock_llm import MockLLMProvider
 from examples.tasks import EVAL_TASKS, TRAINING_TASKS
-from icicl import Agent, Step, StepContext
+from icrl import Agent, Step, StepContext
 
 console = Console()
 
@@ -235,7 +235,7 @@ async def main() -> None:
         "[bold magenta]╔══════════════════════════════════════════╗[/bold magenta]"
     )
     console.print(
-        "[bold magenta]║   ICICL File System Agent - Mock Demo   ║[/bold magenta]"
+        "[bold magenta]║   ICRL File System Agent - Mock Demo   ║[/bold magenta]"
     )
     console.print(
         "[bold magenta]╚══════════════════════════════════════════╝[/bold magenta]"

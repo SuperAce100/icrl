@@ -8,7 +8,7 @@ description: "Chat message for LLM interactions"
 `Message` represents a single message in an LLM conversation. It's used when communicating with LLM providers.
 
 ```python
-from icicl import Message
+from icrl import Message
 ```
 
 ## Definition
@@ -35,7 +35,7 @@ class Message(BaseModel):
 ## Creating Messages
 
 ```python
-from icicl import Message
+from icrl import Message
 
 # User message
 user_msg = Message(role="user", content="Hello, how are you?")
@@ -61,7 +61,7 @@ print(f"Content: {message.content}")  # "Hello!"
 Messages are passed to the `complete` method of LLM providers:
 
 ```python
-from icicl import LiteLLMProvider, Message
+from icrl import LiteLLMProvider, Message
 
 llm = LiteLLMProvider(model="gpt-4o-mini")
 
@@ -79,7 +79,7 @@ print(response)  # "4" or similar
 When implementing a custom LLM provider, you receive a list of Messages:
 
 ```python
-from icicl import Message
+from icrl import Message
 
 class MyProvider:
     async def complete(self, messages: list[Message]) -> str:
@@ -96,7 +96,7 @@ class MyProvider:
 
 ## Internal Usage
 
-ICICL creates messages internally when calling the LLM:
+ICRL creates messages internally when calling the LLM:
 
 ```python
 # In ReActLoop._generate_plan()
@@ -145,7 +145,7 @@ message = Message.model_validate_json(json_str)
 Use `Message` in type annotations:
 
 ```python
-from icicl import Message
+from icrl import Message
 
 def format_conversation(messages: list[Message]) -> str:
     lines = []

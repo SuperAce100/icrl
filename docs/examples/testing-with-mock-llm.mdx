@@ -5,7 +5,7 @@ description: "Fast testing and development without API calls using mock LLM prov
 
 ## Overview
 
-During development and testing, you may want to iterate quickly without making real LLM API calls. ICICL supports mock LLM providers that return deterministic responses.
+During development and testing, you may want to iterate quickly without making real LLM API calls. ICRL supports mock LLM providers that return deterministic responses.
 
 ## Create a mock provider
 
@@ -13,7 +13,7 @@ Here's a mock LLM that uses pattern matching to generate responses:
 
 ```python mock_llm.py
 import re
-from icicl import Message
+from icrl import Message
 
 class MockLLMProvider:
     """Deterministic mock LLM for testing."""
@@ -99,7 +99,7 @@ class MockLLMProvider:
 Replace the real LLM with your mock:
 
 ```python use_mock.py
-from icicl import Agent
+from icrl import Agent
 
 # Use mock instead of real LLM
 llm = MockLLMProvider(success_rate=1.0)
@@ -141,7 +141,7 @@ print(f"Success: {trajectory.success}")
 ```python test_agent.py
 import pytest
 import asyncio
-from icicl import Agent, Trajectory
+from icrl import Agent, Trajectory
 
 class TestAgent:
     @pytest.fixture
@@ -310,7 +310,7 @@ import asyncio
 from examples.mock_llm import MockLLMProvider
 from examples.file_api_env import FileSystemEnvironment
 from examples.tasks import TRAINING_TASKS
-from icicl import Agent
+from icrl import Agent
 
 async def test_with_mock():
     agent = Agent(
@@ -334,7 +334,7 @@ asyncio.run(test_with_mock())
 Run it:
 
 ```bash
-cd /path/to/icicl
+cd /path/to/icrl
 uv run python examples/test_with_mock.py
 ```
 

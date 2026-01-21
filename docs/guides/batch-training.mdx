@@ -1,6 +1,6 @@
 ---
 title: "Batch Training"
-description: "Train your ICICL agents on multiple tasks efficiently to build a robust trajectory database"
+description: "Train your ICRL agents on multiple tasks efficiently to build a robust trajectory database"
 ---
 
 ## Overview
@@ -12,7 +12,7 @@ Batch training allows you to train an agent on multiple goals in sequence, build
 Use `train_batch` to train on multiple goals:
 
 ```python batch_training.py
-from icicl import Agent, LiteLLMProvider
+from icrl import Agent, LiteLLMProvider
 
 agent = Agent(
     llm=LiteLLMProvider(model="gpt-4o-mini"),
@@ -297,7 +297,7 @@ print_database_health(agent)
 
 ```python pipeline.py
 import asyncio
-from icicl import Agent, LiteLLMProvider
+from icrl import Agent, LiteLLMProvider
 
 async def full_training_pipeline():
     # Initialize

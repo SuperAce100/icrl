@@ -8,7 +8,7 @@ description: "FAISS-backed trajectory storage and semantic search"
 `TrajectoryDatabase` provides persistent storage for trajectories with FAISS-based semantic similarity search. Trajectories are stored as JSON files on disk with an efficient vector index for retrieval.
 
 ```python
-from icicl.database import TrajectoryDatabase
+from icrl.database import TrajectoryDatabase
 ```
 
 ## Constructor
@@ -62,7 +62,7 @@ Add a trajectory to the database.
 </ParamField>
 
 ```python
-from icicl import Trajectory, Step
+from icrl import Trajectory, Step
 
 trajectory = Trajectory(
     goal="Find the config file",
@@ -237,8 +237,8 @@ if meta:
 ### Basic Operations
 
 ```python
-from icicl.database import TrajectoryDatabase
-from icicl import Trajectory, Step
+from icrl.database import TrajectoryDatabase
+from icrl import Trajectory, Step
 
 # Create or load database
 db = TrajectoryDatabase("./my_trajectories")
@@ -268,7 +268,7 @@ db.remove(traj.id)
 ### With Agent
 
 ```python
-from icicl import Agent
+from icrl import Agent
 
 agent = Agent(
     llm=llm,
@@ -289,8 +289,8 @@ print(f"Total: {len(db)}")
 ### Custom Embedder
 
 ```python
-from icicl.embedder import SentenceTransformerEmbedder
-from icicl.database import TrajectoryDatabase
+from icrl.embedder import SentenceTransformerEmbedder
+from icrl.database import TrajectoryDatabase
 
 # Use a different embedding model
 embedder = SentenceTransformerEmbedder(

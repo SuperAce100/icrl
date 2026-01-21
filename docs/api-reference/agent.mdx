@@ -1,14 +1,14 @@
 ---
 title: "Agent"
-description: "Main Agent class for training and running ICICL agents"
+description: "Main Agent class for training and running ICRL agents"
 ---
 
 ## Overview
 
-The `Agent` class is the main interface for ICICL. It handles training, inference, database management, and curation.
+The `Agent` class is the main interface for ICRL. It handles training, inference, database management, and curation.
 
 ```python
-from icicl import Agent
+from icrl import Agent
 ```
 
 ## Constructor
@@ -247,7 +247,7 @@ print(f"Success rate: {stats['success_rate']:.1%}")
 ### Basic usage
 
 ```python basic.py
-from icicl import Agent, LiteLLMProvider
+from icrl import Agent, LiteLLMProvider
 
 agent = Agent(
     llm=LiteLLMProvider(model="gpt-4o-mini"),
@@ -264,7 +264,7 @@ print(f"Success: {trajectory.success}")
 ### With seed trajectories
 
 ```python seed.py
-from icicl import Trajectory, Step
+from icrl import Trajectory, Step
 
 seed = Trajectory(
     goal="Example task",
@@ -285,7 +285,7 @@ agent = Agent(
 ### With step callback
 
 ```python callback.py
-from icicl import Step, StepContext
+from icrl import Step, StepContext
 
 def on_step(step: Step, context: StepContext) -> None:
     print(f"Step {len(context.history) + 1}")

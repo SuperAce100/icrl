@@ -1,11 +1,11 @@
 ---
 title: "Harbor Coding Agent"
-description: "Build a coding agent compatible with Harbor/Terminal-Bench 2.0 that improves through ICICL trajectory learning"
+description: "Build a coding agent compatible with Harbor/Terminal-Bench 2.0 that improves through ICRL trajectory learning"
 ---
 
 ## Overview
 
-This example demonstrates a coding agent that integrates with the [Harbor](https://harborframework.com) framework and Terminal-Bench 2.0. It shows how ICICL's self-generated in-context learning improves agent performance on realistic software engineering tasks.
+This example demonstrates a coding agent that integrates with the [Harbor](https://harborframework.com) framework and Terminal-Bench 2.0. It shows how ICRL's self-generated in-context learning improves agent performance on realistic software engineering tasks.
 
 <Note>
 Harbor is the official harness for Terminal-Bench 2.0, a benchmark for evaluating AI agents on complex terminal-based tasks.
@@ -38,7 +38,7 @@ class CodingWorkspaceState:
     shell_history: list[str] = field(default_factory=list)
 
 class CodingEnvironment:
-    """Coding environment compatible with ICICL Environment protocol."""
+    """Coding environment compatible with ICRL Environment protocol."""
     
     def __init__(self, task: CodingTask):
         self._task = task
@@ -159,7 +159,7 @@ Respond with ONLY the command, no explanation."""
 
 ## Run the Performance Improvement Demo
 
-The example demonstrates ICICL's value through three phases:
+The example demonstrates ICRL's value through three phases:
 
 <Steps>
   <Step title="Baseline Evaluation">
@@ -169,7 +169,7 @@ The example demonstrates ICICL's value through three phases:
     baseline_success, baseline_trajectories = await run_baseline_evaluation(
         agent, CODING_TASKS["evaluation"]
     )
-    # Results without ICICL training
+    # Results without ICRL training
     ```
   </Step>
   
@@ -200,7 +200,7 @@ The example demonstrates ICICL's value through three phases:
 
 ```python harbor_demo.py
 #!/usr/bin/env python3
-"""Harbor-compatible coding agent with ICICL performance improvement."""
+"""Harbor-compatible coding agent with ICRL performance improvement."""
 
 import asyncio
 import tempfile
@@ -213,7 +213,7 @@ from examples.harbor_coding_agent import (
     REASON_PROMPT,
     ACT_PROMPT,
 )
-from icicl import Agent, LiteLLMProvider
+from icrl import Agent, LiteLLMProvider
 
 async def main():
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -281,7 +281,7 @@ if __name__ == "__main__":
 
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║  Harbor Coding Agent with ICICL Performance Improvement   ║
+║  Harbor Coding Agent with ICRL Performance Improvement   ║
 ╚═══════════════════════════════════════════════════════════╝
 
 ═══ Phase 1: Baseline Evaluation (No Examples) ═══
@@ -303,14 +303,14 @@ Improved Results: 3/3 tasks succeeded
 
 ═══ Performance Comparison ═══
 ┌──────────────────────────────────────┬──────────┬───────────┐
-│ Task                                 │ Baseline │ With ICICL│
+│ Task                                 │ Baseline │ With ICRL│
 ├──────────────────────────────────────┼──────────┼───────────┤
 │ Find where the database URL...       │    ✗     │     ✓     │
 │ Fix the debug mode default...        │    ✗     │     ✓     │
 │ Add input validation to...           │    ✓     │     ✓     │
 └──────────────────────────────────────┴──────────┴───────────┘
 
-✓ ICICL improved performance by 67%!
+✓ ICRL improved performance by 67%!
 ```
 
 ## Integration with Harbor
@@ -322,18 +322,18 @@ from harbor.agents.base import BaseAgent
 from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
 
-class ICICLHarborAgent(BaseAgent):
-    """ICICL-powered agent compatible with Harbor."""
+class ICRLHarborAgent(BaseAgent):
+    """ICRL-powered agent compatible with Harbor."""
     
     SUPPORTS_ATIF = True  # Support Harbor's trajectory format
     
-    def __init__(self, icicl_agent: Agent, *args, **kwargs):
+    def __init__(self, icrl_agent: Agent, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.icicl_agent = icicl_agent
+        self.icrl_agent = icrl_agent
     
     @staticmethod
     def name() -> str:
-        return "icicl-coding-agent"
+        return "icrl-coding-agent"
     
     def version(self) -> str:
         return "1.0.0"
@@ -348,11 +348,11 @@ class ICICLHarborAgent(BaseAgent):
         environment: BaseEnvironment,
         context: AgentContext,
     ) -> None:
-        # Wrap Harbor environment for ICICL
-        icicl_env = HarborEnvironmentAdapter(environment, instruction)
+        # Wrap Harbor environment for ICRL
+        icrl_env = HarborEnvironmentAdapter(environment, instruction)
         
         # Run with trajectory learning
-        trajectory = await self.icicl_agent.run(icicl_env, instruction)
+        trajectory = await self.icrl_agent.run(icrl_env, instruction)
         
         # Populate Harbor context
         context.metadata = {
@@ -372,7 +372,7 @@ class ICICLHarborAgent(BaseAgent):
     Agent uses familiar commands: ls, cat, grep, sed - matching Harbor's approach
   </Card>
   <Card title="Measurable Improvement" icon="chart-line">
-    Clear before/after comparison shows ICICL's impact on performance
+    Clear before/after comparison shows ICRL's impact on performance
   </Card>
   <Card title="Harbor Compatible" icon="puzzle-piece">
     Follows Harbor's BaseAgent pattern for Terminal-Bench 2.0 integration

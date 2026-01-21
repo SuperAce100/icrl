@@ -5,17 +5,17 @@ description: "Protocol for LLM integrations"
 
 ## Overview
 
-The `LLMProvider` protocol defines the interface for LLM integrations. Implement this protocol to use custom LLM backends with ICICL.
+The `LLMProvider` protocol defines the interface for LLM integrations. Implement this protocol to use custom LLM backends with ICRL.
 
 ```python
-from icicl import LLMProvider
+from icrl import LLMProvider
 ```
 
 ## Protocol Definition
 
 ```python
 from typing import Protocol, runtime_checkable
-from icicl import Message
+from icrl import Message
 
 @runtime_checkable
 class LLMProvider(Protocol):
@@ -44,10 +44,10 @@ Generate a completion from the given messages.
 
 ## Built-in Implementation
 
-ICICL provides `LiteLLMProvider` which supports 100+ models:
+ICRL provides `LiteLLMProvider` which supports 100+ models:
 
 ```python
-from icicl import LiteLLMProvider
+from icrl import LiteLLMProvider
 
 llm = LiteLLMProvider(
     model="gpt-4o-mini",
@@ -67,7 +67,7 @@ See [LiteLLMProvider](/api-reference/litellm-provider) for full documentation.
 ### Basic Implementation
 
 ```python
-from icicl import Message
+from icrl import Message
 
 class MyLLMProvider:
     async def complete(self, messages: list[Message]) -> str:
@@ -87,7 +87,7 @@ class MyLLMProvider:
 
 ```python
 from openai import AsyncOpenAI
-from icicl import Message
+from icrl import Message
 
 class OpenAIProvider:
     def __init__(
@@ -117,7 +117,7 @@ class OpenAIProvider:
 
 ```python
 import anthropic
-from icicl import Message
+from icrl import Message
 
 class ClaudeProvider:
     def __init__(self, model: str = "claude-3-5-sonnet-20241022"):
@@ -151,7 +151,7 @@ class ClaudeProvider:
 
 ```python
 import httpx
-from icicl import Message
+from icrl import Message
 
 class OllamaProvider:
     def __init__(
@@ -186,7 +186,7 @@ class OllamaProvider:
 
 ```python
 import asyncio
-from icicl import Message
+from icrl import Message
 
 class RetryProvider:
     def __init__(self, base_provider, max_retries: int = 3):
@@ -208,7 +208,7 @@ class RetryProvider:
 ```python
 import hashlib
 import json
-from icicl import Message
+from icrl import Message
 
 class CachedProvider:
     def __init__(self, base_provider):
@@ -248,7 +248,7 @@ class FallbackProvider:
 ## Mock Provider for Testing
 
 ```python
-from icicl import Message
+from icrl import Message
 
 class MockProvider:
     def __init__(self):
@@ -271,7 +271,7 @@ class MockProvider:
 ## Type Checking
 
 ```python
-from icicl import LLMProvider
+from icrl import LLMProvider
 
 class MyProvider:
     async def complete(self, messages: list[Message]) -> str:
@@ -284,7 +284,7 @@ print(isinstance(provider, LLMProvider))  # True
 ## Using Custom Providers
 
 ```python
-from icicl import Agent
+from icrl import Agent
 
 # Create your provider
 llm = OllamaProvider(model="llama3")

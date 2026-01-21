@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Harbor 3-Way SGICL Comparison Script.
+"""Harbor 3-Way ICRL Comparison Script.
 
 This script runs a 3-way comparison on real Harbor/SWE-bench tasks:
 1. Zero-shot: No retrieval (k=0)
-2. SGICL Online: Examples accumulated on-the-fly
-3. SGICL Full DB: All examples pre-loaded
+2. ICRL Online: Examples accumulated on-the-fly
+3. ICRL Full DB: All examples pre-loaded
 
 Unlike the simulated experiment, this uses actual Harbor environments
 and SWE-bench tasks.
 
 Usage:
     # Run on Django tasks from SWE-bench
-    ICICL_HARBOR_SMOKE=1 uv run python examples/harbor_comparison.py \
+    ICRL_HARBOR_SMOKE=1 uv run python examples/harbor_comparison.py \
         --filter "*django*" --disable-verification
 
     # Run on specific tasks
@@ -28,7 +28,7 @@ Requirements:
 
 Environment variables:
     MODEL: LLM model to use (default: gpt-4o-mini)
-    ICICL_MAX_STEPS: Max steps per task (default: 50)
+    ICRL_MAX_STEPS: Max steps per task (default: 50)
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ console = Console()
 
 # Default paths
 DEFAULT_CHECKPOINT = Path("harbor_comparison_checkpoint.json")
-DEFAULT_DB_DIR = Path.home() / ".icicl" / "harbor_comparison"
+DEFAULT_DB_DIR = Path.home() / ".icrl" / "harbor_comparison"
 DEFAULT_JOBS_DIR = Path("harbor_jobs")
 
 
@@ -102,7 +102,7 @@ def run_harbor_command(
     dataset: str,
     task_filter: str | None = None,
     task_names: list[str] | None = None,
-    job_name: str = "sgicl-run",
+    job_name: str = "icrl-run",
     jobs_dir: Path = DEFAULT_JOBS_DIR,
     db_path: str | None = None,
     extra_env: dict | None = None,
@@ -118,7 +118,7 @@ def run_harbor_command(
         task_names: Optional specific task names to run
         job_name: Name for the Harbor job
         jobs_dir: Directory where Harbor writes job artifacts
-        db_path: Path to ICICL database
+        db_path: Path to ICRL database
         extra_env: Additional environment variables
         disable_verification: Skip verifier/tests (useful for fast smoke runs)
     
@@ -150,7 +150,7 @@ def run_harbor_command(
     # Set up environment
     env = os.environ.copy()
     if db_path:
-        env["ICICL_DB_PATH"] = db_path
+        env["ICRL_DB_PATH"] = db_path
     if extra_env:
         env.update(extra_env)
     
@@ -184,9 +184,9 @@ def run_harbor_command(
                 data = json.load(f)
             # Attach a few convenience fields for debugging/scripted analysis.
             if isinstance(data, dict):
-                data["_icicl_job_name"] = job_name
-                data["_icicl_jobs_dir"] = str(jobs_dir)
-                data["_icicl_command"] = " ".join(cmd)
+                data["_icrl_job_name"] = job_name
+                data["_icrl_jobs_dir"] = str(jobs_dir)
+                data["_icrl_command"] = " ".join(cmd)
             return data
         else:
             console.print(f"[red]No result file found at {result_file}[/red]")
@@ -267,13 +267,13 @@ async def run_comparison(
             "max_steps": max_steps,
             "timestamp": datetime.now().isoformat(),
             "zero_shot": None,
-            "sgicl_online": None,
+            "icrl_online": None,
         }
     
     # Common environment
     common_env = {
         "MODEL": model,
-        "ICICL_MAX_STEPS": str(max_steps),
+        "ICRL_MAX_STEPS": str(max_steps),
     }
     
     # Setup database directories
@@ -289,14 +289,14 @@ async def run_comparison(
         console.print("[dim]No retrieval, each task solved independently[/dim]\n")
         
         zs_result = run_harbor_command(
-            agent_import_path="icicl.harbor.agents:ICICLZeroShotAgent",
+            agent_import_path="icrl.harbor.agents:ICRLZeroShotAgent",
             dataset=dataset,
             task_filter=task_filter,
             task_names=task_names,
             job_name="sgicl-zeroshot",
             jobs_dir=jobs_dir,
             db_path=str(zs_db),
-            extra_env={**common_env, "ICICL_K": "0"},
+            extra_env={**common_env, "ICRL_K": "0"},
             n_parallel=n_parallel,  # Zero-shot can run in parallel
             disable_verification=disable_verification,
         )
@@ -308,30 +308,30 @@ async def run_comparison(
         console.print("[dim]Zero-shot already complete, skipping...[/dim]")
     
     # =========================================================================
-    # Condition 2: SGICL Online
+    # Condition 2: ICRL Online
     # =========================================================================
-    if results["sgicl_online"] is None:
-        console.print("\n[bold cyan]═══ Condition 2: SGICL Online (k=3) ═══[/bold cyan]")
+    if results["icrl_online"] is None:
+        console.print("\n[bold cyan]═══ Condition 2: ICRL Online (k=3) ═══[/bold cyan]")
         console.print("[dim]Examples accumulated on-the-fly[/dim]\n")
         
         online_result = run_harbor_command(
-            agent_import_path="icicl.harbor.agents:ICICLTrainAgent",
+            agent_import_path="icrl.harbor.agents:ICRLTrainAgent",
             dataset=dataset,
             task_filter=task_filter,
             task_names=task_names,
-            job_name="sgicl-online",
+            job_name="icrl-online",
             jobs_dir=jobs_dir,
             db_path=str(online_db),
-            extra_env={**common_env, "ICICL_K": "3"},
+            extra_env={**common_env, "ICRL_K": "3"},
             n_parallel=min(n_parallel, 8),  # Cap at 8 for online learning
             disable_verification=disable_verification,
         )
         
-        results["sgicl_online"] = online_result
+        results["icrl_online"] = online_result
         if checkpoint_path:
             save_checkpoint(results, checkpoint_path)
     else:
-        console.print("[dim]SGICL Online already complete, skipping...[/dim]")
+        console.print("[dim]ICRL Online already complete, skipping...[/dim]")
     
     return results
 
@@ -339,11 +339,11 @@ async def run_comparison(
 def print_results(results: dict):
     """Print comparison results."""
     console.print("\n")
-    console.print(Panel.fit("[bold]Harbor SGICL Comparison Results[/bold]", border_style="cyan"))
+    console.print(Panel.fit("[bold]Harbor ICRL Comparison Results[/bold]", border_style="cyan"))
     
     # Extract success rates
     zs_success, zs_total = extract_success_rate(results.get("zero_shot", {}))
-    online_success, online_total = extract_success_rate(results.get("sgicl_online", {}))
+    online_success, online_total = extract_success_rate(results.get("icrl_online", {}))
     
     table = Table(title=f"Results on {results.get('dataset', 'unknown')}")
     table.add_column("Condition", style="cyan")
@@ -361,7 +361,7 @@ def print_results(results: dict):
     
     online_delta = online_success - zs_success
     table.add_row(
-        "SGICL Online (k=3)",
+        "ICRL Online (k=3)",
         f"{online_success}/{online_total} ({online_pct:.0f}%)",
         f"[green]+{online_delta}[/green]" if online_delta > 0 else str(online_delta),
     )
@@ -371,13 +371,13 @@ def print_results(results: dict):
     # Summary
     console.print("\n[bold]Summary:[/bold]")
     if online_success > zs_success:
-        console.print(f"[green]✓ SGICL Online improved by {online_delta} tasks[/green]")
+        console.print(f"[green]✓ ICRL Online improved by {online_delta} tasks[/green]")
     else:
         console.print("[yellow]No improvement observed[/yellow]")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Harbor 3-Way SGICL Comparison")
+    parser = argparse.ArgumentParser(description="Harbor 3-Way ICRL Comparison")
     parser.add_argument(
         "--dataset", type=str, default="swebench-verified@1.0",
         help="Harbor dataset (default: swebench-verified@1.0)"
@@ -439,7 +439,7 @@ def main():
     
     console.print(
         Panel.fit(
-            "[bold magenta]Harbor 3-Way SGICL Comparison[/bold magenta]\n"
+            "[bold magenta]Harbor 3-Way ICRL Comparison[/bold magenta]\n"
             f"Dataset: {args.dataset}\n"
             f"Model: {model} | Max Steps: {args.max_steps} | Parallel: {args.parallel}\n"
             f"Filter: {args.filter or 'none'} | Tasks: {len(args.tasks) if args.tasks else 'all'}",

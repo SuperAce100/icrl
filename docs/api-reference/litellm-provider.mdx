@@ -8,7 +8,7 @@ description: "Built-in LLM provider supporting 100+ models"
 `LiteLLMProvider` is the built-in LLM provider that uses [LiteLLM](https://github.com/BerriAI/litellm) to support 100+ models from various providers through a unified interface.
 
 ```python
-from icicl import LiteLLMProvider
+from icrl import LiteLLMProvider
 ```
 
 ## Constructor
@@ -59,7 +59,7 @@ Generate a completion from the given messages.
 </ResponseField>
 
 ```python
-from icicl import LiteLLMProvider, Message
+from icrl import LiteLLMProvider, Message
 
 llm = LiteLLMProvider(model="gpt-4o-mini")
 
@@ -219,7 +219,7 @@ except Exception as e:
 ## Using with Agent
 
 ```python
-from icicl import Agent, LiteLLMProvider
+from icrl import Agent, LiteLLMProvider
 
 llm = LiteLLMProvider(
     model="gpt-4o-mini",
@@ -258,9 +258,9 @@ OPENAI_API_KEY=sk-...
 
 ```python
 from dotenv import load_dotenv
-load_dotenv()  # ICICL does this automatically
+load_dotenv()  # ICRL does this automatically
 
-from icicl import LiteLLMProvider
+from icrl import LiteLLMProvider
 llm = LiteLLMProvider(model="gpt-4o-mini")
 ```
 

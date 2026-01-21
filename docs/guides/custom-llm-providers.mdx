@@ -1,11 +1,11 @@
 ---
 title: "Custom LLM Providers"
-description: "Integrate custom LLM backends with your ICICL agents"
+description: "Integrate custom LLM backends with your ICRL agents"
 ---
 
 ## Overview
 
-ICICL includes a built-in `LiteLLMProvider` that supports 100+ models. However, you may want to use a custom LLM integration for:
+ICRL includes a built-in `LiteLLMProvider` that supports 100+ models. However, you may want to use a custom LLM integration for:
 
 - Self-hosted models
 - Custom API endpoints
@@ -17,7 +17,7 @@ ICICL includes a built-in `LiteLLMProvider` that supports 100+ models. However, 
 Every LLM provider must implement the `LLMProvider` protocol:
 
 ```python protocol.py
-from icicl import LLMProvider, Message
+from icrl import LLMProvider, Message
 
 class MyLLMProvider:
     async def complete(self, messages: list[Message]) -> str:
@@ -37,7 +37,7 @@ class MyLLMProvider:
 Messages are simple Pydantic models:
 
 ```python
-from icicl import Message
+from icrl import Message
 
 message = Message(role="user", content="Hello, world!")
 # message.role -> "user"
@@ -57,7 +57,7 @@ Common roles:
     
     ```python openai_provider.py
     from openai import AsyncOpenAI
-    from icicl import Message
+    from icrl import Message
 
     class OpenAIProvider:
         def __init__(
@@ -89,7 +89,7 @@ Common roles:
     
     ```python anthropic_provider.py
     import anthropic
-    from icicl import Message
+    from icrl import Message
 
     class AnthropicProvider:
         def __init__(
@@ -131,7 +131,7 @@ Common roles:
     
     ```python ollama_provider.py
     import httpx
-    from icicl import Message
+    from icrl import Message
 
     class OllamaProvider:
         def __init__(
@@ -166,7 +166,7 @@ Common roles:
     
     ```python vllm_provider.py
     from openai import AsyncOpenAI
-    from icicl import Message
+    from icrl import Message
 
     class VLLMProvider:
         def __init__(
@@ -201,7 +201,7 @@ Handle transient failures:
 
 ```python retry_provider.py
 import asyncio
-from icicl import Message
+from icrl import Message
 
 class RetryProvider:
     def __init__(self, base_provider, max_retries: int = 3):
@@ -225,7 +225,7 @@ Reduce API calls for repeated prompts:
 ```python cached_provider.py
 import hashlib
 import json
-from icicl import Message
+from icrl import Message
 
 class CachedProvider:
     def __init__(self, base_provider):
@@ -269,7 +269,7 @@ class FallbackProvider:
 Test without making API calls:
 
 ```python mock_provider.py
-from icicl import Message
+from icrl import Message
 
 class MockProvider:
     def __init__(self):
@@ -313,7 +313,7 @@ llm = RetryProvider(
 ## Using custom providers
 
 ```python agent_setup.py
-from icicl import Agent
+from icrl import Agent
 
 # Create your custom provider
 llm = OllamaProvider(model="llama3")

@@ -8,7 +8,7 @@ description: "Protocol for environments the agent interacts with"
 The `Environment` protocol defines the interface that all environments must implement. Environments receive actions from the agent and return observations, determining when tasks succeed or fail.
 
 ```python
-from icicl import Environment
+from icrl import Environment
 ```
 
 ## Protocol Definition
@@ -180,7 +180,7 @@ class FileSystemEnvironment:
 The protocol is runtime checkable:
 
 ```python
-from icicl import Environment
+from icrl import Environment
 
 class MyEnv:
     def reset(self, goal: str) -> str:
@@ -196,7 +196,7 @@ print(isinstance(env, Environment))  # True
 ## Using with Agent
 
 ```python
-from icicl import Agent, LiteLLMProvider
+from icrl import Agent, LiteLLMProvider
 
 # Your environment implementation
 env = FileSystemEnvironment()

@@ -1,7 +1,7 @@
 [project]
-name = "icicl"
+name = "icrl"
 version = "0.1.0"
-description = "Self-Generated In-Context Learning for LLM Agents"
+description = "In-Context Reinforcement Learning for LLM Agents"
 readme = "README.md"
 authors = [
     { name = "Asanshay Gupta", email = "46036121+SuperAce100@users.noreply.github.com" }
@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [project.scripts]
-icicl = "icicl.cli.main:app"
+icrl = "icrl.cli.main:app"
 
 [build-system]
 requires = ["hatchling"]

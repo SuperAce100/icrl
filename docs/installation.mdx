@@ -1,35 +1,35 @@
 ---
 title: "Installation"
-description: "Install ICICL and configure your environment for self-improving LLM agents"
+description: "Install ICRL and configure your environment for self-improving LLM agents"
 ---
 
 ## Requirements
 
-ICICL requires **Python 3.12** or higher.
+ICRL requires **Python 3.12** or higher.
 
-## Install ICICL
+## Install ICRL
 
 <Tabs>
   <Tab title="pip">
     ```bash
-    pip install icicl
+    pip install icrl
     ```
   </Tab>
   <Tab title="uv">
     ```bash
-    uv add icicl
+    uv add icrl
     ```
   </Tab>
   <Tab title="poetry">
     ```bash
-    poetry add icicl
+    poetry add icrl
     ```
   </Tab>
 </Tabs>
 
 ## Dependencies
 
-ICICL automatically installs these dependencies:
+ICRL automatically installs these dependencies:
 
 | Package | Version | Purpose |
 |---------|---------|---------|
@@ -43,7 +43,7 @@ ICICL automatically installs these dependencies:
 
 ## Configure your LLM provider
 
-ICICL uses LiteLLM for LLM access, which supports [100+ providers](https://docs.litellm.ai/docs/providers). Set up your preferred provider:
+ICRL uses LiteLLM for LLM access, which supports [100+ providers](https://docs.litellm.ai/docs/providers). Set up your preferred provider:
 
 <Tabs>
   <Tab title="OpenAI">
@@ -52,7 +52,7 @@ ICICL uses LiteLLM for LLM access, which supports [100+ providers](https://docs.
     ```
     
     ```python
-    from icicl import LiteLLMProvider
+    from icrl import LiteLLMProvider
     
     llm = LiteLLMProvider(model="gpt-4o-mini")
     # Other options: gpt-4o, gpt-4-turbo, gpt-3.5-turbo
@@ -64,7 +64,7 @@ ICICL uses LiteLLM for LLM access, which supports [100+ providers](https://docs.
     ```
     
     ```python
-    from icicl import LiteLLMProvider
+    from icrl import LiteLLMProvider
     
     llm = LiteLLMProvider(model="claude-3-5-sonnet-20241022")
     # Other options: claude-3-opus-20240229, claude-3-haiku-20240307
@@ -76,7 +76,7 @@ ICICL uses LiteLLM for LLM access, which supports [100+ providers](https://docs.
     ```
     
     ```python
-    from icicl import LiteLLMProvider
+    from icrl import LiteLLMProvider
     
     llm = LiteLLMProvider(model="gemini/gemini-1.5-pro")
     # Other options: gemini/gemini-pro
@@ -90,7 +90,7 @@ ICICL uses LiteLLM for LLM access, which supports [100+ providers](https://docs.
     ```
     
     ```python
-    from icicl import LiteLLMProvider
+    from icrl import LiteLLMProvider
     
     llm = LiteLLMProvider(model="azure/your-deployment-name")
     ```
@@ -106,7 +106,7 @@ OPENAI_API_KEY=sk-...
 ```
 
 <Note>
-ICICL automatically loads environment variables from `.env` using `python-dotenv`.
+ICRL automatically loads environment variables from `.env` using `python-dotenv`.
 </Note>
 
 ## Optional: GPU acceleration
@@ -138,12 +138,12 @@ pip install faiss-gpu
 Run this script to confirm everything works correctly:
 
 ```python verify.py
-import icicl
+import icrl
 
-print(f"ICICL version: {icicl.__version__}")
+print(f"ICRL version: {icrl.__version__}")
 
 # Check if all components import correctly
-from icicl import (
+from icrl import (
     Agent,
     LiteLLMProvider,
     Trajectory,
@@ -157,7 +157,7 @@ from icicl import (
 print("All components imported successfully!")
 
 # Test embedding model loads
-from icicl.embedder import SentenceTransformerEmbedder
+from icrl.embedder import SentenceTransformerEmbedder
 embedder = SentenceTransformerEmbedder()
 embedding = embedder.embed_single("test")
 print(f"Embedding dimension: {len(embedding)}")
@@ -176,8 +176,8 @@ To install from source for development:
 <Steps>
   <Step title="Clone the repository">
     ```bash
-    git clone https://github.com/SuperAce100/icicl.git
-    cd icicl
+    git clone https://github.com/SuperAce100/icrl.git
+    cd icrl
     ```
   </Step>
   <Step title="Install dependencies">

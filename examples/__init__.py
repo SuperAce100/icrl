@@ -1,3 +1,3 @@
-"""Examples for the icicl package."""
+"""Examples for the icrl package."""
 
 

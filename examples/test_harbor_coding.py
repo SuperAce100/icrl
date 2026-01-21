@@ -307,7 +307,7 @@ class TestAgentIntegration:
     @pytest.fixture
     def agent(self, mock_llm, tmp_path):
         """Create an agent with mock LLM."""
-        from icicl import Agent
+        from icrl import Agent
 
         return Agent(
             llm=mock_llm,

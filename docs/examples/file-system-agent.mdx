@@ -1,11 +1,11 @@
 ---
 title: "File System Agent"
-description: "Build a complete ICICL agent that navigates a virtual file system to accomplish tasks"
+description: "Build a complete ICRL agent that navigates a virtual file system to accomplish tasks"
 ---
 
 ## Overview
 
-This example demonstrates a complete ICICL agent that navigates a simulated file system to accomplish tasks like finding files, reading contents, and copying data.
+This example demonstrates a complete ICRL agent that navigates a simulated file system to accomplish tasks like finding files, reading contents, and copying data.
 
 ## Define the environment
 
@@ -186,7 +186,7 @@ What is the SINGLE next command? Respond with only the command."""
     Monitor what your agent does in real-time:
     
     ```python callback.py
-    from icicl import Step, StepContext
+    from icrl import Step, StepContext
 
     def on_step(step: Step, context: StepContext) -> None:
         print(f"\n📍 Observation: {step.observation[:100]}...")
@@ -198,7 +198,7 @@ What is the SINGLE next command? Respond with only the command."""
   
   <Step title="Initialize the agent">
     ```python agent.py
-    from icicl import Agent, LiteLLMProvider
+    from icrl import Agent, LiteLLMProvider
 
     agent = Agent(
         llm=LiteLLMProvider(model="gpt-4o-mini", temperature=0.3),
@@ -293,7 +293,7 @@ asyncio.run(evaluate_agent())
 
 ```python demo.py
 #!/usr/bin/env python3
-"""File system navigation agent with ICICL."""
+"""File system navigation agent with ICRL."""
 
 import asyncio
 import os
@@ -303,7 +303,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from examples.file_api_env import FileSystemEnvironment, Task
-from icicl import Agent, LiteLLMProvider, Step, StepContext
+from icrl import Agent, LiteLLMProvider, Step, StepContext
 
 load_dotenv()
 
@@ -402,7 +402,7 @@ if __name__ == "__main__":
   
   <Step title="Run the demo">
     ```bash
-    cd /path/to/icicl
+    cd /path/to/icrl
     uv run python examples/demo_with_real_llm.py
     ```
   </Step>

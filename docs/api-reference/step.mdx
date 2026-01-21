@@ -8,7 +8,7 @@ description: "Single step in a trajectory"
 A `Step` represents a single action taken by the agent, including what it observed, how it reasoned, and what action it took.
 
 ```python
-from icicl import Step
+from icrl import Step
 ```
 
 ## Definition
@@ -37,7 +37,7 @@ class Step(BaseModel):
 ## Creating Steps
 
 ```python
-from icicl import Step
+from icrl import Step
 
 step = Step(
     observation="Current directory: /home/user\nFiles: notes.txt, config.json",
@@ -59,7 +59,7 @@ print(f"Did: {step.action}")
 Steps are collected in a trajectory's `steps` list:
 
 ```python
-from icicl import Trajectory, Step
+from icrl import Trajectory, Step
 
 trajectory = Trajectory(
     goal="Read the config file",
@@ -95,7 +95,7 @@ trajectory = Trajectory(
 Steps are passed to the `on_step` callback:
 
 ```python
-from icicl import Step, StepContext
+from icrl import Step, StepContext
 
 def on_step(step: Step, context: StepContext) -> None:
     # Access step data
@@ -117,7 +117,7 @@ agent = Agent(..., on_step=on_step)
 The `StepContext.format_history()` method formats steps for prompt inclusion:
 
 ```python
-from icicl import StepContext, Step
+from icrl import StepContext, Step
 
 context = StepContext(
     goal="Find config",

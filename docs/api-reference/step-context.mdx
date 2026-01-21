@@ -8,7 +8,7 @@ description: "Context available during step execution and prompt formatting"
 `StepContext` contains all the contextual information available during a step, including the goal, plan, current observation, history, and retrieved examples. It's used for prompt formatting and passed to step callbacks.
 
 ```python
-from icicl import StepContext
+from icrl import StepContext
 ```
 
 ## Definition
@@ -146,7 +146,7 @@ No previous steps.
 ### For Testing Prompts
 
 ```python
-from icicl import StepContext, Step, Trajectory
+from icrl import StepContext, Step, Trajectory
 
 context = StepContext(
     goal="Complete the task",
@@ -220,7 +220,7 @@ print(formatted)
 `StepContext` is passed to the `on_step` callback:
 
 ```python
-from icicl import Step, StepContext
+from icrl import Step, StepContext
 
 def on_step(step: Step, context: StepContext) -> None:
     # Current step info

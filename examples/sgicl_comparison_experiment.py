@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""SGICL vs Zero-Shot Comparison Experiment.
+"""ICRL vs Zero-Shot Comparison Experiment.
 
 This script runs a direct comparison between:
 1. Zero-shot baseline: No retrieval, each task solved independently
-2. SGICL (train mode): Sequential with trajectory storage and retrieval
+2. ICRL (train mode): Sequential with trajectory storage and retrieval
 
-The key insight: with SGICL, as the agent solves tasks, it stores successful
+The key insight: with ICRL, as the agent solves tasks, it stores successful
 trajectories. Later tasks can retrieve these as in-context examples, improving
 performance over time.
 
@@ -41,7 +41,7 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from icicl import Agent, LiteLLMProvider, Step, StepContext, Trajectory
+from icrl import Agent, LiteLLMProvider, Step, StepContext, Trajectory
 
 load_dotenv()
 
@@ -97,7 +97,7 @@ class FileSystemState:
 
 
 class SimpleEnvironment:
-    """Simple environment for testing SGICL without Harbor."""
+    """Simple environment for testing ICRL without Harbor."""
 
     def __init__(self, task: SimpleTask, max_steps: int = 20):
         self._task = task
@@ -253,7 +253,7 @@ Available commands: ls, cd, cat, grep, find, pwd, echo, sed, mkdir, cp, mv, rm
 
 
 def create_coding_tasks() -> list[SimpleTask]:
-    """Create a set of related coding tasks for testing SGICL."""
+    """Create a set of related coding tasks for testing ICRL."""
     return [
         # === Bug Fix Tasks (similar pattern: find file, identify bug, fix) ===
         SimpleTask(
@@ -447,8 +447,8 @@ async def run_experiment(
 
     Runs 3 conditions:
     1. Zero-shot: No examples (k=0)
-    2. SGICL Online: Examples accumulated on-the-fly
-    3. SGICL Full DB: All examples available from start (pre-loaded)
+    2. ICRL Online: Examples accumulated on-the-fly
+    3. ICRL Full DB: All examples available from start (pre-loaded)
 
     Args:
         tasks: List of tasks to run
@@ -465,8 +465,8 @@ async def run_experiment(
             console.print(
                 f"[yellow]Resuming from checkpoint with "
                 f"{len(existing_results.get('zero_shot', {}).get('successes', []))} zero-shot, "
-                f"{len(existing_results.get('sgicl_online', {}).get('successes', []))} online, "
-                f"{len(existing_results.get('sgicl_full_db', {}).get('successes', []))} full-db "
+                f"{len(existing_results.get('icrl_online', {}).get('successes', []))} online, "
+                f"{len(existing_results.get('icrl_full_db', {}).get('successes', []))} full-db "
                 f"tasks completed[/yellow]\n"
             )
 
@@ -481,8 +481,8 @@ async def run_experiment(
             "n_tasks": len(tasks),
             "timestamp": datetime.now().isoformat(),
             "zero_shot": {"successes": [], "steps": [], "times": []},
-            "sgicl_online": {"successes": [], "steps": [], "times": [], "db_size": []},
-            "sgicl_full_db": {"successes": [], "steps": [], "times": [], "db_size": []},
+            "icrl_online": {"successes": [], "steps": [], "times": [], "db_size": []},
+            "icrl_full_db": {"successes": [], "steps": [], "times": [], "db_size": []},
         }
 
     # GPT-5 only supports temperature=1, use 0.7 for others (not 0)
@@ -491,8 +491,8 @@ async def run_experiment(
 
     # Track where we left off for each condition
     zs_start = len(results["zero_shot"]["successes"])
-    online_start = len(results["sgicl_online"]["successes"])
-    full_start = len(results["sgicl_full_db"]["successes"])
+    online_start = len(results["icrl_online"]["successes"])
+    full_start = len(results["icrl_full_db"]["successes"])
 
     # =========================================================================
     # Condition 1: Zero-shot baseline (no retrieval, no storage)
@@ -566,11 +566,11 @@ async def run_experiment(
         zs_trajectories = []  # Will be loaded from online results if needed
 
     # =========================================================================
-    # Condition 2: SGICL Online (examples accumulated on-the-fly)
+    # Condition 2: ICRL Online (examples accumulated on-the-fly)
     # =========================================================================
     if online_start < len(tasks):
         console.print(
-            "\n[bold cyan]═══ Condition 2: SGICL Online (On-the-fly) ═══[/bold cyan]"
+            "\n[bold cyan]═══ Condition 2: ICRL Online (On-the-fly) ═══[/bold cyan]"
         )
         if online_start > 0:
             console.print(f"[yellow]Resuming from task {online_start + 1}[/yellow]")
@@ -616,10 +616,10 @@ async def run_experiment(
                     online_agent, task, i, mode="train"
                 )
 
-                results["sgicl_online"]["successes"].append(success)
-                results["sgicl_online"]["steps"].append(steps)
-                results["sgicl_online"]["times"].append(time_taken)
-                results["sgicl_online"]["db_size"].append(len(online_agent.database))
+                results["icrl_online"]["successes"].append(success)
+                results["icrl_online"]["steps"].append(steps)
+                results["icrl_online"]["times"].append(time_taken)
+                results["icrl_online"]["db_size"].append(len(online_agent.database))
 
                 status = "[green]✓[/green]" if success else "[red]✗[/red]"
                 progress.update(
@@ -632,14 +632,14 @@ async def run_experiment(
                 if checkpoint_path:
                     save_checkpoint(results, checkpoint_path)
     else:
-        console.print("[dim]SGICL Online condition already complete, skipping...[/dim]")
+        console.print("[dim]ICRL Online condition already complete, skipping...[/dim]")
 
     # =========================================================================
-    # Condition 3: SGICL Full DB (all examples available from start)
+    # Condition 3: ICRL Full DB (all examples available from start)
     # =========================================================================
     if full_start < len(tasks):
         console.print(
-            "\n[bold cyan]═══ Condition 3: SGICL Full DB (Pre-loaded) ═══[/bold cyan]"
+            "\n[bold cyan]═══ Condition 3: ICRL Full DB (Pre-loaded) ═══[/bold cyan]"
         )
         if full_start > 0:
             console.print(f"[yellow]Resuming from task {full_start + 1}[/yellow]")
@@ -688,10 +688,10 @@ async def run_experiment(
                     full_db_agent, task, i, mode="train"
                 )
 
-                results["sgicl_full_db"]["successes"].append(success)
-                results["sgicl_full_db"]["steps"].append(steps)
-                results["sgicl_full_db"]["times"].append(time_taken)
-                results["sgicl_full_db"]["db_size"].append(len(full_db_agent.database))
+                results["icrl_full_db"]["successes"].append(success)
+                results["icrl_full_db"]["steps"].append(steps)
+                results["icrl_full_db"]["times"].append(time_taken)
+                results["icrl_full_db"]["db_size"].append(len(full_db_agent.database))
 
                 status = "[green]✓[/green]" if success else "[red]✗[/red]"
                 progress.update(
@@ -705,7 +705,7 @@ async def run_experiment(
                     save_checkpoint(results, checkpoint_path)
     else:
         console.print(
-            "[dim]SGICL Full DB condition already complete, skipping...[/dim]"
+            "[dim]ICRL Full DB condition already complete, skipping...[/dim]"
         )
 
     # Final save
@@ -727,15 +727,15 @@ def print_results(results: dict):
 
     # Extract success counts
     zs_success = sum(results["zero_shot"]["successes"])
-    online_success = sum(results["sgicl_online"]["successes"])
-    full_success = sum(results["sgicl_full_db"]["successes"])
+    online_success = sum(results["icrl_online"]["successes"])
+    full_success = sum(results["icrl_full_db"]["successes"])
 
     # Summary table
-    table = Table(title="Zero-Shot vs SGICL Online vs SGICL Full DB")
+    table = Table(title="Zero-Shot vs ICRL Online vs ICRL Full DB")
     table.add_column("Metric", style="cyan")
     table.add_column("Zero-Shot\n(k=0)", justify="center")
-    table.add_column("SGICL Online\n(k=3, on-the-fly)", justify="center")
-    table.add_column("SGICL Full DB\n(k=3, pre-loaded)", justify="center")
+    table.add_column("ICRL Online\n(k=3, on-the-fly)", justify="center")
+    table.add_column("ICRL Full DB\n(k=3, pre-loaded)", justify="center")
 
     # Success rates
     table.add_row(
@@ -747,8 +747,8 @@ def print_results(results: dict):
 
     # Average steps
     zs_avg_steps = sum(results["zero_shot"]["steps"]) / n
-    online_avg_steps = sum(results["sgicl_online"]["steps"]) / n
-    full_avg_steps = sum(results["sgicl_full_db"]["steps"]) / n
+    online_avg_steps = sum(results["icrl_online"]["steps"]) / n
+    full_avg_steps = sum(results["icrl_full_db"]["steps"]) / n
     table.add_row(
         "Avg Steps",
         f"{zs_avg_steps:.1f}",
@@ -758,8 +758,8 @@ def print_results(results: dict):
 
     # Average time
     zs_avg_time = sum(results["zero_shot"]["times"]) / n
-    online_avg_time = sum(results["sgicl_online"]["times"]) / n
-    full_avg_time = sum(results["sgicl_full_db"]["times"]) / n
+    online_avg_time = sum(results["icrl_online"]["times"]) / n
+    full_avg_time = sum(results["icrl_full_db"]["times"]) / n
     table.add_row(
         "Avg Time (s)",
         f"{zs_avg_time:.1f}",
@@ -769,13 +769,13 @@ def print_results(results: dict):
 
     # Final DB sizes
     online_final_db = (
-        results["sgicl_online"]["db_size"][-1]
-        if results["sgicl_online"]["db_size"]
+        results["icrl_online"]["db_size"][-1]
+        if results["icrl_online"]["db_size"]
         else 0
     )
     full_final_db = (
-        results["sgicl_full_db"]["db_size"][-1]
-        if results["sgicl_full_db"]["db_size"]
+        results["icrl_full_db"]["db_size"][-1]
+        if results["icrl_full_db"]["db_size"]
         else 0
     )
     table.add_row(
@@ -800,7 +800,7 @@ def print_results(results: dict):
     full_step_delta = full_avg_steps - zs_avg_steps
 
     delta_table.add_row(
-        "SGICL Online",
+        "ICRL Online",
         f"[green]+{online_delta}[/green]"
         if online_delta > 0
         else f"[red]{online_delta}[/red]"
@@ -811,7 +811,7 @@ def print_results(results: dict):
         else f"{online_step_delta:+.1f}",
     )
     delta_table.add_row(
-        "SGICL Full DB",
+        "ICRL Full DB",
         f"[green]+{full_delta}[/green]"
         if full_delta > 0
         else f"[red]{full_delta}[/red]"
@@ -841,16 +841,16 @@ def print_results(results: dict):
         )
         online_ok = (
             "[green]✓[/green]"
-            if results["sgicl_online"]["successes"][i]
+            if results["icrl_online"]["successes"][i]
             else "[red]✗[/red]"
         )
         full_ok = (
             "[green]✓[/green]"
-            if results["sgicl_full_db"]["successes"][i]
+            if results["icrl_full_db"]["successes"][i]
             else "[red]✗[/red]"
         )
-        online_db = results["sgicl_online"]["db_size"][i]
-        full_db = results["sgicl_full_db"]["db_size"][i]
+        online_db = results["icrl_online"]["db_size"][i]
+        full_db = results["icrl_full_db"]["db_size"][i]
         task_table.add_row(
             str(i + 1), zs_ok, online_ok, full_ok, str(online_db), str(full_db)
         )
@@ -862,12 +862,12 @@ def print_results(results: dict):
     if full_success > zs_success:
         improvement = (full_success - zs_success) / max(zs_success, 1) * 100
         console.print(
-            f"[bold green]✓ SGICL Full DB improved by {full_success - zs_success} tasks ({improvement:.0f}% relative)[/bold green]"
+            f"[bold green]✓ ICRL Full DB improved by {full_success - zs_success} tasks ({improvement:.0f}% relative)[/bold green]"
         )
     if online_success > zs_success:
         improvement = (online_success - zs_success) / max(zs_success, 1) * 100
         console.print(
-            f"[bold green]✓ SGICL Online improved by {online_success - zs_success} tasks ({improvement:.0f}% relative)[/bold green]"
+            f"[bold green]✓ ICRL Online improved by {online_success - zs_success} tasks ({improvement:.0f}% relative)[/bold green]"
         )
     if full_success <= zs_success and online_success <= zs_success:
         console.print(
@@ -876,7 +876,7 @@ def print_results(results: dict):
 
 
 async def main():
-    parser = argparse.ArgumentParser(description="3-Way SGICL Comparison Experiment")
+    parser = argparse.ArgumentParser(description="3-Way ICRL Comparison Experiment")
     parser.add_argument(
         "--n-tasks", type=int, default=10, help="Number of tasks to run"
     )
@@ -904,7 +904,7 @@ async def main():
         checkpoint_path = Path(args.checkpoint)
     elif args.resume:
         # Default checkpoint location
-        checkpoint_path = Path("sgicl_experiment_checkpoint.json")
+        checkpoint_path = Path("icrl_experiment_checkpoint.json")
 
     resume_str = ""
     if checkpoint_path and checkpoint_path.exists():
@@ -912,9 +912,9 @@ async def main():
 
     console.print(
         Panel.fit(
-            "[bold magenta]3-Way SGICL Comparison Experiment[/bold magenta]\n"
+            "[bold magenta]3-Way ICRL Comparison Experiment[/bold magenta]\n"
             f"Model: {model} | Tasks: {args.n_tasks} | Max Steps: {args.max_steps}{resume_str}\n"
-            "[dim]Conditions: Zero-Shot | SGICL Online | SGICL Full DB[/dim]",
+            "[dim]Conditions: Zero-Shot | ICRL Online | ICRL Full DB[/dim]",
             border_style="magenta",
         )
     )

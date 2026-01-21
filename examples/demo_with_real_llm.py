@@ -1,6 +1,6 @@
 """Demo example using a real LLM for file system navigation.
 
-This script demonstrates icicl with actual LLM calls, showing how the agent:
+This script demonstrates icrl with actual LLM calls, showing how the agent:
 - Learns from successful trajectories over multiple episodes
 - Retrieves relevant examples to improve performance
 - Reasons through multi-step tasks
@@ -24,7 +24,7 @@ from rich.console import Console
 
 from examples.file_api_env import FileSystemEnvironment
 from examples.tasks import EVAL_TASKS, TRAINING_TASKS
-from icicl import Agent, LiteLLMProvider, Step, StepContext
+from icrl import Agent, LiteLLMProvider, Step, StepContext
 
 load_dotenv()
 
@@ -103,7 +103,7 @@ async def run_demo() -> None:
         "[bold magenta]╔═══════════════════════════════════════════════╗[/bold magenta]"
     )
     console.print(
-        "[bold magenta]║   ICICL File System Agent - Real LLM Demo    ║[/bold magenta]"
+        "[bold magenta]║   ICRL File System Agent - Real LLM Demo    ║[/bold magenta]"
     )
     console.print(
         "[bold magenta]╚═══════════════════════════════════════════════╝[/bold magenta]"

@@ -1,4 +1,4 @@
-"""Simulated file system environment for icicl examples."""
+"""Simulated file system environment for icrl examples."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 ---
 title: "Custom Environments"
-description: "Build environments for your ICICL agents to interact with"
+description: "Build environments for your ICRL agents to interact with"
 ---
 
 ## Overview
@@ -12,7 +12,7 @@ Environments define the world your agent interacts with. They receive actions fr
 Every environment must implement the `Environment` protocol:
 
 ```python protocol.py
-from icicl import Environment
+from icrl import Environment
 
 class MyEnvironment:
     def reset(self, goal: str) -> str:
@@ -339,7 +339,7 @@ Always test your environment independently before integrating with an agent. Thi
 ## Using with an agent
 
 ```python agent_integration.py
-from icicl import Agent, LiteLLMProvider
+from icrl import Agent, LiteLLMProvider
 
 # Create your environment
 env = FileSystemEnvironment()

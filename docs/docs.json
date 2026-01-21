@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "name": "ICICL",
+  "name": "ICRL",
   "logo": {
     "dark": "/logo/dark.svg",
     "light": "/logo/light.svg"
@@ -28,7 +28,7 @@
   "topbarLinks": [
     {
       "name": "GitHub",
-      "url": "https://github.com/SuperAce100/icicl"
+      "url": "https://github.com/SuperAce100/icrl"
     }
   ],
   "topbarCtaButton": {
@@ -47,7 +47,7 @@
           {
             "group": "Core Concepts",
             "pages": [
-              "core-concepts/sgicl-algorithm",
+              "core-concepts/icrl-algorithm",
               "core-concepts/react-loop",
               "core-concepts/trajectory-database",
               "core-concepts/curation"
@@ -117,17 +117,17 @@
         {
           "anchor": "GitHub",
           "icon": "github",
-          "href": "https://github.com/SuperAce100/icicl"
+          "href": "https://github.com/SuperAce100/icrl"
         },
         {
           "anchor": "PyPI",
           "icon": "python",
-          "href": "https://pypi.org/project/icicl/"
+          "href": "https://pypi.org/project/icrl/"
         }
       ]
     }
   },
   "footerSocials": {
-    "github": "https://github.com/SuperAce100/icicl"
+    "github": "https://github.com/SuperAce100/icrl"
   }
 }

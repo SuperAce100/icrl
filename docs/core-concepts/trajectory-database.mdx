@@ -1,15 +1,15 @@
 ---
 title: "Trajectory Database"
-description: "Learn how ICICL stores and retrieves trajectories using FAISS-backed semantic search"
+description: "Learn how ICRL stores and retrieves trajectories using FAISS-backed semantic search"
 ---
 
 ## Overview
 
-The **Trajectory Database** is the persistent memory of your ICICL agent. It stores successful trajectories on disk and uses FAISS for efficient semantic similarity search.
+The **Trajectory Database** is the persistent memory of your ICRL agent. It stores successful trajectories on disk and uses FAISS for efficient semantic similarity search.
 
 ## Database structure
 
-When you create an agent with `db_path="./trajectories"`, ICICL creates the following structure:
+When you create an agent with `db_path="./trajectories"`, ICRL creates the following structure:
 
 ```
 ./trajectories/
@@ -116,7 +116,7 @@ db.remove("trajectory-id")
 The `TrajectoryRetriever` wraps the database with episode-aware retrieval:
 
 ```python retriever.py
-from icicl.retriever import TrajectoryRetriever
+from icrl.retriever import TrajectoryRetriever
 
 retriever = TrajectoryRetriever(database, k=3)
 
@@ -139,8 +139,8 @@ The retriever tracks which trajectories are used in each episode. This informati
 Use a different embedding model for better accuracy or speed:
 
 ```python custom_embedder.py
-from icicl.embedder import SentenceTransformerEmbedder
-from icicl.database import TrajectoryDatabase
+from icrl.embedder import SentenceTransformerEmbedder
+from icrl.database import TrajectoryDatabase
 
 # Use a larger, more accurate model
 embedder = SentenceTransformerEmbedder(
@@ -199,7 +199,7 @@ print(f"Loaded {len(db)} trajectories")
     Bootstrap your agent with known-good examples:
     
     ```python
-    from icicl import Trajectory, Step
+    from icrl import Trajectory, Step
     
     seed = Trajectory(
         goal="Example task",

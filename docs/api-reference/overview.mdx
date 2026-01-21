@@ -1,14 +1,14 @@
 ---
 title: "API Overview"
-description: "Complete API reference for the ICICL library"
+description: "Complete API reference for the ICRL library"
 ---
 
 ## Package structure
 
-ICICL is organized into the following modules:
+ICRL is organized into the following modules:
 
 ```
-icicl/
+icrl/
 ├── agent.py        # Main Agent class
 ├── loop.py         # ReAct loop implementation
 ├── database.py     # FAISS-backed trajectory storage
@@ -26,7 +26,7 @@ icicl/
 All main classes are available from the top-level package:
 
 ```python imports.py
-from icicl import (
+from icrl import (
     # Main class
     Agent,
     
@@ -49,7 +49,7 @@ from icicl import (
 
 <CardGroup cols={2}>
   <Card title="Agent" icon="robot" href="/api-reference/agent">
-    The main class for training and running ICICL agents
+    The main class for training and running ICRL agents
   </Card>
   <Card title="LiteLLMProvider" icon="microchip" href="/api-reference/litellm-provider">
     Built-in LLM provider supporting 100+ models
@@ -106,7 +106,7 @@ from icicl import (
 ### Creating an agent
 
 ```python create_agent.py
-from icicl import Agent, LiteLLMProvider
+from icrl import Agent, LiteLLMProvider
 
 agent = Agent(
     llm=LiteLLMProvider(model="gpt-4o-mini"),
@@ -155,7 +155,7 @@ print(f"Success rate: {stats['success_rate']:.1%}")
 ### Data models
 
 ```python models.py
-from icicl import Trajectory, Step, Message
+from icrl import Trajectory, Step, Message
 
 # Create a step
 step = Step(
@@ -179,6 +179,6 @@ message = Message(role="user", content="Hello")
 ## Version
 
 ```python version.py
-import icicl
-print(icicl.__version__)  # "0.1.0"
+import icrl
+print(icrl.__version__)  # "0.1.0"
 ```

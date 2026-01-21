@@ -1,11 +1,11 @@
 ---
 title: "Prompt Templates"
-description: "Design effective prompts for planning, reasoning, and acting in your ICICL agents"
+description: "Design effective prompts for planning, reasoning, and acting in your ICRL agents"
 ---
 
 ## Overview
 
-ICICL uses three prompt templates that control how your agent thinks and acts:
+ICRL uses three prompt templates that control how your agent thinks and acts:
 
 1. **Plan prompt**: Generates the initial strategy
 2. **Reason prompt**: Analyzes observations and decides what to do
@@ -258,7 +258,7 @@ What is the SINGLE next command? Respond with only the command."""
 The `StepContext` class provides formatting helpers:
 
 ```python formatting.py
-from icicl import StepContext
+from icrl import StepContext
 
 context = StepContext(
     goal="Find the config file",
@@ -280,7 +280,7 @@ history_str = context.format_history()
 Test your prompts without running full episodes:
 
 ```python test_prompts.py
-from icicl import StepContext
+from icrl import StepContext
 
 # Create test context
 context = StepContext(

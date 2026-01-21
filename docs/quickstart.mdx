@@ -1,33 +1,33 @@
 ---
 title: "Quickstart"
-description: "Build your first self-improving ICICL agent in under 5 minutes"
+description: "Build your first self-improving ICRL agent in under 5 minutes"
 ---
 
 ## Installation
 
-Install ICICL using your preferred package manager:
+Install ICRL using your preferred package manager:
 
 <Tabs>
   <Tab title="pip">
     ```bash
-    pip install icicl
+    pip install icrl
     ```
   </Tab>
   <Tab title="uv">
     ```bash
-    uv add icicl
+    uv add icrl
     ```
   </Tab>
   <Tab title="poetry">
     ```bash
-    poetry add icicl
+    poetry add icrl
     ```
   </Tab>
 </Tabs>
 
 ## Set up your API key
 
-ICICL uses LiteLLM under the hood, which supports 100+ LLM providers. Configure your preferred provider:
+ICRL uses LiteLLM under the hood, which supports 100+ LLM providers. Configure your preferred provider:
 
 <Tabs>
   <Tab title="OpenAI">
@@ -87,7 +87,7 @@ ICICL uses LiteLLM under the hood, which supports 100+ LLM providers. Configure 
 
   <Step title="Initialize the agent">
     ```python agent.py
-    from icicl import Agent, LiteLLMProvider
+    from icrl import Agent, LiteLLMProvider
 
     llm = LiteLLMProvider(model="gpt-4o-mini")
 
@@ -179,7 +179,7 @@ ICICL uses LiteLLM under the hood, which supports 100+ LLM providers. Configure 
 Use step callbacks to observe what your agent does in real-time:
 
 ```python callbacks.py
-from icicl import Step, StepContext
+from icrl import Step, StepContext
 
 def on_step(step: Step, context: StepContext) -> None:
     print(f"Observation: {step.observation[:100]}...")
@@ -210,8 +210,8 @@ print(f"Success rate: {stats['success_rate']:.1%}")
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Core Concepts" icon="book" href="/core-concepts/sgicl-algorithm">
-    Learn how the SGICL algorithm enables self-improvement
+  <Card title="Core Concepts" icon="book" href="/core-concepts/icrl-algorithm">
+    Learn how the ICRL algorithm enables self-improvement
   </Card>
   <Card title="Custom Environments" icon="puzzle-piece" href="/guides/custom-environments">
     Build environments tailored to your use case

@@ -8,7 +8,7 @@ description: "Episode-aware semantic retrieval for trajectories"
 `TrajectoryRetriever` wraps the database with episode-aware retrieval, tracking which trajectories are used during an episode for curation purposes.
 
 ```python
-from icicl.retriever import TrajectoryRetriever
+from icrl.retriever import TrajectoryRetriever
 ```
 
 ## Constructor
@@ -223,8 +223,8 @@ class ReActLoop:
 You typically don't create a retriever directly—the `Agent` does it for you. But if needed:
 
 ```python
-from icicl.database import TrajectoryDatabase
-from icicl.retriever import TrajectoryRetriever
+from icrl.database import TrajectoryDatabase
+from icrl.retriever import TrajectoryRetriever
 
 db = TrajectoryDatabase("./trajectories")
 retriever = TrajectoryRetriever(database=db, k=5)
