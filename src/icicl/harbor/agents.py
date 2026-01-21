@@ -43,6 +43,8 @@ from icicl.harbor.prompts import (
     SYSTEM_PROMPT,
 )
 
+# Disable LiteLLM's async logging worker to avoid event loop mismatch errors
+litellm.disable_logging_worker = True
 # Drop unsupported params for newer models like GPT-5
 litellm.drop_params = True
 

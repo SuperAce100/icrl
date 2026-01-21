@@ -57,23 +57,26 @@ async def run_task(
         console.print(f"[dim italic]{preview}[/]")
 
     def on_tool_start(tool: str, params: dict[str, Any]) -> None:
+        def _dim(val: str) -> str:
+            return f"[dim]{val}[/]" if val else ""
+
         if tool == "Bash":
             cmd = params.get("command", "")
             if len(cmd) > 60:
                 cmd = cmd[:60] + "..."
-            console.print(f"  [dim]$ {cmd}[/]")
+            console.print(f"  Bash {_dim(cmd)}")
         elif tool == "Read":
-            console.print(f"  [dim]reading {params.get('path', '')}[/]")
+            console.print(f"  Read {_dim(params.get('path', ''))}")
         elif tool == "Write":
-            console.print(f"  [dim]writing {params.get('path', '')}[/]")
+            console.print(f"  Write {_dim(params.get('path', ''))}")
         elif tool == "Edit":
-            console.print(f"  [dim]editing {params.get('path', '')}[/]")
+            console.print(f"  Edit {_dim(params.get('path', ''))}")
         elif tool == "Grep":
-            console.print(f"  [dim]grep {params.get('pattern', '')}[/]")
+            console.print(f"  Grep {_dim(params.get('pattern', ''))}")
         elif tool == "Glob":
-            console.print(f"  [dim]glob {params.get('pattern', '')}[/]")
+            console.print(f"  Glob {_dim(params.get('pattern', ''))}")
         else:
-            console.print(f"  [dim]{tool.lower()}[/]")
+            console.print(f"  {tool}")
 
     def on_tool_end(tool: str, result: ToolResult) -> None:
         pass
@@ -103,8 +106,6 @@ async def run_task(
     if len(database) > 0:
         similar = database.search(goal, k=config.k)
         examples = [traj.to_example_string() for traj in similar]
-        if examples:
-            console.print(f"[dim]using {len(examples)} examples[/]")
 
     loop = ToolLoop(
         llm=llm,
@@ -140,6 +141,20 @@ def run_tui(config: Config | None = None, working_dir: Path | None = None) -> No
     console = Console()
     config = config or Config.load()
     working_dir = working_dir or Path.cwd()
+
+    # One-time intro banner for the current process (i.e., first time entering chat)
+    if not getattr(run_tui, "_intro_printed", False):
+        run_tui._intro_printed = True  # type: ignore[attr-defined]
+        console.print(
+            "[bold cyan]"
+            "  ___ ____ ___ ____ _     \n"
+            " |_ _/ ___|_ _/ ___| |    \n"
+            "  | | |    | | |   | |    \n"
+            "  | | |___ | | |___| |___ \n"
+            " |___\\____|___\\____|_____|\n"
+            "[/]"
+        )
+        console.print("[dim]Type a task and press Enter. 'exit' to quit.[/]\n")
 
     db_path = config.db_path or str(get_default_db_path())
     database = TrajectoryDatabase(db_path)

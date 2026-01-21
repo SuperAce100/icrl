@@ -27,10 +27,18 @@ Example usage:
     trajectory = await agent.run(env, goal="Complete another task")
 """
 
-from icicl.agent import Agent
-from icicl.models import Message, Step, StepContext, Trajectory
-from icicl.protocols import Environment, LLMProvider
-from icicl.providers import LiteLLMProvider
+# Disable LiteLLM's async logging worker BEFORE any litellm import.
+# This avoids event loop mismatch errors when asyncio.run() is called
+# multiple times (e.g., in interactive chat mode).
+import litellm as _litellm
+
+_litellm.disable_logging_worker = True
+del _litellm
+
+from icicl.agent import Agent  # noqa: E402
+from icicl.models import Message, Step, StepContext, Trajectory  # noqa: E402
+from icicl.protocols import Environment, LLMProvider  # noqa: E402
+from icicl.providers import LiteLLMProvider  # noqa: E402
 
 __all__ = [
     "Agent",

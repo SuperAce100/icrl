@@ -18,9 +18,5 @@ def build_edit_prompt(path: str, old_text: str, new_text: str) -> str:
     )
 
 
-def parse_yes_no(answer: str) -> bool:
-    """Parse a yes/no answer from the user."""
-    answer = answer.strip().lower()
-    if answer in ("1", "yes", "y", "true"):
-        return True
-    return False
+# NOTE: Human verification uses Rich's Confirm.ask in the CLI layer.
+# Tools only receive a callback and treat its return value as a boolean.

@@ -22,6 +22,7 @@ warnings.filterwarnings("ignore", message="coroutine 'close_litellm_async_client
 import typer  # noqa: E402
 from rich.console import Console  # noqa: E402
 from rich.panel import Panel  # noqa: E402
+from rich.prompt import Confirm  # noqa: E402
 from rich.table import Table  # noqa: E402
 
 from icicl import __version__  # noqa: E402
@@ -94,27 +95,29 @@ def run(
                 console.print(f"[dim]{preview}{suffix}[/]")
 
     def on_tool_start(tool: str, params: dict) -> None:
+        # Prefer past-tense action verbs in logs (matches the user's mental model of
+        # "what happened"), while still being emitted at tool start.
         if tool == "Read":
-            console.print(f"[cyan]Reading[/] {params.get('path', '')}")
+            console.print(f"[cyan]Read[/] {params.get('path', '')}")
         elif tool == "Write":
-            console.print(f"[green]Writing[/] {params.get('path', '')}")
+            console.print(f"[green]Wrote[/] {params.get('path', '')}")
         elif tool == "Edit":
-            console.print(f"[yellow]Editing[/] {params.get('path', '')}")
+            console.print(f"[yellow]Edited[/] {params.get('path', '')}")
         elif tool == "Bash":
             cmd = params.get("command", "")
             if len(cmd) > 60:
                 cmd = cmd[:60] + "..."
-            console.print(f"[magenta]Running[/] {cmd}")
+            console.print(f"[magenta]Ran[/] {cmd}")
         elif tool == "Glob":
-            console.print(f"[cyan]Searching[/] {params.get('pattern', '')}")
+            console.print(f"[cyan]Globbed[/] {params.get('pattern', '')}")
         elif tool == "Grep":
-            console.print(f"[cyan]Searching[/] {params.get('pattern', '')}")
+            console.print(f"[cyan]Grepped[/] {params.get('pattern', '')}")
         elif tool == "WebSearch":
-            console.print(f"[blue]Searching web[/] {params.get('query', '')}")
+            console.print(f"[blue]Searched web[/] {params.get('query', '')}")
         elif tool == "WebFetch":
-            console.print(f"[blue]Fetching[/] {params.get('url', '')}")
+            console.print(f"[blue]Fetched[/] {params.get('url', '')}")
         else:
-            console.print(f"[dim]Using tool: {tool}[/]")
+            console.print(f"[dim]Used tool: {tool}[/]")
 
     def on_tool_end(tool: str, result: ToolResult) -> None:
         if verbose:
@@ -143,6 +146,12 @@ def run(
         console.print(f"[dim]Steps taken: {len(trajectory.steps)}[/]")
 
     def ask_user(question: str, options: list[str] | None) -> str:
+        # Use Rich prompts for better UX in terminal.
+        # Special-case yes/no prompts (used by human verification gates).
+        if options and {o.strip().lower() for o in options} <= {"yes", "no", "y", "n"}:
+            approved = Confirm.ask(question, default=True)
+            return "yes" if approved else "no"
+
         console.print(f"\n[bold yellow]Question:[/] {question}")
         if options:
             for i, opt in enumerate(options, 1):

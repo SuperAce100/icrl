@@ -3,11 +3,7 @@
 import re
 from typing import Any
 
-from icicl.cli.human_verification import (
-    build_edit_prompt,
-    build_write_prompt,
-    parse_yes_no,
-)
+from icicl.cli.human_verification import build_edit_prompt, build_write_prompt
 from icicl.cli.tools.base import Tool, ToolParameter, ToolResult
 
 
@@ -138,8 +134,8 @@ class WriteTool(Tool):
             # Human verification gate (write)
             if self._ask_user_callback:
                 question = build_write_prompt(path=path, content=content)
-                answer = self._ask_user_callback(question, ["yes", "no"])
-                if not parse_yes_no(answer):
+                approved = bool(self._ask_user_callback(question, None))
+                if not approved:
                     msg = f"Denied by user: Write to {path}"
                     return ToolResult(output=msg, success=False)
 
@@ -216,8 +212,8 @@ class EditTool(Tool):
                 question = build_edit_prompt(
                     path=path, old_text=old_text, new_text=new_text
                 )
-                answer = self._ask_user_callback(question, ["yes", "no"])
-                if not parse_yes_no(answer):
+                approved = bool(self._ask_user_callback(question, None))
+                if not approved:
                     msg = f"Denied by user: Edit {path}"
                     return ToolResult(output=msg, success=False)
 

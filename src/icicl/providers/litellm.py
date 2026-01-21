@@ -5,10 +5,15 @@ import time
 from typing import Any
 
 import litellm
-from litellm.exceptions import BadRequestError
 
-from icicl._debug import log as _debug_log
-from icicl.models import Message
+# Disable LiteLLM's async logging worker to avoid event loop mismatch errors
+# when asyncio.run() is called multiple times.
+litellm.disable_logging_worker = True
+
+from litellm.exceptions import BadRequestError  # noqa: E402
+
+from icicl._debug import log as _debug_log  # noqa: E402
+from icicl.models import Message  # noqa: E402
 
 
 class LiteLLMProvider:
