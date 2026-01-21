@@ -1,44 +1,72 @@
 <svg width="800" height="400" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="800" height="400" fill="#f8fafc"/>
-  
+
   <!-- Title -->
-  <text x="400" y="100" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#0D9373" text-anchor="middle">ICICL</text>
-  <text x="400" y="140" font-family="Arial, sans-serif" font-size="20" fill="#64748b" text-anchor="middle">Self-Generated In-Context Learning for LLM Agents</text>
-  
-  <!-- Flow diagram -->
-  <g transform="translate(100, 180)">
-    <!-- Bootstrap -->
-    <rect x="0" y="0" width="120" height="60" rx="8" fill="#0D9373"/>
-    <text x="60" y="35" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Bootstrap</text>
-    
-    <!-- Arrow -->
-    <path d="M130 30 L160 30" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
-    
+  <text x="400" y="85" font-family="Arial, sans-serif" font-size="52" font-weight="bold" fill="#0D9373" text-anchor="middle">ICRL</text>
+  <text x="400" y="125" font-family="Arial, sans-serif" font-size="20" fill="#64748b" text-anchor="middle">Plan → Reason → Act loop with retrieval + self-curation</text>
+
+  <!-- Main flow: Retrieve → Plan → Reason → Act → Observe → Store success → Curate -->
+  <g transform="translate(52, 160)">
     <!-- Retrieve -->
-    <rect x="170" y="0" width="120" height="60" rx="8" fill="#07C983"/>
-    <text x="230" y="35" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Retrieve</text>
-    
+    <rect x="0" y="0" width="110" height="56" rx="10" fill="#07C983"/>
+    <text x="55" y="34" font-family="Arial, sans-serif" font-size="14" fill="#052017" text-anchor="middle" font-weight="bold">Retrieve</text>
+    <text x="55" y="49" font-family="Arial, sans-serif" font-size="10" fill="#052017" text-anchor="middle">top‑k examples</text>
+
     <!-- Arrow -->
-    <path d="M300 30 L330 30" stroke="#94a3b8" stroke-width="2"/>
-    
-    <!-- Generate -->
-    <rect x="340" y="0" width="120" height="60" rx="8" fill="#0D9373"/>
-    <text x="400" y="35" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Generate</text>
-    
+    <path d="M118 28 L140 28" stroke="#94a3b8" stroke-width="2"/>
+
+    <!-- Plan -->
+    <rect x="148" y="0" width="100" height="56" rx="10" fill="#0D9373"/>
+    <text x="198" y="34" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Plan</text>
+
     <!-- Arrow -->
-    <path d="M470 30 L500 30" stroke="#94a3b8" stroke-width="2"/>
-    
-    <!-- Curate -->
-    <rect x="510" y="0" width="120" height="60" rx="8" fill="#07C983"/>
-    <text x="570" y="35" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Curate</text>
+    <path d="M256 28 L278 28" stroke="#94a3b8" stroke-width="2"/>
+
+    <!-- Reason -->
+    <rect x="286" y="0" width="110" height="56" rx="10" fill="#0D9373"/>
+    <text x="341" y="34" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Reason</text>
+
+    <!-- Arrow -->
+    <path d="M404 28 L426 28" stroke="#94a3b8" stroke-width="2"/>
+
+    <!-- Act -->
+    <rect x="434" y="0" width="90" height="56" rx="10" fill="#0D9373"/>
+    <text x="479" y="34" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Act</text>
+
+    <!-- Arrow -->
+    <path d="M532 28 L554 28" stroke="#94a3b8" stroke-width="2"/>
+
+    <!-- Observe -->
+    <rect x="562" y="0" width="110" height="56" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="617" y="32" font-family="Arial, sans-serif" font-size="14" fill="#0f172a" text-anchor="middle" font-weight="bold">Observe</text>
+    <text x="617" y="49" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">tool output</text>
+
+    <!-- Loop arrow back to Retrieve -->
+    <path d="M617 62 C617 98 320 108 110 92 C44 86 24 70 24 56" stroke="#94a3b8" stroke-width="2" fill="none"/>
+    <path d="M24 56 L18 46" stroke="#94a3b8" stroke-width="2"/>
+    <path d="M24 56 L14 56" stroke="#94a3b8" stroke-width="2"/>
+
+    <text x="230" y="104" font-family="Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="middle">repeat each step with fresh retrieval</text>
+
+    <!-- Success store + curate (bottom-right) -->
+    <g transform="translate(460, 120)">
+      <rect x="0" y="0" width="212" height="64" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+      <text x="106" y="26" font-family="Arial, sans-serif" font-size="13" fill="#0f172a" text-anchor="middle" font-weight="bold">Memory (Trajectories)</text>
+      <text x="106" y="44" font-family="Arial, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">store successful episodes</text>
+
+      <!-- Curate tag -->
+      <rect x="142" y="48" width="62" height="20" rx="8" fill="#07C983"/>
+      <text x="173" y="62" font-family="Arial, sans-serif" font-size="10" fill="#052017" text-anchor="middle" font-weight="bold">Curate</text>
+
+      <!-- Arrow from Observe down to Memory -->
+      <path d="M157 -64 C157 -20 130 0 106 0" stroke="#94a3b8" stroke-width="2" fill="none"/>
+      <text x="92" y="-28" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="end">on success</text>
+    </g>
+
+    <!-- Hint text under main row -->
+    <text x="220" y="178" font-family="Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="middle">Retrieve examples → decide next action → learn from successes</text>
   </g>
-  
+
   <!-- Tagline -->
-  <text x="400" y="320" font-family="Arial, sans-serif" font-size="16" fill="#64748b" text-anchor="middle">Agents that learn from their own experience</text>
-  
-  <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <path d="M0,0 L0,6 L9,3 z" fill="#94a3b8"/>
-    </marker>
-  </defs>
+  <text x="400" y="360" font-family="Arial, sans-serif" font-size="16" fill="#64748b" text-anchor="middle">In-Context Reinforcement Learning: retrieval-augmented decisions + self-improving memory</text>
 </svg>
