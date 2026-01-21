@@ -3,6 +3,7 @@
 import re
 from typing import Any
 
+from icicl.cli.human_verification import build_edit_prompt, build_write_prompt, parse_yes_no
 from icicl.cli.tools.base import Tool, ToolParameter, ToolResult
 
 
@@ -92,7 +93,18 @@ class ReadTool(Tool):
 
 
 class WriteTool(Tool):
-    """Create or overwrite a file."""
+    """Create or overwrite a file.
+
+    This tool supports optional human verification via an injected callback.
+    """
+
+    def __init__(
+        self,
+        working_dir=None,
+        ask_user_callback=None,
+    ):
+        super().__init__(working_dir)
+        self._ask_user_callback = ask_user_callback
 
     @property
     def name(self) -> str:
@@ -119,6 +131,13 @@ class WriteTool(Tool):
 
     async def execute(self, path: str, content: str, **kwargs: Any) -> ToolResult:
         try:
+            # Human verification gate (write)
+            if self._ask_user_callback:
+                question = build_write_prompt(path=path, content=content)
+                answer = self._ask_user_callback(question, ["yes", "no"])
+                if not parse_yes_no(answer):
+                    return ToolResult(output=f"Denied by user: Write to {path}", success=False)
+
             full_path = self._working_dir / path
 
             # Security check
@@ -139,7 +158,18 @@ class WriteTool(Tool):
 
 
 class EditTool(Tool):
-    """Make precise edits to a file."""
+    """Make precise edits to a file.
+
+    This tool supports optional human verification via an injected callback.
+    """
+
+    def __init__(
+        self,
+        working_dir=None,
+        ask_user_callback=None,
+    ):
+        super().__init__(working_dir)
+        self._ask_user_callback = ask_user_callback
 
     @property
     def name(self) -> str:
@@ -176,6 +206,13 @@ class EditTool(Tool):
         self, path: str, old_text: str, new_text: str, **kwargs: Any
     ) -> ToolResult:
         try:
+            # Human verification gate (edit)
+            if self._ask_user_callback:
+                question = build_edit_prompt(path=path, old_text=old_text, new_text=new_text)
+                answer = self._ask_user_callback(question, ["yes", "no"])
+                if not parse_yes_no(answer):
+                    return ToolResult(output=f"Denied by user: Edit {path}", success=False)
+
             full_path = self._working_dir / path
 
             if not full_path.exists():

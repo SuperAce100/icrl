@@ -149,8 +149,8 @@ def create_default_registry(
 
     # File tools
     registry.register(ReadTool(working_dir))
-    registry.register(WriteTool(working_dir))
-    registry.register(EditTool(working_dir))
+    registry.register(WriteTool(working_dir, ask_user_callback=ask_user_callback))
+    registry.register(EditTool(working_dir, ask_user_callback=ask_user_callback))
     registry.register(GlobTool(working_dir))
     registry.register(GrepTool(working_dir))
 
