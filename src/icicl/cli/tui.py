@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Any
 
 from rich.console import Console
+from rich.markdown import Markdown
+from rich.prompt import Prompt
 
 from icicl.cli.config import Config, get_default_db_path
 from icicl.cli.prompts import SYSTEM_PROMPT
@@ -62,17 +64,17 @@ async def run_task(
 
         if tool == "Bash":
             cmd = params.get("command", "")
-            console.print(f"[white]$ {cmd}[/]")
+            console.print(f"$ {cmd}")
         elif tool == "Read":
             console.print(f"  Read {_dim(params.get('path', ''))}")
         elif tool == "Write":
-            console.print(f"  Write {_dim(params.get('path', ''))}")
+            console.print(f"  Wrote {_dim(params.get('path', ''))}")
         elif tool == "Edit":
-            console.print(f"  Edit {_dim(params.get('path', ''))}")
+            console.print(f"  Edited {_dim(params.get('path', ''))}")
         elif tool == "Grep":
-            console.print(f"  Grep {_dim(params.get('pattern', ''))}")
+            console.print(f"  Grepped {_dim(params.get('pattern', ''))}")
         elif tool == "Glob":
-            console.print(f"  Glob {_dim(params.get('pattern', ''))}")
+            console.print(f"  Globbed {_dim(params.get('pattern', ''))}")
         else:
             console.print(f"  {tool}")
 
@@ -85,12 +87,12 @@ async def run_task(
                 console.print(f"[dim]{tail}[/]")
 
     def ask_user(question: str, options: list[str] | None) -> str:
-        console.print(f"\n[bold]{question}[/]")
         if options:
+            console.print(f"\n[bold]{question}[/]")
             for i, opt in enumerate(options, 1):
                 console.print(f"  {i}. {opt}")
-        console.print("> ", end="")
-        return console.input()
+            return Prompt.ask(">")
+        return Prompt.ask(f"\n[bold]{question}[/]")
 
     registry = create_default_registry(
         working_dir=working_dir,
@@ -130,13 +132,9 @@ async def run_task(
         console.print("[green]✓[/] Done")
         if trajectory.metadata.get("final_response"):
             response = trajectory.metadata["final_response"]
-            if len(response) > 500:
-                response = response[:500] + "..."
-            console.print(response)
+            console.print(Markdown(response))
     else:
         console.print("[red]✗[/] Failed")
-
-    console.print(f"[dim]({len(trajectory.steps)} steps)[/]\n")
 
 
 def run_tui(config: Config | None = None, working_dir: Path | None = None) -> None:
@@ -150,14 +148,14 @@ def run_tui(config: Config | None = None, working_dir: Path | None = None) -> No
         run_tui._intro_printed = True  # type: ignore[attr-defined]
         console.print(
             "[bold cyan]"
-            "  ___ ____ ___ ____ _     \n"
-            " |_ _/ ___|_ _/ ___| |    \n"
-            "  | | |    | | |   | |    \n"
-            "  | | |___ | | |___| |___ \n"
-            " |___\\____|___\\____|_____|\n"
+            "  ___ ____ ____  _     \n"
+            " |_ _/ ___|  _ \\| |    \n"
+            "  | | |   | |_) | |    \n"
+            "  | | |___|  _ <| |___ \n"
+            " |___\\____|_| \\_\\_____|\n"
             "[/]"
         )
-        console.print("Type a task and press Enter. 'exit' to quit.\n")
+        console.print("Type a task and press Enter. 'exit' to quit.")
 
     db_path = config.db_path or str(get_default_db_path())
     database = TrajectoryDatabase(db_path)
@@ -176,11 +174,10 @@ def run_tui(config: Config | None = None, working_dir: Path | None = None) -> No
             try:
                 # Info line: model · cwd · examples
                 db_count = len(database)
-                console.print(f"\n{model_display} · {cwd_display} · {db_count} examples")
+                console.print(f"{model_display} · {cwd_display} · {db_count} examples")
 
                 # Prompt
-                console.print("→ ", end="")
-                goal = console.input()
+                goal = Prompt.ask("[bold green]>>[/bold green] \b")
 
                 if not goal.strip():
                     continue

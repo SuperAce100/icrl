@@ -3,6 +3,8 @@
 import re
 from typing import Any
 
+from rich.prompt import Confirm
+
 from icicl.cli.human_verification import build_edit_prompt, build_write_prompt
 from icicl.cli.tools.base import Tool, ToolParameter, ToolResult
 
@@ -133,8 +135,11 @@ class WriteTool(Tool):
         try:
             # Human verification gate (write)
             if self._ask_user_callback:
+                # Ask for approval (default: True so Enter approves)
                 question = build_write_prompt(path=path, content=content)
-                approved = bool(self._ask_user_callback(question, None))
+                # Let the user see options + default explicitly in the question text.
+                prompt = f"{question}\n\nOptions: [y]es / [n]o (default: yes)"
+                approved = Confirm.ask(prompt, default=True)
                 if not approved:
                     msg = f"Denied by user: Write to {path}"
                     return ToolResult(output=msg, success=False)
@@ -209,10 +214,13 @@ class EditTool(Tool):
         try:
             # Human verification gate (edit)
             if self._ask_user_callback:
+                # Ask for approval (default: True so Enter approves)
                 question = build_edit_prompt(
                     path=path, old_text=old_text, new_text=new_text
                 )
-                approved = bool(self._ask_user_callback(question, None))
+                # Let the user see options + default explicitly in the question text.
+                prompt = f"{question}\n\nOptions: [y]es / [n]o (default: yes)"
+                approved = Confirm.ask(prompt, default=True)
                 if not approved:
                     msg = f"Denied by user: Edit {path}"
                     return ToolResult(output=msg, success=False)
