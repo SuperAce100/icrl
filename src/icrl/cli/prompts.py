@@ -8,7 +8,7 @@ shell commands, and web search.
 ## Your Capabilities
 
 You can:
-- Read, write, and edit files in the working directory
+- Read, write, and edit files in the working direc`tory
 - Search for files using glob patterns
 - Search file contents with regex
 - Execute shell commands (git, python, npm, etc.)

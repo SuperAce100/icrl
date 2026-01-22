@@ -153,9 +153,18 @@ class AgentRunner:
 
         trajectory = await self._loop.run(goal, examples=examples if examples else None)
 
-        # Store if training and successful
+        # Store if training and successful (with human verification)
         if train and trajectory.success:
-            self._database.add(trajectory)
+            approved = True
+            if self._callbacks:
+                resp = self._callbacks.ask_user(
+                    "Store this successful run as a new example in your trajectory database?",
+                    ["yes", "no"],
+                )
+                approved = resp.strip().lower() in {"yes", "y", "1", "true"}
+
+            if approved:
+                self._database.add(trajectory)
 
         if self._callbacks:
             self._callbacks.on_complete(trajectory)

@@ -6,10 +6,44 @@ ICRL implements the In-Context Reinforcement Learning algorithm, enabling LLM ag
 
 ## Installation
 
+### Install from PyPI
+
 ```bash
 pip install icrl
 # or with uv
 uv add icrl
+```
+
+### Install from source
+
+```bash
+git clone https://github.com/SuperAce100/icrl.git
+cd icrl
+
+# Create & activate a virtual environment (recommended)
+python -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+# .venv\Scripts\activate   # Windows (PowerShell)
+
+# Install in editable mode
+pip install -e .
+```
+
+If you use `uv`:
+
+```bash
+git clone https://github.com/SuperAce100/icrl.git
+cd icrl
+uv sync
+# or: uv pip install -e .
+```
+
+Verify the install:
+
+```bash
+python -c "import icrl; print(icrl.__version__)"
+# If the CLI entrypoint is installed:
+icrl --help
 ```
 
 **Dependencies**: `pydantic`, `litellm`, `sentence-transformers`, `faiss-cpu`, `aiofiles`, `rich`, `python-dotenv`

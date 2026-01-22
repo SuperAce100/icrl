@@ -168,7 +168,7 @@ def run(
 
         # Special-case yes/no prompts (used by human verification gates).
         if options and {o.strip().lower() for o in options} <= {"yes", "no", "y", "n"}:
-            approved = Confirm.ask(f"{question}\n\nAccept?", default=True)
+            approved = Confirm.ask(question, default=True)
             return "yes" if approved else "no"
 
         console.print()
