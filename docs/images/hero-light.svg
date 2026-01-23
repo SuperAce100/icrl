@@ -1,72 +1,66 @@
 <svg width="800" height="400" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="400" fill="#f8fafc"/>
+  <rect width="800" height="400" fill="#E7E5E4"/>
 
   <!-- Title -->
-  <text x="400" y="85" font-family="Arial, sans-serif" font-size="52" font-weight="bold" fill="#0D9373" text-anchor="middle">ICRL</text>
-  <text x="400" y="125" font-family="Arial, sans-serif" font-size="20" fill="#64748b" text-anchor="middle">Plan → Reason → Act loop with retrieval + self-curation</text>
+  <text x="400" y="70" font-family="Archivo, Arial, sans-serif" font-size="56" font-weight="700" fill="#F88D39" text-anchor="middle">ICRL</text>
+  <text x="400" y="100" font-family="Arial, sans-serif" font-size="16" fill="#292524" text-anchor="middle" opacity="0.7">In-Context Reinforcement Learning</text>
 
-  <!-- Main flow: Retrieve → Plan → Reason → Act → Observe → Store success → Curate -->
-  <g transform="translate(52, 160)">
+  <!-- Main flow diagram - centered, clean boxes -->
+  <g transform="translate(80, 140)">
     <!-- Retrieve -->
-    <rect x="0" y="0" width="110" height="56" rx="10" fill="#07C983"/>
-    <text x="55" y="34" font-family="Arial, sans-serif" font-size="14" fill="#052017" text-anchor="middle" font-weight="bold">Retrieve</text>
-    <text x="55" y="49" font-family="Arial, sans-serif" font-size="10" fill="#052017" text-anchor="middle">top‑k examples</text>
+    <rect x="0" y="0" width="120" height="50" rx="8" fill="#49A1D9"/>
+    <text x="60" y="30" font-family="Archivo, Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="600">Retrieve</text>
 
-    <!-- Arrow -->
-    <path d="M118 28 L140 28" stroke="#94a3b8" stroke-width="2"/>
+    <!-- Arrow 1 -->
+    <path d="M130 25 L155 25" stroke="#292524" stroke-width="2" stroke-linecap="round"/>
+    <path d="M150 20 L158 25 L150 30" stroke="#292524" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 
     <!-- Plan -->
-    <rect x="148" y="0" width="100" height="56" rx="10" fill="#0D9373"/>
-    <text x="198" y="34" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Plan</text>
+    <rect x="168" y="0" width="100" height="50" rx="8" fill="#F88D39"/>
+    <text x="218" y="30" font-family="Archivo, Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="600">Plan</text>
 
-    <!-- Arrow -->
-    <path d="M256 28 L278 28" stroke="#94a3b8" stroke-width="2"/>
+    <!-- Arrow 2 -->
+    <path d="M278 25 L303 25" stroke="#292524" stroke-width="2" stroke-linecap="round"/>
+    <path d="M298 20 L306 25 L298 30" stroke="#292524" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 
     <!-- Reason -->
-    <rect x="286" y="0" width="110" height="56" rx="10" fill="#0D9373"/>
-    <text x="341" y="34" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Reason</text>
+    <rect x="316" y="0" width="100" height="50" rx="8" fill="#FFDE8E"/>
+    <text x="366" y="30" font-family="Archivo, Arial, sans-serif" font-size="14" fill="#292524" text-anchor="middle" font-weight="600">Reason</text>
 
-    <!-- Arrow -->
-    <path d="M404 28 L426 28" stroke="#94a3b8" stroke-width="2"/>
+    <!-- Arrow 3 -->
+    <path d="M426 25 L451 25" stroke="#292524" stroke-width="2" stroke-linecap="round"/>
+    <path d="M446 20 L454 25 L446 30" stroke="#292524" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 
     <!-- Act -->
-    <rect x="434" y="0" width="90" height="56" rx="10" fill="#0D9373"/>
-    <text x="479" y="34" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">Act</text>
+    <rect x="464" y="0" width="100" height="50" rx="8" fill="#F88D39"/>
+    <text x="514" y="30" font-family="Archivo, Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="600">Act</text>
 
-    <!-- Arrow -->
-    <path d="M532 28 L554 28" stroke="#94a3b8" stroke-width="2"/>
+    <!-- Arrow 4 -->
+    <path d="M574 25 L599 25" stroke="#292524" stroke-width="2" stroke-linecap="round"/>
+    <path d="M594 20 L602 25 L594 30" stroke="#292524" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 
     <!-- Observe -->
-    <rect x="562" y="0" width="110" height="56" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
-    <text x="617" y="32" font-family="Arial, sans-serif" font-size="14" fill="#0f172a" text-anchor="middle" font-weight="bold">Observe</text>
-    <text x="617" y="49" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">tool output</text>
-
-    <!-- Loop arrow back to Retrieve -->
-    <path d="M617 62 C617 98 320 108 110 92 C44 86 24 70 24 56" stroke="#94a3b8" stroke-width="2" fill="none"/>
-    <path d="M24 56 L18 46" stroke="#94a3b8" stroke-width="2"/>
-    <path d="M24 56 L14 56" stroke="#94a3b8" stroke-width="2"/>
-
-    <text x="230" y="104" font-family="Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="middle">repeat each step with fresh retrieval</text>
-
-    <!-- Success store + curate (bottom-right) -->
-    <g transform="translate(460, 120)">
-      <rect x="0" y="0" width="212" height="64" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
-      <text x="106" y="26" font-family="Arial, sans-serif" font-size="13" fill="#0f172a" text-anchor="middle" font-weight="bold">Memory (Trajectories)</text>
-      <text x="106" y="44" font-family="Arial, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">store successful episodes</text>
-
-      <!-- Curate tag -->
-      <rect x="142" y="48" width="62" height="20" rx="8" fill="#07C983"/>
-      <text x="173" y="62" font-family="Arial, sans-serif" font-size="10" fill="#052017" text-anchor="middle" font-weight="bold">Curate</text>
-
-      <!-- Arrow from Observe down to Memory -->
-      <path d="M157 -64 C157 -20 130 0 106 0" stroke="#94a3b8" stroke-width="2" fill="none"/>
-      <text x="92" y="-28" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="end">on success</text>
-    </g>
-
-    <!-- Hint text under main row -->
-    <text x="220" y="178" font-family="Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="middle">Retrieve examples → decide next action → learn from successes</text>
+    <rect x="612" y="0" width="100" height="50" rx="8" fill="#49A1D9"/>
+    <text x="662" y="30" font-family="Archivo, Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="600">Observe</text>
   </g>
 
+  <!-- Loop arrow -->
+  <g transform="translate(80, 140)">
+    <path d="M662 55 C662 85 400 95 60 75 C30 72 20 60 20 50" stroke="#292524" stroke-width="2" fill="none" stroke-dasharray="6 4" opacity="0.5"/>
+    <path d="M20 50 L14 58" stroke="#292524" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <path d="M20 50 L12 46" stroke="#292524" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  </g>
+
+  <!-- Memory/Database section -->
+  <g transform="translate(250, 260)">
+    <rect x="0" y="0" width="300" height="70" rx="12" fill="white" stroke="#292524" stroke-width="1.5" opacity="0.9"/>
+    <text x="150" y="30" font-family="Archivo, Arial, sans-serif" font-size="15" fill="#292524" text-anchor="middle" font-weight="600">Trajectory Memory</text>
+    <text x="150" y="50" font-family="Arial, sans-serif" font-size="12" fill="#292524" text-anchor="middle" opacity="0.6">Store successes • Retrieve examples • Self-curate</text>
+  </g>
+
+  <!-- Connection from loop to memory -->
+  <path d="M400 235 L400 258" stroke="#292524" stroke-width="2" stroke-dasharray="4 3" opacity="0.4"/>
+
   <!-- Tagline -->
-  <text x="400" y="360" font-family="Arial, sans-serif" font-size="16" fill="#64748b" text-anchor="middle">In-Context Reinforcement Learning: retrieval-augmented decisions + self-improving memory</text>
+  <text x="400" y="370" font-family="Arial, sans-serif" font-size="14" fill="#292524" text-anchor="middle" opacity="0.6">Agents that learn from their own successful experiences</text>
 </svg>
