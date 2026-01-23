@@ -2,8 +2,9 @@
 
 import json
 import os
+import time
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,9 @@ import litellm
 
 # Disable LiteLLM's async logging worker to avoid event loop issues
 litellm.disable_logging_worker = True
+
+# Suppress the "Provider List" debug message
+litellm.suppress_debug_info = True
 
 # Suppress the async client cleanup warning
 warnings.filterwarnings("ignore", message="coroutine 'close_litellm_async_clients'")
@@ -30,12 +34,30 @@ class ToolCall:
 
 
 @dataclass
+class LLMStats:
+    """Statistics from an LLM call."""
+
+    latency_ms: float = 0.0  # Time to first response / total time in milliseconds
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+
+    @property
+    def tokens_per_second(self) -> float:
+        """Calculate throughput in tokens per second."""
+        if self.latency_ms <= 0:
+            return 0.0
+        return (self.completion_tokens / self.latency_ms) * 1000
+
+
+@dataclass
 class ToolResponse:
     """Response from tool calling completion."""
 
     content: str | None  # Text content if any
     tool_calls: list[ToolCall]  # Tool calls to execute
     finish_reason: str  # "tool_calls", "stop", etc.
+    stats: LLMStats = field(default_factory=LLMStats)  # Latency and token stats
 
 
 class AnthropicVertexToolProvider:
@@ -47,7 +69,7 @@ class AnthropicVertexToolProvider:
 
     def __init__(
         self,
-        model: str = "claude-3-5-sonnet",
+        model: str = "claude-opus-4-5",
         temperature: float = 0.3,
         max_tokens: int = 4096,
         registry: ToolRegistry | None = None,
@@ -64,7 +86,7 @@ class AnthropicVertexToolProvider:
             registry: Tool registry for available tools.
             credentials_path: Path to GCP service account JSON file.
             project_id: GCP project ID.
-            location: GCP region (e.g., "us-east5").
+            location: GCP region (e.g., "global", "us-east5").
         """
         self._temperature = temperature
         self._max_tokens = max_tokens
@@ -121,10 +143,20 @@ class AnthropicVertexToolProvider:
                 kwargs["tools"] = tools
                 kwargs["tool_choice"] = "auto"
 
+        start_time = time.perf_counter()
         response = await litellm.acompletion(**kwargs)
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
 
         message = response.choices[0].message
         finish_reason = response.choices[0].finish_reason
+
+        # Extract token usage from response
+        usage = getattr(response, "usage", None)
+        stats = LLMStats(latency_ms=elapsed_ms)
+        if usage:
+            stats.prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
+            stats.completion_tokens = getattr(usage, "completion_tokens", 0) or 0
+            stats.total_tokens = getattr(usage, "total_tokens", 0) or 0
 
         # Parse tool calls if present
         tool_calls: list[ToolCall] = []
@@ -146,6 +178,7 @@ class AnthropicVertexToolProvider:
             content=message.content,
             tool_calls=tool_calls,
             finish_reason=finish_reason,
+            stats=stats,
         )
 
     async def complete(self, messages: list[Message]) -> str:
@@ -154,6 +187,18 @@ class AnthropicVertexToolProvider:
         response = await litellm.acompletion(
             model=self._model,
             messages=litellm_messages,
+            temperature=self._temperature,
+            max_tokens=self._max_tokens,
+            vertex_ai_project=self._project_id,
+            vertex_ai_location=self._location,
+        )
+        return response.choices[0].message.content or ""
+
+    async def complete_text(self, messages: list[dict[str, Any]]) -> str:
+        """Completion that returns text only and never uses tools."""
+        response = await litellm.acompletion(
+            model=self._model,
+            messages=messages,
             temperature=self._temperature,
             max_tokens=self._max_tokens,
             vertex_ai_project=self._project_id,

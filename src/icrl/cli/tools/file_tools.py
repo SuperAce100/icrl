@@ -104,9 +104,11 @@ class WriteTool(Tool):
         self,
         working_dir=None,
         ask_user_callback=None,
+        auto_approve: bool = True,
     ):
         super().__init__(working_dir)
         self._ask_user_callback = ask_user_callback
+        self._auto_approve = auto_approve
 
     @property
     def name(self) -> str:
@@ -133,8 +135,8 @@ class WriteTool(Tool):
 
     async def execute(self, path: str, content: str, **kwargs: Any) -> ToolResult:
         try:
-            # Human verification gate (write)
-            if self._ask_user_callback:
+            # Human verification gate (write) - skip if auto_approve is enabled
+            if self._ask_user_callback and not self._auto_approve:
                 # Ask for approval (default: True so Enter approves)
                 question = build_write_prompt(path=path, content=content)
                 # Let the user see options + default explicitly in the question text.
@@ -173,9 +175,11 @@ class EditTool(Tool):
         self,
         working_dir=None,
         ask_user_callback=None,
+        auto_approve: bool = True,
     ):
         super().__init__(working_dir)
         self._ask_user_callback = ask_user_callback
+        self._auto_approve = auto_approve
 
     @property
     def name(self) -> str:
@@ -212,8 +216,8 @@ class EditTool(Tool):
         self, path: str, old_text: str, new_text: str, **kwargs: Any
     ) -> ToolResult:
         try:
-            # Human verification gate (edit)
-            if self._ask_user_callback:
+            # Human verification gate (edit) - skip if auto_approve is enabled
+            if self._ask_user_callback and not self._auto_approve:
                 # Ask for approval (default: True so Enter approves)
                 question = build_edit_prompt(
                     path=path, old_text=old_text, new_text=new_text

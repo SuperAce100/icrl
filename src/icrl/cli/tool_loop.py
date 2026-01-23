@@ -5,9 +5,54 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from icrl.cli.providers.tool_provider import ToolLLMProvider
+from icrl.cli.providers.tool_provider import LLMStats, ToolLLMProvider
 from icrl.cli.tools.base import ToolRegistry, ToolResult
 from icrl.models import Step, Trajectory
+
+
+@dataclass
+class SessionStats:
+    """Accumulated statistics for a session/turn."""
+
+    total_latency_ms: float = 0.0
+    total_prompt_tokens: int = 0
+    total_completion_tokens: int = 0
+    total_tokens: int = 0
+    llm_calls: int = 0
+
+    def add(self, stats: LLMStats) -> None:
+        """Add stats from a single LLM call."""
+        self.total_latency_ms += stats.latency_ms
+        self.total_prompt_tokens += stats.prompt_tokens
+        self.total_completion_tokens += stats.completion_tokens
+        self.total_tokens += stats.total_tokens
+        self.llm_calls += 1
+
+    @property
+    def avg_latency_ms(self) -> float:
+        """Average latency per LLM call."""
+        if self.llm_calls == 0:
+            return 0.0
+        return self.total_latency_ms / self.llm_calls
+
+    @property
+    def tokens_per_second(self) -> float:
+        """Overall throughput in tokens per second."""
+        if self.total_latency_ms <= 0:
+            return 0.0
+        return (self.total_completion_tokens / self.total_latency_ms) * 1000
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for metadata storage."""
+        return {
+            "total_latency_ms": round(self.total_latency_ms, 1),
+            "avg_latency_ms": round(self.avg_latency_ms, 1),
+            "total_prompt_tokens": self.total_prompt_tokens,
+            "total_completion_tokens": self.total_completion_tokens,
+            "total_tokens": self.total_tokens,
+            "llm_calls": self.llm_calls,
+            "tokens_per_second": round(self.tokens_per_second, 1),
+        }
 
 
 @dataclass
@@ -103,6 +148,7 @@ class ToolLoop:
         steps: list[Step] = []
         success = False
         final_response = ""
+        session_stats = SessionStats()
 
         for step_num in range(self._max_steps):
             if self._cancelled:
@@ -110,6 +156,9 @@ class ToolLoop:
 
             # Get LLM response
             response = await self._llm.complete_with_tools(messages)
+
+            # Accumulate stats
+            session_stats.add(response.stats)
 
             # Handle text content (thinking)
             if response.content:
@@ -214,5 +263,8 @@ class ToolLoop:
             plan="",  # Tool calling doesn't have separate plan phase
             steps=steps,
             success=success,
-            metadata={"final_response": final_response},
+            metadata={
+                "final_response": final_response,
+                "stats": session_stats.to_dict(),
+            },
         )

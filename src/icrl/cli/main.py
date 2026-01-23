@@ -29,6 +29,7 @@ from icrl import __version__  # noqa: E402
 from icrl.cli.config import Config, get_config_dir, get_default_db_path  # noqa: E402
 from icrl.cli.runner import AgentRunner, SimpleCallbacks  # noqa: E402
 from icrl.cli.tools.base import ToolResult  # noqa: E402
+from icrl.database import TrajectoryDatabase  # noqa: E402
 
 app = typer.Typer(
     name="icrl",
@@ -65,6 +66,13 @@ def run(
         bool,
         typer.Option("--no-train", help="Don't store trajectory in database"),
     ] = False,
+    compare: Annotated[
+        bool,
+        typer.Option(
+            "--compare",
+            help="Generate two candidate final responses and let you choose which to store (or reject both)",
+        ),
+    ] = False,
     working_dir: Annotated[
         Path | None,
         typer.Option("--dir", "-d", help="Working directory"),
@@ -87,9 +95,21 @@ def run(
     vertex_location: Annotated[
         str | None,
         typer.Option(
-            "--vertex-location", help="GCP region for Vertex AI (e.g., us-east5)"
+            "--vertex-location", help="GCP region for Vertex AI (e.g., global, us-east5)"
         ),
     ] = None,
+    stats: Annotated[
+        bool,
+        typer.Option("--stats/--no-stats", help="Show latency and throughput statistics"),
+    ] = True,
+    auto_approve: Annotated[
+        bool,
+        typer.Option(
+            "--auto-approve/--no-auto-approve",
+            "-y",
+            help="Auto-approve file writes and edits without confirmation prompts",
+        ),
+    ] = True,
 ) -> None:
     """Run a coding task with the agent."""
     config = Config.load()
@@ -101,6 +121,8 @@ def run(
         config.vertex_project_id = vertex_project
     if vertex_location:
         config.vertex_location = vertex_location
+    config.show_stats = stats
+    config.auto_approve = auto_approve
 
     work_dir = working_dir or Path.cwd()
 
@@ -186,6 +208,29 @@ def run(
 
         console.print(f"[dim]Steps taken: {len(trajectory.steps)}[/]")
 
+        # Display stats if enabled
+        if config.show_stats and trajectory.metadata.get("stats"):
+            stats_data = trajectory.metadata["stats"]
+            latency_s = stats_data.get("total_latency_ms", 0) / 1000
+            tokens = stats_data.get("total_tokens", 0)
+            completion_tokens = stats_data.get("total_completion_tokens", 0)
+            prompt_tokens = stats_data.get("total_prompt_tokens", 0)
+            tps = stats_data.get("tokens_per_second", 0)
+            llm_calls = stats_data.get("llm_calls", 0)
+
+            parts = []
+            if latency_s > 0:
+                parts.append(f"{latency_s:.1f}s")
+            if tokens > 0:
+                parts.append(f"{tokens:,} tokens ({prompt_tokens:,}↑ {completion_tokens:,}↓)")
+            if tps > 0:
+                parts.append(f"{tps:.0f} tok/s")
+            if llm_calls > 0:
+                parts.append(f"{llm_calls} calls")
+
+            if parts:
+                console.print(f"[dim]⏱ {' · '.join(parts)}[/dim]")
+
     def ask_user(question: str, options: list[str] | None) -> str:
         """Cleaner AskUserQuestion UI (matches the rest of the app)."""
 
@@ -222,7 +267,7 @@ def run(
     console.print(f"[dim]Model: {config.model} | Working dir: {work_dir}[/]\n")
 
     try:
-        asyncio.run(runner.run(goal, train=not no_train))
+        asyncio.run(runner.run(goal, train=not no_train, compare_mode=compare))
     except KeyboardInterrupt:
         console.print("\n[yellow]Cancelled by user.[/]")
         runner.cancel()
@@ -234,10 +279,29 @@ def tui(
         str | None,
         typer.Option("--model", "-m", help="LLM model to use"),
     ] = None,
+    compare: Annotated[
+        bool,
+        typer.Option(
+            "--compare",
+            help="Generate two candidate final responses and let you choose which to store (or reject both)",
+        ),
+    ] = False,
     working_dir: Annotated[
         Path | None,
         typer.Option("--dir", "-d", help="Working directory"),
     ] = None,
+    stats: Annotated[
+        bool,
+        typer.Option("--stats/--no-stats", help="Show latency and throughput statistics"),
+    ] = True,
+    auto_approve: Annotated[
+        bool,
+        typer.Option(
+            "--auto-approve/--no-auto-approve",
+            "-y",
+            help="Auto-approve file writes and edits without confirmation prompts",
+        ),
+    ] = True,
 ) -> None:
     """Start the interactive TUI (Terminal User Interface)."""
     from icrl.cli.tui import run_tui
@@ -245,9 +309,11 @@ def tui(
     config = Config.load()
     if model:
         config.model = model
+    config.show_stats = stats
+    config.auto_approve = auto_approve
 
     work_dir = working_dir or Path.cwd()
-    run_tui(config=config, working_dir=work_dir)
+    run_tui(config=config, working_dir=work_dir, compare_mode=compare)
 
 
 @app.command()
@@ -256,10 +322,29 @@ def chat(
         str | None,
         typer.Option("--model", "-m", help="LLM model to use"),
     ] = None,
+    compare: Annotated[
+        bool,
+        typer.Option(
+            "--compare",
+            help="Generate two candidate final responses and let you choose which to store (or reject both)",
+        ),
+    ] = False,
     working_dir: Annotated[
         Path | None,
         typer.Option("--dir", "-d", help="Working directory"),
     ] = None,
+    stats: Annotated[
+        bool,
+        typer.Option("--stats/--no-stats", help="Show latency and throughput statistics"),
+    ] = True,
+    auto_approve: Annotated[
+        bool,
+        typer.Option(
+            "--auto-approve/--no-auto-approve",
+            "-y",
+            help="Auto-approve file writes and edits without confirmation prompts",
+        ),
+    ] = True,
 ) -> None:
     """Start an interactive chat session."""
     from icrl.cli.tui import run_tui
@@ -267,9 +352,11 @@ def chat(
     config = Config.load()
     if model:
         config.model = model
+    config.show_stats = stats
+    config.auto_approve = auto_approve
 
     work_dir = working_dir or Path.cwd()
-    run_tui(config=config, working_dir=work_dir)
+    run_tui(config=config, working_dir=work_dir, compare_mode=compare)
 
 
 # Config subcommands
@@ -306,6 +393,10 @@ def config_set(
         config.max_steps = int(value)
     elif key == "k":
         config.k = int(value)
+    elif key == "show_stats":
+        config.show_stats = value.lower() in ("true", "1", "yes", "on")
+    elif key == "auto_approve":
+        config.auto_approve = value.lower() in ("true", "1", "yes", "on")
     elif key == "db_path":
         config.db_path = value
     elif key == "vertex_credentials_path":
@@ -317,7 +408,7 @@ def config_set(
     else:
         console.print(f"[red]Unknown configuration key: {key}[/]")
         console.print(
-            "[dim]Valid keys: model, temperature, max_tokens, max_steps, k, "
+            "[dim]Valid keys: model, temperature, max_tokens, max_steps, k, show_stats, auto_approve, "
             "db_path, vertex_credentials_path, vertex_project_id, vertex_location[/]"
         )
         raise typer.Exit(1)
@@ -341,8 +432,6 @@ def db_stats() -> None:
     config = Config.load()
     db_path = config.db_path or str(get_default_db_path())
 
-    from icrl.database import TrajectoryDatabase
-
     db = TrajectoryDatabase(db_path)
 
     console.print("\n[bold]Database Statistics[/]")
@@ -357,6 +446,24 @@ def db_stats() -> None:
         console.print(f"Successful: {successful}")
         console.print(f"Total steps: {total_steps}")
         console.print(f"Avg steps/trajectory: {total_steps / len(trajectories):.1f}")
+
+        # Curation stats
+        with_artifacts = sum(
+            1 for m in db._curation_metadata.values() if m.code_artifacts
+        )
+        validated = sum(
+            1 for m in db._curation_metadata.values() if m.persistence_score is not None
+        )
+        deprecated = sum(
+            1 for m in db._curation_metadata.values() if m.is_deprecated
+        )
+
+        if with_artifacts > 0 or validated > 0 or deprecated > 0:
+            console.print("\n[bold]Curation Stats[/]")
+            console.print(f"With code artifacts: {with_artifacts}")
+            console.print(f"Validated: {validated}")
+            console.print(f"Deprecated: {deprecated}")
+            console.print(f"Active: {len(db) - deprecated}")
 
 
 @db_app.command("list")
@@ -488,6 +595,230 @@ def db_clear(
         console.print("[green]Database cleared.[/]")
     else:
         console.print("[dim]Database directory doesn't exist.[/]")
+
+
+@db_app.command("validate")
+def db_validate(
+    trajectory_id: Annotated[
+        str | None,
+        typer.Argument(help="Trajectory ID to validate (validates all if not specified)"),
+    ] = None,
+    working_dir: Annotated[
+        Path | None,
+        typer.Option("--dir", "-d", help="Working directory for validation"),
+    ] = None,
+    include_deprecated: Annotated[
+        bool,
+        typer.Option("--include-deprecated", help="Include deprecated trajectories"),
+    ] = False,
+) -> None:
+    """Validate code persistence for trajectories.
+
+    Checks whether code changes from trajectories still exist in the codebase.
+    This provides implicit feedback about trajectory quality over time.
+    """
+    from rich.table import Table
+
+    config = Config.load()
+    db_path = config.db_path or str(get_default_db_path())
+    database = TrajectoryDatabase(db_path)
+
+    work_dir = working_dir or Path.cwd()
+
+    if trajectory_id:
+        # Validate single trajectory
+        validation = database.validate_trajectory(trajectory_id, work_dir)
+        if validation is None:
+            console.print(f"[red]Trajectory not found or has no code artifacts: {trajectory_id}[/]")
+            raise typer.Exit(1)
+
+        console.print(f"[bold]Validation for {trajectory_id}[/]")
+        console.print(f"  Score: {validation.score:.1%}")
+        console.print(f"  Status: {validation.reason}")
+        if validation.details:
+            console.print(f"  Artifacts: {validation.details.get('artifact_count', 0)}")
+            console.print(f"  Intact: {validation.details.get('intact_count', 0)}")
+            console.print(f"  Modified: {validation.details.get('modified_count', 0)}")
+            console.print(f"  Removed: {validation.details.get('removed_count', 0)}")
+    else:
+        # Validate all trajectories
+        results = database.validate_all(work_dir, include_deprecated=include_deprecated)
+
+        if not results:
+            console.print("[dim]No trajectories with code artifacts to validate.[/]")
+            return
+
+        table = Table(title="Validation Results")
+        table.add_column("Trajectory ID", style="cyan")
+        table.add_column("Score", justify="right")
+        table.add_column("Status")
+        table.add_column("Artifacts", justify="right")
+        table.add_column("Intact", justify="right")
+
+        for traj_id, validation in results:
+            score_str = f"{validation.score:.0%}"
+            if validation.score >= 0.8:
+                score_style = "green"
+            elif validation.score >= 0.5:
+                score_style = "yellow"
+            else:
+                score_style = "red"
+
+            table.add_row(
+                traj_id[:12] + "...",
+                f"[{score_style}]{score_str}[/{score_style}]",
+                validation.reason,
+                str(validation.details.get("artifact_count", 0)),
+                str(validation.details.get("intact_count", 0)),
+            )
+
+        console.print(table)
+        console.print(f"\n[dim]Validated {len(results)} trajectories.[/]")
+
+
+@db_app.command("deprecated")
+def db_deprecated() -> None:
+    """List deprecated trajectories."""
+    from rich.table import Table
+
+    config = Config.load()
+    db_path = config.db_path or str(get_default_db_path())
+    database = TrajectoryDatabase(db_path)
+
+    deprecated = database.get_deprecated_trajectories()
+
+    if not deprecated:
+        console.print("[dim]No deprecated trajectories.[/]")
+        return
+
+    table = Table(title="Deprecated Trajectories")
+    table.add_column("Trajectory ID", style="cyan")
+    table.add_column("Reason")
+    table.add_column("Superseded By")
+    table.add_column("Deprecated At")
+
+    for meta in deprecated:
+        superseded_by = meta.superseded_by[:12] + "..." if meta.superseded_by else "-"
+        deprecated_at = meta.deprecated_at.strftime("%Y-%m-%d %H:%M") if meta.deprecated_at else "-"
+
+        table.add_row(
+            meta.trajectory_id[:12] + "...",
+            meta.deprecation_reason or "-",
+            superseded_by,
+            deprecated_at,
+        )
+
+    console.print(table)
+    console.print(f"\n[dim]{len(deprecated)} deprecated trajectories.[/]")
+
+
+@db_app.command("prune")
+def db_prune(
+    min_utility: Annotated[
+        float,
+        typer.Option("--min-utility", "-u", help="Minimum utility score to keep"),
+    ] = 0.3,
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", "-n", help="Show what would be pruned without removing"),
+    ] = False,
+    force: Annotated[
+        bool,
+        typer.Option("--force", "-f", help="Skip confirmation"),
+    ] = False,
+) -> None:
+    """Prune low-utility and deprecated trajectories.
+
+    Removes trajectories that have been deprecated or have utility scores
+    below the specified threshold.
+    """
+    config = Config.load()
+    db_path = config.db_path or str(get_default_db_path())
+    database = TrajectoryDatabase(db_path)
+
+    # Find trajectories to prune
+    to_prune: list[str] = []
+
+    for meta in database._curation_metadata.values():
+        if meta.is_deprecated:
+            to_prune.append(meta.trajectory_id)
+        elif meta.utility_score < min_utility and (
+            meta.times_retrieved >= 3 or meta.persistence_score is not None
+        ):
+            # Only prune if we have enough signal
+            to_prune.append(meta.trajectory_id)
+
+    if not to_prune:
+        console.print("[dim]No trajectories to prune.[/]")
+        return
+
+    console.print(f"[bold]Found {len(to_prune)} trajectories to prune:[/]")
+    for traj_id in to_prune[:10]:
+        meta = database.get_curation_metadata(traj_id)
+        reason = "deprecated" if meta and meta.is_deprecated else f"utility={meta.utility_score:.1%}" if meta else "unknown"
+        console.print(f"  - {traj_id[:12]}... ({reason})")
+    if len(to_prune) > 10:
+        console.print(f"  ... and {len(to_prune) - 10} more")
+
+    if dry_run:
+        console.print("\n[dim]Dry run - no changes made.[/]")
+        return
+
+    if not force:
+        confirm = typer.confirm(f"Remove {len(to_prune)} trajectories?")
+        if not confirm:
+            raise typer.Abort()
+
+    removed = 0
+    for traj_id in to_prune:
+        if database.remove(traj_id):
+            removed += 1
+
+    console.print(f"[green]Removed {removed} trajectories.[/]")
+
+
+@db_app.command("extract-artifacts")
+def db_extract_artifacts(
+    working_dir: Annotated[
+        Path | None,
+        typer.Option("--dir", "-d", help="Working directory for artifact extraction"),
+    ] = None,
+) -> None:
+    """Extract code artifacts from existing trajectories.
+
+    This retroactively extracts code artifacts (Write/Edit operations) from
+    trajectories that were added before artifact extraction was implemented.
+    """
+    from icrl.validators.code import extract_code_artifacts
+
+    config = Config.load()
+    db_path = config.db_path or str(get_default_db_path())
+    database = TrajectoryDatabase(db_path)
+
+    work_dir = working_dir or Path.cwd()
+
+    updated = 0
+    for traj_id, trajectory in database._trajectories.items():
+        meta = database._curation_metadata.get(traj_id)
+        if meta is None:
+            continue
+
+        # Skip if already has artifacts
+        if meta.code_artifacts:
+            continue
+
+        # Extract artifacts
+        artifacts = extract_code_artifacts(trajectory, work_dir)
+        if artifacts:
+            meta.code_artifacts = artifacts
+            updated += 1
+            console.print(f"  Extracted {len(artifacts)} artifacts from {traj_id[:12]}...")
+
+    if updated > 0:
+        database._save_curation()
+        console.print(f"\n[green]Updated {updated} trajectories with code artifacts.[/]")
+    else:
+        console.print("[dim]No trajectories needed artifact extraction.[/]")
 
 
 if __name__ == "__main__":
