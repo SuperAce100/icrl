@@ -38,10 +38,11 @@ del _litellm
 from icrl.agent import Agent  # noqa: E402
 from icrl.models import Message, Step, StepContext, Trajectory  # noqa: E402
 from icrl.protocols import Environment, LLMProvider  # noqa: E402
-from icrl.providers import LiteLLMProvider  # noqa: E402
+from icrl.providers import AnthropicVertexProvider, LiteLLMProvider  # noqa: E402
 
 __all__ = [
     "Agent",
+    "AnthropicVertexProvider",
     "Environment",
     "LiteLLMProvider",
     "LLMProvider",

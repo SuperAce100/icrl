@@ -73,11 +73,34 @@ def run(
         bool,
         typer.Option("--verbose", "-v", help="Show detailed output"),
     ] = False,
+    vertex_credentials: Annotated[
+        Path | None,
+        typer.Option(
+            "--vertex-credentials",
+            help="Path to GCP service account JSON for Vertex AI",
+        ),
+    ] = None,
+    vertex_project: Annotated[
+        str | None,
+        typer.Option("--vertex-project", help="GCP project ID for Vertex AI"),
+    ] = None,
+    vertex_location: Annotated[
+        str | None,
+        typer.Option(
+            "--vertex-location", help="GCP region for Vertex AI (e.g., us-east5)"
+        ),
+    ] = None,
 ) -> None:
     """Run a coding task with the agent."""
     config = Config.load()
     if model:
         config.model = model
+    if vertex_credentials:
+        config.vertex_credentials_path = str(vertex_credentials)
+    if vertex_project:
+        config.vertex_project_id = vertex_project
+    if vertex_location:
+        config.vertex_location = vertex_location
 
     work_dir = working_dir or Path.cwd()
 
@@ -285,8 +308,18 @@ def config_set(
         config.k = int(value)
     elif key == "db_path":
         config.db_path = value
+    elif key == "vertex_credentials_path":
+        config.vertex_credentials_path = value
+    elif key == "vertex_project_id":
+        config.vertex_project_id = value
+    elif key == "vertex_location":
+        config.vertex_location = value
     else:
         console.print(f"[red]Unknown configuration key: {key}[/]")
+        console.print(
+            "[dim]Valid keys: model, temperature, max_tokens, max_steps, k, "
+            "db_path, vertex_credentials_path, vertex_project_id, vertex_location[/]"
+        )
         raise typer.Exit(1)
 
     config.save()

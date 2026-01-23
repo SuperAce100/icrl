@@ -20,3 +20,5 @@ harbor_django_comp
 harbor_*
 
 sgicl_v*
+
+credentials.json

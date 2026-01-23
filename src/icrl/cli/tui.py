@@ -11,7 +11,11 @@ from rich.prompt import Prompt
 
 from icrl.cli.config import Config, get_default_db_path
 from icrl.cli.prompts import SYSTEM_PROMPT
-from icrl.cli.providers.tool_provider import ToolLLMProvider
+from icrl.cli.providers import (
+    AnthropicVertexToolProvider,
+    ToolLLMProvider,
+    is_vertex_model,
+)
 from icrl.cli.tool_loop import ToolLoop
 from icrl.cli.tools.base import ToolResult, create_default_registry
 from icrl.database import TrajectoryDatabase
@@ -23,6 +27,12 @@ def format_model_name(model: str) -> str:
     model_name = model_parts[-1] if model_parts else model
 
     name_map = {
+        "claude-opus-4.5": "Claude Opus 4.5",
+        "claude-opus-4-5": "Claude Opus 4.5",
+        "claude-sonnet-4.5": "Claude Sonnet 4.5",
+        "claude-sonnet-4-5": "Claude Sonnet 4.5",
+        "claude-haiku-4.5": "Claude Haiku 4.5",
+        "claude-haiku-4-5": "Claude Haiku 4.5",
         "claude-3-5-sonnet-20241022": "Claude 3.5 Sonnet",
         "claude-3-5-sonnet": "Claude 3.5 Sonnet",
         "claude-3-opus": "Claude 3 Opus",
@@ -104,12 +114,24 @@ async def run_task(
         ask_user_callback=ask_user,
     )
 
-    llm = ToolLLMProvider(
-        model=config.model,
-        temperature=config.temperature,
-        max_tokens=config.max_tokens,
-        registry=registry,
-    )
+    # Create LLM provider (auto-detect Vertex AI models)
+    if is_vertex_model(config.model):
+        llm = AnthropicVertexToolProvider(
+            model=config.model,
+            temperature=config.temperature,
+            max_tokens=config.max_tokens,
+            registry=registry,
+            credentials_path=config.vertex_credentials_path,
+            project_id=config.vertex_project_id,
+            location=config.vertex_location,
+        )
+    else:
+        llm = ToolLLMProvider(
+            model=config.model,
+            temperature=config.temperature,
+            max_tokens=config.max_tokens,
+            registry=registry,
+        )
 
     # Retrieve examples
     examples: list[str] = []

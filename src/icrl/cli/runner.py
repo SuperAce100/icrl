@@ -6,7 +6,11 @@ from typing import Any, Protocol
 
 from icrl.cli.config import Config, get_default_db_path
 from icrl.cli.prompts import SYSTEM_PROMPT
-from icrl.cli.providers.tool_provider import ToolLLMProvider
+from icrl.cli.providers import (
+    AnthropicVertexToolProvider,
+    ToolLLMProvider,
+    is_vertex_model,
+)
 from icrl.cli.tool_loop import ToolLoop
 from icrl.cli.tools.base import ToolResult, create_default_registry
 from icrl.database import TrajectoryDatabase
@@ -124,13 +128,24 @@ class AgentRunner:
             ask_user_callback=ask_user_callback,
         )
 
-        # Create LLM provider
-        llm = ToolLLMProvider(
-            model=self._config.model,
-            temperature=self._config.temperature,
-            max_tokens=self._config.max_tokens,
-            registry=registry,
-        )
+        # Create LLM provider (auto-detect Vertex AI models)
+        if is_vertex_model(self._config.model):
+            llm = AnthropicVertexToolProvider(
+                model=self._config.model,
+                temperature=self._config.temperature,
+                max_tokens=self._config.max_tokens,
+                registry=registry,
+                credentials_path=self._config.vertex_credentials_path,
+                project_id=self._config.vertex_project_id,
+                location=self._config.vertex_location,
+            )
+        else:
+            llm = ToolLLMProvider(
+                model=self._config.model,
+                temperature=self._config.temperature,
+                max_tokens=self._config.max_tokens,
+                registry=registry,
+            )
 
         # Retrieve examples from database
         self.last_db_size = len(self._database)

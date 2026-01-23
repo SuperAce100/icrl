@@ -43,6 +43,11 @@ class Config:
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
 
+    # Vertex AI settings (for Anthropic Claude on Google Cloud)
+    vertex_credentials_path: str | None = None
+    vertex_project_id: str | None = None
+    vertex_location: str | None = None
+
     @classmethod
     def load(cls, path: Path | None = None) -> "Config":
         """Load configuration from file.
@@ -69,6 +74,16 @@ class Config:
         config.openai_api_key = os.environ.get("OPENAI_API_KEY")
         config.anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY")
 
+        # Load Vertex AI settings from environment (fallbacks)
+        if config.vertex_credentials_path is None:
+            config.vertex_credentials_path = os.environ.get(
+                "GOOGLE_APPLICATION_CREDENTIALS"
+            )
+        if config.vertex_project_id is None:
+            config.vertex_project_id = os.environ.get("VERTEXAI_PROJECT")
+        if config.vertex_location is None:
+            config.vertex_location = os.environ.get("VERTEXAI_LOCATION")
+
         return config
 
     def save(self, path: Path | None = None) -> None:
@@ -90,6 +105,9 @@ class Config:
             "max_steps": self.max_steps,
             "k": self.k,
             "db_path": self.db_path,
+            "vertex_credentials_path": self.vertex_credentials_path,
+            "vertex_project_id": self.vertex_project_id,
+            "vertex_location": self.vertex_location,
         }
 
         with open(path, "w") as f:
@@ -97,7 +115,7 @@ class Config:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary."""
-        return {
+        result = {
             "model": self.model,
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
@@ -105,3 +123,11 @@ class Config:
             "k": self.k,
             "db_path": self.db_path or str(get_default_db_path()),
         }
+        # Only include Vertex settings if configured
+        if self.vertex_credentials_path:
+            result["vertex_credentials_path"] = self.vertex_credentials_path
+        if self.vertex_project_id:
+            result["vertex_project_id"] = self.vertex_project_id
+        if self.vertex_location:
+            result["vertex_location"] = self.vertex_location
+        return result
