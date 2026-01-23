@@ -42,6 +42,9 @@ class ToolLoop:
         self._on_thinking = on_thinking
         self._cancelled = False
 
+        # Conversation history for multi-turn chat
+        self._messages: list[dict[str, Any]] = []
+
         # Ensure LLM has access to tools
         self._llm.set_registry(registry)
 
@@ -49,34 +52,53 @@ class ToolLoop:
         """Cancel the loop."""
         self._cancelled = True
 
-    async def run(self, goal: str, examples: list[str] | None = None) -> Trajectory:
+    def clear_history(self) -> None:
+        """Clear conversation history for a fresh start."""
+        self._messages = []
+
+    def get_messages(self) -> list[dict[str, Any]]:
+        """Get the current conversation history."""
+        return list(self._messages)
+
+    async def run(
+        self,
+        goal: str,
+        examples: list[str] | None = None,
+        continue_conversation: bool = False,
+    ) -> Trajectory:
         """Run the tool-calling loop.
 
         Args:
             goal: The user's goal/task
             examples: Optional retrieved examples to include in context
+            continue_conversation: If True, continue from existing conversation history
 
         Returns:
             Trajectory with steps
         """
         self._cancelled = False
 
-        # Build initial messages
-        messages: list[dict[str, Any]] = [
-            {"role": "system", "content": self._system_prompt},
-        ]
+        if continue_conversation and self._messages:
+            # Continue existing conversation - just add the new user message
+            messages = self._messages
+            messages.append({"role": "user", "content": goal})
+        else:
+            # Start fresh conversation
+            messages = [
+                {"role": "system", "content": self._system_prompt},
+            ]
 
-        # Add examples if provided
-        if examples:
-            examples_text = "\n\n---\n\n".join(examples)
-            ex_content = (
-                f"Here are some relevant examples from similar tasks:\n\n"
-                f"{examples_text}"
-            )
-            messages.append({"role": "system", "content": ex_content})
+            # Add examples if provided
+            if examples:
+                examples_text = "\n\n---\n\n".join(examples)
+                ex_content = (
+                    f"Here are some relevant examples from similar tasks:\n\n"
+                    f"{examples_text}"
+                )
+                messages.append({"role": "system", "content": ex_content})
 
-        # Add user goal
-        messages.append({"role": "user", "content": goal})
+            # Add user goal
+            messages.append({"role": "user", "content": goal})
 
         steps: list[Step] = []
         success = False
@@ -156,6 +178,13 @@ class ToolLoop:
                         "content": result.output,
                     }
                 )
+
+        # If the model finished with a text response (no tool call), add it to messages
+        if success and final_response:
+            messages.append({"role": "assistant", "content": final_response})
+
+        # Save messages for multi-turn continuation
+        self._messages = messages
 
         return Trajectory(
             goal=goal,

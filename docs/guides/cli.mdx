@@ -88,28 +88,49 @@ icrl run "<your goal here>" [OPTIONS]
 - Default mode shows a short preview of the agent’s “thinking” and tails the last few lines of Bash output.
 - `--verbose` prints full “thinking” panels and tool outputs (truncated for very large outputs).
 
-### `icrl tui`
+### `icrl tui` / `icrl chat`
 
-Start the interactive terminal UI.
+Start an interactive multi-turn chat session.
 
 ```bash
 icrl tui [--model MODEL] [--dir PATH]
-```
-
-Notes:
-
-- `tui` uses the same config resolution as `run`.
-- `--model` overrides the configured model for the session.
-
-### `icrl chat`
-
-Start an interactive chat session.
-
-```bash
 icrl chat [--model MODEL] [--dir PATH]
 ```
 
-Currently `chat` uses the same underlying TUI entrypoint as `tui`.
+Both commands launch the same interactive interface with **multi-turn conversation support**. The agent remembers context from previous turns within the same session.
+
+**Options**
+
+- `--model, -m TEXT`: Override the configured model for the session.
+- `--dir, -d PATH`: Working directory to operate in.
+
+**Multi-turn chat**
+
+The chat session maintains conversation history across turns:
+
+- Each message you send continues the same conversation
+- The agent remembers previous tool outputs and context
+- Examples are retrieved only on the first turn
+
+**Commands within the chat**
+
+- `/clear` — Reset the conversation history and start fresh
+- `exit`, `quit`, or `q` — Exit the chat session
+
+**Example session**
+
+```
+>> Create a new Python file called hello.py with a greeting function
+[agent creates the file]
+
+>> Now add a main block that calls the function
+[agent remembers the file and adds to it]
+
+>> /clear
+Conversation cleared.
+
+>> [fresh conversation starts]
+```
 
 ## Configuration
 
