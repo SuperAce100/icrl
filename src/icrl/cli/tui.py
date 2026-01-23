@@ -210,8 +210,10 @@ def run_tui(config: Config | None = None, working_dir: Path | None = None) -> No
                 db_count = len(database)
                 console.print(f"{model_display} · {cwd_display} · {db_count} examples")
 
-                # Prompt
-                goal = Prompt.ask("[bold green]>>[/bold green] \b")
+                # Prompt with simple bordered line
+                console.print("[green]─" * 50 + "[/]")
+                goal = Prompt.ask("[bold green]>>[/bold green]")
+                console.print("[green]─" * 50 + "[/]")
 
                 if not goal.strip():
                     continue
