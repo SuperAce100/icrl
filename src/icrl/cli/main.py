@@ -8,7 +8,10 @@ litellm.disable_logging_worker = True
 import asyncio  # noqa: E402
 import warnings  # noqa: E402
 from pathlib import Path  # noqa: E402
-from typing import Annotated  # noqa: E402
+from typing import TYPE_CHECKING, Annotated  # noqa: E402
+
+if TYPE_CHECKING:
+    from icrl.cli.ablation import AblationComparison
 
 # Better interactive input editing (e.g., backspace across wrapped lines)
 try:  # pragma: no cover
@@ -44,6 +47,219 @@ app.add_typer(config_app, name="config")
 app.add_typer(db_app, name="db")
 
 console = Console()
+
+
+def _run_ablation(goal: str, config: Config, work_dir: Path, verbose: bool) -> None:
+    """Run ablation study comparing with/without in-context examples."""
+    from rich.table import Table
+
+    from icrl.cli.ablation import AblationRunner, AblationComparison
+    from icrl.cli.providers import AnthropicVertexToolProvider, ToolLLMProvider, is_vertex_model
+    from icrl.cli.tools.base import create_default_registry
+
+    def on_status(msg: str) -> None:
+        console.print(f"[dim]{msg}[/]")
+
+    runner = AblationRunner(
+        config=config,
+        working_dir=work_dir,
+        on_status=on_status,
+    )
+
+    console.print(f"\n[bold]Ablation Study:[/] {goal}")
+    console.print(f"[dim]Model: {config.model} | Base dir: {work_dir}[/]\n")
+
+    try:
+        comparison = asyncio.run(runner.run(goal))
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Cancelled by user.[/]")
+        return
+
+    if comparison is None:
+        console.print("[red]Ablation study failed.[/]")
+        raise typer.Exit(1)
+
+    # Display comparison table
+    _display_ablation_results(comparison, verbose)
+
+    # Run LLM analysis
+    console.print("\n[bold]Generating analysis...[/]")
+    try:
+        # Create LLM provider for analysis
+        registry = create_default_registry(working_dir=work_dir)
+        if is_vertex_model(config.model):
+            llm = AnthropicVertexToolProvider(
+                model=config.model,
+                temperature=config.temperature,
+                max_tokens=config.max_tokens,
+                registry=registry,
+                credentials_path=config.vertex_credentials_path,
+                project_id=config.vertex_project_id,
+                location=config.vertex_location,
+            )
+        else:
+            llm = ToolLLMProvider(
+                model=config.model,
+                temperature=config.temperature,
+                max_tokens=config.max_tokens,
+                registry=registry,
+            )
+
+        analysis = asyncio.run(runner.analyze_comparison(comparison, llm))
+        console.print(
+            Panel(
+                analysis,
+                title="[bold blue]LLM Analysis[/]",
+                border_style="blue",
+            )
+        )
+    except Exception as e:
+        console.print(f"[yellow]Analysis failed: {e}[/]")
+
+
+def _display_ablation_results(comparison: "AblationComparison", verbose: bool) -> None:
+    """Display ablation comparison results in a table."""
+    from rich.table import Table
+
+    # Import here to avoid circular imports
+    from icrl.cli.ablation import AblationComparison
+
+    with_ex = comparison.with_examples
+    without_ex = comparison.without_examples
+
+    # Summary table
+    table = Table(title="Ablation Results", show_header=True)
+    table.add_column("Metric", style="bold")
+    table.add_column("With Examples", justify="right")
+    table.add_column("Without Examples", justify="right")
+    table.add_column("Δ", justify="right")
+
+    # Success
+    with_success = "✓" if with_ex.success else "✗"
+    without_success = "✓" if without_ex.success else "✗"
+    success_style_with = "green" if with_ex.success else "red"
+    success_style_without = "green" if without_ex.success else "red"
+    table.add_row(
+        "Success",
+        f"[{success_style_with}]{with_success}[/]",
+        f"[{success_style_without}]{without_success}[/]",
+        "",
+    )
+
+    # Examples used
+    table.add_row(
+        "Examples Used",
+        str(with_ex.examples_count),
+        "0",
+        f"+{with_ex.examples_count}",
+    )
+
+    # Steps
+    steps_delta = with_ex.steps_count - without_ex.steps_count
+    steps_delta_str = f"{steps_delta:+d}" if steps_delta != 0 else "="
+    steps_style = "green" if steps_delta < 0 else ("red" if steps_delta > 0 else "dim")
+    table.add_row(
+        "Steps",
+        str(with_ex.steps_count),
+        str(without_ex.steps_count),
+        f"[{steps_style}]{steps_delta_str}[/]",
+    )
+
+    # Input tokens
+    input_delta = with_ex.prompt_tokens - without_ex.prompt_tokens
+    input_delta_str = f"{input_delta:+,}" if input_delta != 0 else "="
+    # More input tokens with examples is expected, so neutral color
+    table.add_row(
+        "Input Tokens",
+        f"{with_ex.prompt_tokens:,}",
+        f"{without_ex.prompt_tokens:,}",
+        f"[dim]{input_delta_str}[/]",
+    )
+
+    # Output tokens
+    output_delta = with_ex.completion_tokens - without_ex.completion_tokens
+    output_delta_str = f"{output_delta:+,}" if output_delta != 0 else "="
+    output_style = "green" if output_delta < 0 else ("red" if output_delta > 0 else "dim")
+    table.add_row(
+        "Output Tokens",
+        f"{with_ex.completion_tokens:,}",
+        f"{without_ex.completion_tokens:,}",
+        f"[{output_style}]{output_delta_str}[/]",
+    )
+
+    # Total tokens
+    total_delta = with_ex.total_tokens - without_ex.total_tokens
+    total_delta_str = f"{total_delta:+,}" if total_delta != 0 else "="
+    table.add_row(
+        "Total Tokens",
+        f"{with_ex.total_tokens:,}",
+        f"{without_ex.total_tokens:,}",
+        f"[dim]{total_delta_str}[/]",
+    )
+
+    # Latency
+    latency_delta = with_ex.latency_s - without_ex.latency_s
+    latency_delta_str = f"{latency_delta:+.1f}s" if abs(latency_delta) > 0.1 else "="
+    latency_style = "green" if latency_delta < -0.5 else ("red" if latency_delta > 0.5 else "dim")
+    table.add_row(
+        "Latency",
+        f"{with_ex.latency_s:.1f}s",
+        f"{without_ex.latency_s:.1f}s",
+        f"[{latency_style}]{latency_delta_str}[/]",
+    )
+
+    console.print(table)
+
+    # Verbose: show steps comparison
+    if verbose:
+        console.print("\n[bold]Steps Comparison:[/]")
+
+        console.print("\n[cyan]With Examples:[/]")
+        for i, step in enumerate(with_ex.trajectory.steps[:15], 1):
+            action = step.action
+            if "(" in action:
+                tool_name = action.split("(")[0]
+            else:
+                tool_name = action[:50]
+            console.print(f"  {i}. {tool_name}")
+        if len(with_ex.trajectory.steps) > 15:
+            console.print(f"  ... and {len(with_ex.trajectory.steps) - 15} more")
+
+        console.print("\n[cyan]Without Examples:[/]")
+        for i, step in enumerate(without_ex.trajectory.steps[:15], 1):
+            action = step.action
+            if "(" in action:
+                tool_name = action.split("(")[0]
+            else:
+                tool_name = action[:50]
+            console.print(f"  {i}. {tool_name}")
+        if len(without_ex.trajectory.steps) > 15:
+            console.print(f"  ... and {len(without_ex.trajectory.steps) - 15} more")
+
+    # Show final responses
+    console.print("\n[bold]Final Responses:[/]")
+
+    if with_ex.final_response:
+        console.print(
+            Panel(
+                with_ex.final_response[:1000] + ("..." if len(with_ex.final_response) > 1000 else ""),
+                title="[green]With Examples[/]",
+                border_style="green",
+            )
+        )
+    else:
+        console.print("[dim]With Examples: (no response)[/]")
+
+    if without_ex.final_response:
+        console.print(
+            Panel(
+                without_ex.final_response[:1000] + ("..." if len(without_ex.final_response) > 1000 else ""),
+                title="[yellow]Without Examples[/]",
+                border_style="yellow",
+            )
+        )
+    else:
+        console.print("[dim]Without Examples: (no response)[/]")
 
 
 @app.command()
@@ -110,6 +326,13 @@ def run(
             help="Auto-approve file writes and edits without confirmation prompts",
         ),
     ] = True,
+    ablate: Annotated[
+        bool,
+        typer.Option(
+            "--ablate",
+            help="Run ablation study: compare with vs without in-context examples (requires git)",
+        ),
+    ] = False,
 ) -> None:
     """Run a coding task with the agent."""
     config = Config.load()
@@ -125,6 +348,11 @@ def run(
     config.auto_approve = auto_approve
 
     work_dir = working_dir or Path.cwd()
+
+    # Handle ablation mode separately
+    if ablate:
+        _run_ablation(goal, config, work_dir, verbose)
+        return
 
     def on_thinking(text: str) -> None:
         if verbose:

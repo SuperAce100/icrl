@@ -114,12 +114,15 @@ class AgentRunner:
         goal: str,
         train: bool = True,
         compare_mode: bool = False,
+        use_examples: bool = True,
     ) -> Trajectory:
         """Run a coding task.
 
         Args:
             goal: The task to accomplish
             train: If True, store successful trajectories
+            compare_mode: If True, generate alternative responses for comparison
+            use_examples: If True, retrieve and use in-context examples
 
         Returns:
             The resulting trajectory
@@ -153,10 +156,10 @@ class AgentRunner:
                 registry=registry,
             )
 
-        # Retrieve examples from database
+        # Retrieve examples from database (if enabled)
         self.last_db_size = len(self._database)
         examples: list[str] = []
-        if self.last_db_size > 0:
+        if use_examples and self.last_db_size > 0:
             similar = self._database.search(goal, k=self._config.k)
             examples = [traj.to_example_string() for traj in similar]
         self.last_examples_count = len(examples)
