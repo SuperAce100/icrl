@@ -135,10 +135,33 @@ class ToolLoop:
                         output=f"Unknown tool: {tool_call.name}", success=False
                     )
                 else:
-                    if self._on_tool_start:
-                        self._on_tool_start(tool_call.name, tool_call.arguments)
+                    # Validate arguments before execution
+                    is_valid, validation_error = tool.validate_arguments(
+                        tool_call.arguments
+                    )
+                    if not is_valid:
+                        result = ToolResult(
+                            output=f"Error calling {tool_call.name}: {validation_error}",
+                            success=False,
+                        )
+                    else:
+                        if self._on_tool_start:
+                            self._on_tool_start(tool_call.name, tool_call.arguments)
 
-                    result = await tool.execute(**tool_call.arguments)
+                        try:
+                            result = await tool.execute(**tool_call.arguments)
+                        except TypeError as e:
+                            # Handle missing/invalid arguments that slipped past validation
+                            result = ToolResult(
+                                output=f"Error calling {tool_call.name}: {e}",
+                                success=False,
+                            )
+                        except Exception as e:
+                            # Handle any other unexpected errors gracefully
+                            result = ToolResult(
+                                output=f"Error executing {tool_call.name}: {type(e).__name__}: {e}",
+                                success=False,
+                            )
 
                     if self._on_tool_end:
                         self._on_tool_end(tool_call.name, result)

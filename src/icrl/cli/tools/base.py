@@ -63,6 +63,23 @@ class Tool(ABC):
         """Execute the tool with given parameters."""
         ...
 
+    def validate_arguments(self, arguments: dict[str, Any]) -> tuple[bool, str | None]:
+        """Validate that required arguments are present.
+
+        Args:
+            arguments: The arguments to validate.
+
+        Returns:
+            Tuple of (is_valid, error_message).
+        """
+        required_params = [p.name for p in self.parameters if p.required]
+        missing = [p for p in required_params if p not in arguments]
+
+        if missing:
+            return False, f"Missing required argument(s): {', '.join(missing)}"
+
+        return True, None
+
     def to_openai_schema(self) -> dict[str, Any]:
         """Convert to OpenAI function calling schema."""
         properties: dict[str, Any] = {}
