@@ -7,7 +7,7 @@ from typing import Any
 
 from rich.console import Console
 from rich.markdown import Markdown
-from rich.prompt import Prompt
+from rich.prompt import Confirm, Prompt
 
 from icrl.cli.config import Config, get_default_db_path
 from icrl.cli.prompts import SYSTEM_PROMPT
@@ -151,8 +151,15 @@ async def run_task(
 
     trajectory = await loop.run(goal, examples=examples if examples else None)
 
+    # Store if successful (with human verification)
     if trajectory.success:
-        database.add(trajectory)
+        approved = Confirm.ask(
+            "Store this successful run as a new example?", default=True
+        )
+        if approved:
+            database.add(trajectory)
+        else:
+            console.print("[dim]Trajectory discarded.[/]")
 
     console.print()
     if trajectory.success:

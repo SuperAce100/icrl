@@ -119,6 +119,7 @@ agent = Agent(
     on_step: Callable[[Step, StepContext], None] | None = None,  # Step callback
     curation_threshold: float = 0.3,      # Utility threshold for pruning
     curation_min_retrievals: int = 5,     # Min retrievals before pruning
+    verify_trajectory: Callable[[Trajectory], bool] | None = None,  # Verification callback
 )
 ```
 
@@ -126,7 +127,7 @@ agent = Agent(
 
 | Method | Description |
 |--------|-------------|
-| `await agent.train(env, goal)` | Run training episode, store successful trajectories |
+| `await agent.train(env, goal)` | Run training episode, store successful trajectories (with optional verification) |
 | `await agent.run(env, goal)` | Run inference episode (database frozen) |
 | `agent.train_sync(env, goal)` | Synchronous wrapper for `train` |
 | `agent.run_sync(env, goal)` | Synchronous wrapper for `run` |

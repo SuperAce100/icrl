@@ -32,6 +32,7 @@ class Agent:
         on_step: Callable[[Step, StepContext], None] | None = None,
         curation_threshold: float = 0.3,
         curation_min_retrievals: int = 5,
+        verify_trajectory: Callable[[Trajectory], bool] | None = None,
     ) -> None:
         """Initialize the ICRL Agent.
 
@@ -52,6 +53,10 @@ class Agent:
             curation_threshold: Utility threshold below which trajectories are pruned.
             curation_min_retrievals: Minimum retrievals before a trajectory
                 can be pruned.
+            verify_trajectory: Optional callback to verify a trajectory before storing.
+                If provided, called with the trajectory after a successful run.
+                Return True to store the trajectory, False to discard it.
+                If None, trajectories are stored automatically (no verification).
         """
         self._llm = llm
         self._plan_prompt = plan_prompt
@@ -60,6 +65,7 @@ class Agent:
         self._k = k
         self._max_steps = max_steps
         self._on_step = on_step
+        self._verify_trajectory = verify_trajectory
 
         self._database = TrajectoryDatabase(db_path)
 
@@ -95,7 +101,8 @@ class Agent:
         """Run a training episode.
 
         In training mode, successful trajectories are added to the database
-        and used as examples for future episodes.
+        and used as examples for future episodes. If a verify_trajectory
+        callback was provided, it will be called to confirm before storing.
 
         Args:
             env: The environment to interact with.
@@ -107,8 +114,14 @@ class Agent:
         trajectory = await self._loop.run(env, goal)
 
         if trajectory.success:
-            self._database.add(trajectory)
-            self._curation.maybe_curate()
+            # Check verification callback if provided
+            should_store = True
+            if self._verify_trajectory is not None:
+                should_store = self._verify_trajectory(trajectory)
+
+            if should_store:
+                self._database.add(trajectory)
+                self._curation.maybe_curate()
 
         return trajectory
 
