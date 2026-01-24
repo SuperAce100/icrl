@@ -168,7 +168,11 @@ class AgentRunner:
 
         trajectory = await self._loop.run(goal, examples=examples if examples else None)
 
-        # Store if training and successful (with human verification)
+        # Show completion first (so user sees final response)
+        if self._callbacks:
+            self._callbacks.on_complete(trajectory)
+
+        # Then ask about storing (after user has seen the final response)
         if train and trajectory.success:
             approved = True
             if self._callbacks:
@@ -180,9 +184,6 @@ class AgentRunner:
 
             if approved:
                 self._database.add(trajectory)
-
-        if self._callbacks:
-            self._callbacks.on_complete(trajectory)
 
         return trajectory
 

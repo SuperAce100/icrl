@@ -190,16 +190,7 @@ class ChatSession:
 
         self._turn_count += 1
 
-        # Store if successful (with human verification)
-        if trajectory.success:
-            approved = Confirm.ask(
-                "Store this successful run as a new example?", default=True
-            )
-            if approved:
-                self.database.add(trajectory)
-            else:
-                self.console.print("[dim]Trajectory discarded.[/dim]")
-
+        # Show the result first
         self.console.print()
         if trajectory.success:
             self.console.print("[green]OK[/green] Done")
@@ -208,6 +199,17 @@ class ChatSession:
                 self.console.print(Markdown(response))
         else:
             self.console.print("[red]X[/red] Failed")
+
+        # Then ask about storing (after user has seen the final response)
+        if trajectory.success:
+            self.console.print()
+            approved = Confirm.ask(
+                "Store this successful run as a new example?", default=True
+            )
+            if approved:
+                self.database.add(trajectory)
+            else:
+                self.console.print("[dim]Trajectory discarded.[/dim]")
 
 
 async def run_task(

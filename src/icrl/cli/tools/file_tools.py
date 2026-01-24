@@ -3,9 +3,9 @@
 import re
 from typing import Any
 
-from rich.prompt import Confirm
+from rich.console import Console
 
-from icrl.cli.human_verification import build_edit_prompt, build_write_prompt
+from icrl.cli.human_verification import build_edit_prompt
 from icrl.cli.tools.base import Tool, ToolParameter, ToolResult
 
 
@@ -95,10 +95,7 @@ class ReadTool(Tool):
 
 
 class WriteTool(Tool):
-    """Create or overwrite a file.
-
-    This tool supports optional human verification via an injected callback.
-    """
+    """Create or overwrite a file."""
 
     def __init__(
         self,
@@ -133,17 +130,6 @@ class WriteTool(Tool):
 
     async def execute(self, path: str, content: str, **kwargs: Any) -> ToolResult:
         try:
-            # Human verification gate (write)
-            if self._ask_user_callback:
-                # Ask for approval (default: True so Enter approves)
-                question = build_write_prompt(path=path, content=content)
-                # Let the user see options + default explicitly in the question text.
-                prompt = f"{question}\n\nOptions: [y]es / [n]o (default: yes)"
-                approved = Confirm.ask(prompt, default=True)
-                if not approved:
-                    msg = f"Denied by user: Write to {path}"
-                    return ToolResult(output=msg, success=False)
-
             full_path = self._working_dir / path
 
             # Security check
@@ -166,7 +152,7 @@ class WriteTool(Tool):
 class EditTool(Tool):
     """Make precise edits to a file.
 
-    This tool supports optional human verification via an injected callback.
+    When ask_user_callback is provided, displays a diff of the changes.
     """
 
     def __init__(
@@ -212,18 +198,13 @@ class EditTool(Tool):
         self, path: str, old_text: str, new_text: str, **kwargs: Any
     ) -> ToolResult:
         try:
-            # Human verification gate (edit)
+            # Show the diff (no verification required)
             if self._ask_user_callback:
-                # Ask for approval (default: True so Enter approves)
-                question = build_edit_prompt(
+                diff_output = build_edit_prompt(
                     path=path, old_text=old_text, new_text=new_text
                 )
-                # Let the user see options + default explicitly in the question text.
-                prompt = f"{question}\n\nOptions: [y]es / [n]o (default: yes)"
-                approved = Confirm.ask(prompt, default=True)
-                if not approved:
-                    msg = f"Denied by user: Edit {path}"
-                    return ToolResult(output=msg, success=False)
+                console = Console()
+                console.print(diff_output, end="")
 
             full_path = self._working_dir / path
 
