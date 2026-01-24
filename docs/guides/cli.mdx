@@ -15,7 +15,7 @@ If you installed the Python package, you should have the `icrl` executable avail
 icrl --help
 ```
 
-If you are working from source (or if your environment doesn’t put console scripts on PATH), you can also run it as a module:
+If you are working from source (or if your environment doesn't put console scripts on PATH), you can also run it as a module:
 
 ```bash
 python -m icrl.cli.main --help
@@ -74,7 +74,7 @@ icrl run "<your goal here>" [OPTIONS]
 - `--model, -m TEXT`: Override the configured model for this run.
 - `--no-train`: Do not store the resulting trajectory in the database.
 - `--dir, -d PATH`: Working directory to operate in (defaults to current directory).
-- `--verbose, -v`: Show detailed “thinking” output and tool results.
+- `--verbose, -v`: Show detailed "thinking" output and tool results.
 
 **What happens during a run**
 
@@ -85,8 +85,21 @@ icrl run "<your goal here>" [OPTIONS]
 
 **Output modes**
 
-- Default mode shows a short preview of the agent’s “thinking” and tails the last few lines of Bash output.
-- `--verbose` prints full “thinking” panels and tool outputs (truncated for very large outputs).
+- Default mode shows a short preview of the agent's "thinking" and tails the last few lines of Bash output.
+- `--verbose` prints full "thinking" panels and tool outputs (truncated for very large outputs).
+
+**Syntax-highlighted diffs**
+
+When the agent edits files, the CLI displays a colorized unified diff with:
+- **Red** for deleted lines
+- **Green** for added lines
+- **Syntax highlighting** for the code content based on file type
+
+Supported languages include Python, JavaScript, TypeScript, Rust, Go, Java, C/C++, Ruby, PHP, Swift, Kotlin, Scala, SQL, HTML, CSS, YAML, TOML, Markdown, and many more.
+
+**Trajectory storage**
+
+After a successful run, the CLI shows the agent's final response first, then prompts you to confirm whether to store the trajectory as a training example. This lets you review the complete output before deciding whether to add it to your database.
 
 ### `icrl tui` / `icrl chat`
 
@@ -116,6 +129,15 @@ The chat session maintains conversation history across turns:
 
 - `/clear` — Reset the conversation history and start fresh
 - `exit`, `quit`, or `q` — Exit the chat session
+
+**Syntax-highlighted diffs**
+
+Just like in `icrl run`, the chat interface displays colorized diffs when the agent edits files. Each edit shows:
+- File headers in cyan
+- Hunk markers in magenta
+- Deletions in bold red
+- Additions in bold green
+- Context lines with syntax highlighting
 
 **Example session**
 
@@ -263,7 +285,7 @@ icrl --show-completion
 
 ### The `icrl` command is not found
 
-- Ensure your environment’s bin directory is on PATH.
+- Ensure your environment's bin directory is on PATH.
 - Try running as a module: `python -m icrl.cli.main --help`.
 
 ### Model/provider errors
