@@ -5,7 +5,7 @@ from typing import Any
 
 from rich.console import Console
 
-from icrl.cli.human_verification import build_edit_prompt
+from icrl.cli.human_verification import build_edit_prompt, build_write_diff
 from icrl.cli.tools.base import Tool, ToolParameter, ToolResult
 
 
@@ -138,6 +138,19 @@ class WriteTool(Tool):
             except ValueError:
                 return ToolResult(output="Error: Access denied", success=False)
 
+            # Read existing content for diff (if file exists)
+            old_content = None
+            if full_path.exists() and full_path.is_file():
+                try:
+                    old_content = full_path.read_text()
+                except Exception:
+                    pass  # If we can't read it, treat as new file
+
+            # Show the diff
+            if self._ask_user_callback:
+                console = Console()
+                build_write_diff(path, old_content, content, console)
+
             # Create parent directories
             full_path.parent.mkdir(parents=True, exist_ok=True)
             full_path.write_text(content)
@@ -200,11 +213,10 @@ class EditTool(Tool):
         try:
             # Show the diff (no verification required)
             if self._ask_user_callback:
-                diff_output = build_edit_prompt(
-                    path=path, old_text=old_text, new_text=new_text
-                )
                 console = Console()
-                console.print(diff_output, end="")
+                build_edit_prompt(
+                    path=path, old_text=old_text, new_text=new_text, console=console
+                )
 
             full_path = self._working_dir / path
 

@@ -57,90 +57,106 @@ def _get_lexer_for_file(path: str) -> str:
     return ext_to_lexer.get(ext.lower(), "text")
 
 
-def build_write_prompt(path: str, content: str) -> str:
-    """Build a prompt asking the user to verify a write operation."""
-    preview = content[:500] + "..." if len(content) > 500 else content
-    return f"Allow writing to '{path}'?\n\nContent preview:\n{preview}"
+def _render_diff(
+    path: str,
+    old_lines: list[str],
+    new_lines: list[str],
+    console: Console,
+    is_new_file: bool = False,
+) -> None:
+    """Render a unified diff with a clean header showing file and line counts.
 
-
-def build_edit_prompt(path: str, old_text: str, new_text: str) -> str:
-    """Build a Rich-rendered diff for an edit operation.
-
-    Returns a single string containing a Rich-rendered diff with both:
-    - Diff coloring (red for deletions, green for additions)
-    - Syntax highlighting for the code content
-
-    This is designed to be displayed by an outer UI (e.g. Typer/Rich).
+    Args:
+        path: File path being modified
+        old_lines: Original content lines
+        new_lines: New content lines
+        console: Rich console for output
+        is_new_file: Whether this is a new file creation
     """
-    console = Console(width=100, force_terminal=True)
     lexer = _get_lexer_for_file(path)
-
-    # Build a unified diff
-    old_lines = (old_text or "").splitlines()
-    new_lines = (new_text or "").splitlines()
 
     diff_iter = difflib.unified_diff(
         old_lines,
         new_lines,
-        fromfile=f"a/{path}",
-        tofile=f"b/{path}",
         lineterm="",
         n=3,
     )
     diff_lines = list(diff_iter)
 
     if not diff_lines:
-        return "(no textual changes detected)"
+        console.print("[dim](no changes)[/dim]")
+        return
 
-    # Build a combined output with both diff colors and syntax highlighting
-    output_parts: list[Text | str] = []
+    # Count additions and deletions (skip header lines)
+    additions = sum(1 for line in diff_lines if line.startswith("+") and not line.startswith("+++"))
+    deletions = sum(1 for line in diff_lines if line.startswith("-") and not line.startswith("---"))
 
+    # Build clean header: path with +/- counts
+    header = Text()
+    header.append(path, style="bold")
+    header.append("  ")
+    if additions > 0:
+        header.append(f"+{additions}", style="bold green")
+    if additions > 0 and deletions > 0:
+        header.append(" ")
+    if deletions > 0:
+        header.append(f"-{deletions}", style="bold red")
+    if is_new_file:
+        header.append(" ", style="dim")
+        header.append("(new file)", style="dim")
+
+    # Print separator line above
+    console.print("[dim]" + "─" * 50 + "[/dim]")
+
+    console.print(header)
+
+    # Render diff content (skip the --- and +++ header lines from unified diff)
     for line in diff_lines:
+        # Skip unified diff file headers
         if line.startswith("---") or line.startswith("+++"):
-            # File headers - style as bold
-            output_parts.append(Text(line, style="bold cyan"))
+            continue
         elif line.startswith("@@"):
-            # Hunk headers - style as magenta
-            output_parts.append(Text(line, style="magenta"))
+            # Hunk header - show in dim
+            console.print(Text(line, style="dim"))
         elif line.startswith("-"):
-            # Deletion - bold red text, no background
-            code_content = line[1:]  # Remove the leading -
-            deletion_line = Text("- " + code_content, style="bold red")
-            output_parts.append(deletion_line)
+            code_content = line[1:]
+            console.print(Text("- " + code_content, style="bold red"))
         elif line.startswith("+"):
-            # Addition - bold green text, no background
-            code_content = line[1:]  # Remove the leading +
-            addition_line = Text("+ " + code_content, style="bold green")
-            output_parts.append(addition_line)
+            code_content = line[1:]
+            console.print(Text("+ " + code_content, style="bold green"))
         else:
-            # Context line - just syntax highlight
+            # Context line
             code_content = line[1:] if line.startswith(" ") else line
-            highlighted = _highlight_code_line(code_content, lexer, console)
-            context_line = Text("  ")
-            context_line.append_text(highlighted)
-            output_parts.append(context_line)
+            console.print(
+                Syntax("  " + code_content, lexer, theme="ansi_dark", word_wrap=False)
+            )
 
-    # Render all parts
-    with console.capture() as capture:
-        for part in output_parts:
-            console.print(part)
-
-    return capture.get()
+    # Print separator line below
+    console.print("[dim]" + "─" * 50 + "[/dim]")
 
 
-def _highlight_code_line(code: str, lexer: str, console: Console) -> Text:
-    """Apply syntax highlighting to a single line of code and return as Text."""
-    if not code.strip():
-        return Text(code)
+def build_write_prompt(path: str, content: str) -> str:
+    """Build a prompt asking the user to verify a write operation."""
+    preview = content[:500] + "..." if len(content) > 500 else content
+    return f"Allow writing to '{path}'?\n\nContent preview:\n{preview}"
 
-    try:
-        # Use Syntax to highlight, then extract the Text
-        syntax = Syntax(code, lexer, theme="monokai", word_wrap=False)
-        with console.capture() as capture:
-            console.print(syntax, end="")
-        # Parse the captured output back to Text
-        highlighted_str = capture.get().rstrip("\n")
-        return Text.from_ansi(highlighted_str)
-    except Exception:
-        # Fallback to plain text if highlighting fails
-        return Text(code)
+
+def build_write_diff(
+    path: str, old_content: str | None, new_content: str, console: Console
+) -> None:
+    """Display a diff for a write operation."""
+    old_lines = (old_content or "").splitlines() if old_content else []
+    new_lines = (new_content or "").splitlines()
+    is_new_file = old_content is None
+
+    _render_diff(path, old_lines, new_lines, console, is_new_file=is_new_file)
+
+
+def build_edit_prompt(
+    path: str, old_text: str, new_text: str, console: Console
+) -> None:
+    """Display a diff for an edit operation."""
+    old_lines = (old_text or "").splitlines()
+    new_lines = (new_text or "").splitlines()
+
+    _render_diff(path, old_lines, new_lines, console)
