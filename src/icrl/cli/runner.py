@@ -173,6 +173,8 @@ class AgentRunner:
             on_tool_start=(self._callbacks.on_tool_start if self._callbacks else None),
             on_tool_end=self._callbacks.on_tool_end if self._callbacks else None,
             on_thinking=self._callbacks.on_thinking if self._callbacks else None,
+            context_compression_threshold=self._config.context_compression_threshold,
+            enable_prompt_caching=self._config.enable_prompt_caching,
         )
 
         trajectory = await self._loop.run(goal, examples=examples if examples else None)

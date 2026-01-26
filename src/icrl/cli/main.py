@@ -445,19 +445,33 @@ def run(
             prompt_tokens = stats_data.get("total_prompt_tokens", 0)
             tps = stats_data.get("tokens_per_second", 0)
             llm_calls = stats_data.get("llm_calls", 0)
+            cached_tokens = stats_data.get("cached_tokens", 0)
+            cache_creation_tokens = stats_data.get("cache_creation_tokens", 0)
+            cache_hit_rate = stats_data.get("cache_hit_rate", 0)
 
             parts = []
             if latency_s > 0:
                 parts.append(f"{latency_s:.1f}s")
             if tokens > 0:
-                parts.append(f"{tokens:,} tokens ({prompt_tokens:,}↑ {completion_tokens:,}↓)")
+                parts.append(f"{tokens:,} tok ({prompt_tokens:,}↑ {completion_tokens:,}↓)")
             if tps > 0:
                 parts.append(f"{tps:.0f} tok/s")
             if llm_calls > 0:
                 parts.append(f"{llm_calls} calls")
 
+            # Cache info on separate line for clarity
+            cache_parts = []
+            if cached_tokens > 0:
+                cache_parts.append(f"read {cached_tokens:,}")
+            if cache_creation_tokens > 0:
+                cache_parts.append(f"wrote {cache_creation_tokens:,}")
+            if cache_hit_rate > 0:
+                cache_parts.append(f"{cache_hit_rate:.0f}% hit rate")
+
             if parts:
                 console.print(f"[dim]⏱ {' · '.join(parts)}[/dim]")
+            if cache_parts:
+                console.print(f"[dim]📦 Cache: {' · '.join(cache_parts)}[/dim]")
 
     def ask_user(question: str, options: list[str] | None) -> str:
         """Cleaner AskUserQuestion UI (matches the rest of the app)."""
@@ -621,6 +635,8 @@ def config_set(
         config.max_steps = int(value)
     elif key == "k":
         config.k = int(value)
+    elif key == "context_compression_threshold":
+        config.context_compression_threshold = int(value)
     elif key == "show_stats":
         config.show_stats = value.lower() in ("true", "1", "yes", "on")
     elif key == "auto_approve":
@@ -636,7 +652,8 @@ def config_set(
     else:
         console.print(f"[red]Unknown configuration key: {key}[/]")
         console.print(
-            "[dim]Valid keys: model, temperature, max_tokens, max_steps, k, show_stats, auto_approve, "
+            "[dim]Valid keys: model, temperature, max_tokens, max_steps, k, "
+            "context_compression_threshold, show_stats, auto_approve, "
             "db_path, vertex_credentials_path, vertex_project_id, vertex_location[/]"
         )
         raise typer.Exit(1)

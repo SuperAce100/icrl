@@ -37,6 +37,12 @@ class Config:
     max_steps: int = 50
     k: int = 3  # Number of examples to retrieve
 
+    # Context compression settings
+    context_compression_threshold: int = 150_000  # Token threshold to trigger compression
+
+    # Prompt caching settings
+    enable_prompt_caching: bool = True  # Enable prompt caching for supported providers
+
     # Display settings
     show_stats: bool = True  # Show latency and throughput statistics
 
@@ -111,6 +117,8 @@ class Config:
             "max_tokens": self.max_tokens,
             "max_steps": self.max_steps,
             "k": self.k,
+            "context_compression_threshold": self.context_compression_threshold,
+            "enable_prompt_caching": self.enable_prompt_caching,
             "show_stats": self.show_stats,
             "auto_approve": self.auto_approve,
             "db_path": self.db_path,
@@ -130,6 +138,8 @@ class Config:
             "max_tokens": self.max_tokens,
             "max_steps": self.max_steps,
             "k": self.k,
+            "context_compression_threshold": self.context_compression_threshold,
+            "enable_prompt_caching": self.enable_prompt_caching,
             "show_stats": self.show_stats,
             "auto_approve": self.auto_approve,
             "db_path": self.db_path or str(get_default_db_path()),

@@ -156,6 +156,16 @@ class ChatSession:
                 )
 
             self._llm = llm
+            
+            def on_context_compressed(old_tokens: int, new_tokens: int) -> None:
+                """Callback when context is compressed."""
+                reduction = old_tokens - new_tokens
+                pct = (reduction / old_tokens * 100) if old_tokens > 0 else 0
+                self.console.print(
+                    f"[dim cyan]⚡ Context compressed: {old_tokens:,} → {new_tokens:,} tokens "
+                    f"({reduction:,} tokens saved, {pct:.1f}% reduction)[/dim cyan]"
+                )
+            
             self._loop = ToolLoop(
                 llm=llm,
                 registry=registry,
@@ -164,6 +174,9 @@ class ChatSession:
                 on_tool_start=on_tool_start,
                 on_tool_end=on_tool_end,
                 on_thinking=on_thinking,
+                context_compression_threshold=self.config.context_compression_threshold,
+                on_context_compressed=on_context_compressed,
+                enable_prompt_caching=self.config.enable_prompt_caching,
             )
 
         return self._loop
@@ -272,6 +285,15 @@ IMPORTANT: For this task, follow this specific strategy:
 
 Apply this approach consistently throughout your response."""
 
+        def on_context_compressed(old_tokens: int, new_tokens: int) -> None:
+            """Callback when context is compressed."""
+            reduction = old_tokens - new_tokens
+            pct = (reduction / old_tokens * 100) if old_tokens > 0 else 0
+            self.console.print(
+                f"[dim cyan]⚡ Context compressed: {old_tokens:,} → {new_tokens:,} tokens "
+                f"({reduction:,} tokens saved, {pct:.1f}% reduction)[/dim cyan]"
+            )
+        
         loop = ToolLoop(
             llm=llm,
             registry=registry,
@@ -280,6 +302,9 @@ Apply this approach consistently throughout your response."""
             on_tool_start=on_tool_start,
             on_tool_end=on_tool_end,
             on_thinking=on_thinking,
+            context_compression_threshold=self.config.context_compression_threshold,
+            on_context_compressed=on_context_compressed,
+            enable_prompt_caching=self.config.enable_prompt_caching,
         )
         
         self.console.print(f"\n[bold cyan]── Executing {strategy_label} ──[/bold cyan]")
@@ -429,26 +454,40 @@ Apply this approach consistently throughout your response."""
             self._print_stats(trajectory.metadata["stats"])
 
     def _print_stats(self, stats: dict) -> None:
-        """Print latency and throughput statistics."""
+        """Print latency, throughput, and caching statistics."""
         latency_s = stats.get("total_latency_ms", 0) / 1000
         tokens = stats.get("total_tokens", 0)
         completion_tokens = stats.get("total_completion_tokens", 0)
         prompt_tokens = stats.get("total_prompt_tokens", 0)
         tps = stats.get("tokens_per_second", 0)
         llm_calls = stats.get("llm_calls", 0)
+        cached_tokens = stats.get("cached_tokens", 0)
+        cache_creation_tokens = stats.get("cache_creation_tokens", 0)
+        cache_hit_rate = stats.get("cache_hit_rate", 0)
 
         parts = []
         if latency_s > 0:
             parts.append(f"{latency_s:.1f}s")
         if tokens > 0:
-            parts.append(f"{tokens:,} tokens ({prompt_tokens:,}↑ {completion_tokens:,}↓)")
+            parts.append(f"{tokens:,} tok ({prompt_tokens:,}↑ {completion_tokens:,}↓)")
         if tps > 0:
             parts.append(f"{tps:.0f} tok/s")
         if llm_calls > 0:
             parts.append(f"{llm_calls} calls")
 
+        # Cache info on separate line for clarity
+        cache_parts = []
+        if cached_tokens > 0:
+            cache_parts.append(f"read {cached_tokens:,}")
+        if cache_creation_tokens > 0:
+            cache_parts.append(f"wrote {cache_creation_tokens:,}")
+        if cache_hit_rate > 0:
+            cache_parts.append(f"{cache_hit_rate:.0f}% hit rate")
+
         if parts:
             self.console.print(f"[dim]⏱ {' · '.join(parts)}[/dim]")
+        if cache_parts:
+            self.console.print(f"[dim]📦 Cache: {' · '.join(cache_parts)}[/dim]")
 
 
 async def run_task(
