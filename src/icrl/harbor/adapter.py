@@ -371,6 +371,18 @@ Start by exploring the codebase to find the relevant code."""
         """
         action = action.strip()
 
+        # Handle XML-style tags that Claude sometimes uses: <bash>command</bash>
+        import re
+        xml_match = re.search(r"<(?:bash|shell|command|cmd)>(.*?)</(?:bash|shell|command|cmd)>", action, re.DOTALL)
+        if xml_match:
+            action = xml_match.group(1).strip()
+        
+        # Also handle unclosed XML tags: <bash>command
+        if action.startswith("<bash>") or action.startswith("<shell>") or action.startswith("<command>"):
+            action = re.sub(r"^<(?:bash|shell|command|cmd)>", "", action).strip()
+        if action.endswith("</bash>") or action.endswith("</shell>") or action.endswith("</command>"):
+            action = re.sub(r"</(?:bash|shell|command|cmd)>$", "", action).strip()
+
         # Handle markdown code blocks: ```bash\ncommand\n``` or ```\ncommand\n```
         if action.startswith("```"):
             lines = action.split("\n")
