@@ -109,12 +109,20 @@ class AgentRunner:
         db_path = config.db_path or str(get_default_db_path())
         self._database = TrajectoryDatabase(db_path)
 
-    async def run(self, goal: str, train: bool = True) -> Trajectory:
+    async def run(
+        self,
+        goal: str,
+        train: bool = True,
+        compare_mode: bool = False,
+        use_examples: bool = True,
+    ) -> Trajectory:
         """Run a coding task.
 
         Args:
             goal: The task to accomplish
             train: If True, store successful trajectories
+            compare_mode: If True, generate alternative responses for comparison
+            use_examples: If True, retrieve and use in-context examples
 
         Returns:
             The resulting trajectory
@@ -126,6 +134,7 @@ class AgentRunner:
         registry = create_default_registry(
             working_dir=self._working_dir,
             ask_user_callback=ask_user_callback,
+            auto_approve=self._config.auto_approve,
         )
 
         # Create LLM provider (auto-detect Vertex AI models)
@@ -147,10 +156,10 @@ class AgentRunner:
                 registry=registry,
             )
 
-        # Retrieve examples from database
+        # Retrieve examples from database (if enabled)
         self.last_db_size = len(self._database)
         examples: list[str] = []
-        if self.last_db_size > 0:
+        if use_examples and self.last_db_size > 0:
             similar = self._database.search(goal, k=self._config.k)
             examples = [traj.to_example_string() for traj in similar]
         self.last_examples_count = len(examples)
@@ -164,6 +173,8 @@ class AgentRunner:
             on_tool_start=(self._callbacks.on_tool_start if self._callbacks else None),
             on_tool_end=self._callbacks.on_tool_end if self._callbacks else None,
             on_thinking=self._callbacks.on_thinking if self._callbacks else None,
+            context_compression_threshold=self._config.context_compression_threshold,
+            enable_prompt_caching=self._config.enable_prompt_caching,
         )
 
         trajectory = await self._loop.run(goal, examples=examples if examples else None)
@@ -175,15 +186,73 @@ class AgentRunner:
         # Then ask about storing (after user has seen the final response)
         if train and trajectory.success:
             approved = True
-            if self._callbacks:
-                resp = self._callbacks.ask_user(
-                    "Store this successful run as a new example in your trajectory database?",
-                    ["yes", "no"],
-                )
-                approved = resp.strip().lower() in {"yes", "y", "1", "true"}
+
+            if compare_mode:
+                # Generate a second candidate response (same trajectory/tools, different wording)
+                # by asking the model to produce an alternative final summary.
+                alt_text = ""
+                try:
+                    alt_text = await llm.complete_text(
+                        [
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You are generating an alternative final response for the user. "
+                                    "Do not call tools. Keep it concise and helpful."
+                                ),
+                            },
+                            {
+                                "role": "user",
+                                "content": (
+                                    "Here is the original final response. Produce an alternative phrasing "
+                                    "that preserves the same meaning and key details.\n\n"
+                                    f"ORIGINAL:\n{trajectory.metadata.get('final_response','').strip()}"
+                                ),
+                            },
+                        ]
+                    )
+                except Exception:
+                    alt_text = ""
+
+                a = (trajectory.metadata.get("final_response") or "").strip()
+                b = (alt_text or "").strip()
+
+                # If we couldn't produce a meaningful alternative, fall back to normal approval.
+                if a and b and a != b:
+                    choice = "1"
+                    if self._callbacks:
+                        choice = self._callbacks.ask_user(
+                            "Two candidate final responses were generated. Which one should be stored as the example?",
+                            ["Store response A", "Store response B", "Reject both"],
+                        )
+
+                    sel = choice.strip().lower()
+                    if sel in {"1", "a", "store response a"}:
+                        trajectory.metadata["final_response"] = a
+                        approved = True
+                    elif sel in {"2", "b", "store response b"}:
+                        trajectory.metadata["final_response"] = b
+                        approved = True
+                    else:
+                        approved = False
+                else:
+                    # No usable alternative
+                    if self._callbacks:
+                        resp = self._callbacks.ask_user(
+                            "Store this successful run as a new example in your trajectory database?",
+                            ["yes", "no"],
+                        )
+                        approved = resp.strip().lower() in {"yes", "y", "1", "true"}
+            else:
+                if self._callbacks:
+                    resp = self._callbacks.ask_user(
+                        "Store this successful run as a new example in your trajectory database?",
+                        ["yes", "no"],
+                    )
+                    approved = resp.strip().lower() in {"yes", "y", "1", "true"}
 
             if approved:
-                self._database.add(trajectory)
+                self._database.add(trajectory, working_dir=self._working_dir)
 
         return trajectory
 

@@ -141,12 +141,14 @@ class ToolRegistry:
 def create_default_registry(
     working_dir: Path | None = None,
     ask_user_callback: Callable[[str, list[str] | None], str] | None = None,
+    auto_approve: bool = True,
 ) -> ToolRegistry:
     """Create registry with all default tools.
 
     Args:
         working_dir: Working directory for file operations.
         ask_user_callback: Callback for asking user questions.
+        auto_approve: If True, auto-approve file writes and edits without prompting.
 
     Returns:
         ToolRegistry with all default tools registered.
@@ -166,8 +168,20 @@ def create_default_registry(
 
     # File tools
     registry.register(ReadTool(working_dir))
-    registry.register(WriteTool(working_dir, ask_user_callback=ask_user_callback))
-    registry.register(EditTool(working_dir, ask_user_callback=ask_user_callback))
+    registry.register(
+        WriteTool(
+            working_dir,
+            ask_user_callback=ask_user_callback,
+            auto_approve=auto_approve,
+        )
+    )
+    registry.register(
+        EditTool(
+            working_dir,
+            ask_user_callback=ask_user_callback,
+            auto_approve=auto_approve,
+        )
+    )
     registry.register(GlobTool(working_dir))
     registry.register(GrepTool(working_dir))
 

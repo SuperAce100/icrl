@@ -5,7 +5,9 @@ from typing import Any
 
 from rich.console import Console
 
-from icrl.cli.human_verification import build_edit_prompt, build_write_diff
+from rich.prompt import Confirm
+
+from icrl.cli.human_verification import build_edit_prompt, build_write_diff, build_write_prompt
 from icrl.cli.tools.base import Tool, ToolParameter, ToolResult
 
 
@@ -101,9 +103,11 @@ class WriteTool(Tool):
         self,
         working_dir=None,
         ask_user_callback=None,
+        auto_approve: bool = True,
     ):
         super().__init__(working_dir)
         self._ask_user_callback = ask_user_callback
+        self._auto_approve = auto_approve
 
     @property
     def name(self) -> str:
@@ -130,6 +134,17 @@ class WriteTool(Tool):
 
     async def execute(self, path: str, content: str, **kwargs: Any) -> ToolResult:
         try:
+            # Human verification gate (write) - skip if auto_approve is enabled
+            if self._ask_user_callback and not self._auto_approve:
+                # Ask for approval (default: True so Enter approves)
+                question = build_write_prompt(path=path, content=content)
+                # Let the user see options + default explicitly in the question text.
+                prompt = f"{question}\n\nOptions: [y]es / [n]o (default: yes)"
+                approved = Confirm.ask(prompt, default=True)
+                if not approved:
+                    msg = f"Denied by user: Write to {path}"
+                    return ToolResult(output=msg, success=False)
+
             full_path = self._working_dir / path
 
             # Security check
@@ -172,9 +187,11 @@ class EditTool(Tool):
         self,
         working_dir=None,
         ask_user_callback=None,
+        auto_approve: bool = True,
     ):
         super().__init__(working_dir)
         self._ask_user_callback = ask_user_callback
+        self._auto_approve = auto_approve
 
     @property
     def name(self) -> str:
@@ -211,12 +228,17 @@ class EditTool(Tool):
         self, path: str, old_text: str, new_text: str, **kwargs: Any
     ) -> ToolResult:
         try:
-            # Show the diff (no verification required)
-            if self._ask_user_callback:
+            # Human verification gate (edit) - skip if auto_approve is enabled
+            if self._ask_user_callback and not self._auto_approve:
+                # Show the diff and ask for approval
                 console = Console()
                 build_edit_prompt(
                     path=path, old_text=old_text, new_text=new_text, console=console
                 )
+                approved = Confirm.ask("Apply this edit? [y]es / [n]o", default=True)
+                if not approved:
+                    msg = f"Denied by user: Edit to {path}"
+                    return ToolResult(output=msg, success=False)
 
             full_path = self._working_dir / path
 

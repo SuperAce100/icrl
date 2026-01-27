@@ -10,6 +10,9 @@ import litellm
 # when asyncio.run() is called multiple times.
 litellm.disable_logging_worker = True
 
+# Suppress the "Provider List" debug message
+litellm.suppress_debug_info = True
+
 from litellm.exceptions import BadRequestError  # noqa: E402
 
 from icrl._debug import log as _debug_log  # noqa: E402

@@ -28,13 +28,26 @@ class Config:
     """Configuration for ICRL CLI."""
 
     # LLM settings
-    model: str = "gpt-5.2"
+    # Default to Anthropic Claude Opus 4.5 on Vertex AI
+    model: str = "claude-opus-4-5"
     temperature: float = 0.3
     max_tokens: int = 4096
 
     # Agent settings
     max_steps: int = 50
     k: int = 3  # Number of examples to retrieve
+
+    # Context compression settings
+    context_compression_threshold: int = 150_000  # Token threshold to trigger compression
+
+    # Prompt caching settings
+    enable_prompt_caching: bool = True  # Enable prompt caching for supported providers
+
+    # Display settings
+    show_stats: bool = True  # Show latency and throughput statistics
+
+    # Approval settings
+    auto_approve: bool = True  # Auto-approve file writes and edits (no confirmation prompts)
 
     # Database settings
     db_path: str | None = None
@@ -104,6 +117,10 @@ class Config:
             "max_tokens": self.max_tokens,
             "max_steps": self.max_steps,
             "k": self.k,
+            "context_compression_threshold": self.context_compression_threshold,
+            "enable_prompt_caching": self.enable_prompt_caching,
+            "show_stats": self.show_stats,
+            "auto_approve": self.auto_approve,
             "db_path": self.db_path,
             "vertex_credentials_path": self.vertex_credentials_path,
             "vertex_project_id": self.vertex_project_id,
@@ -121,6 +138,10 @@ class Config:
             "max_tokens": self.max_tokens,
             "max_steps": self.max_steps,
             "k": self.k,
+            "context_compression_threshold": self.context_compression_threshold,
+            "enable_prompt_caching": self.enable_prompt_caching,
+            "show_stats": self.show_stats,
+            "auto_approve": self.auto_approve,
             "db_path": self.db_path or str(get_default_db_path()),
         }
         # Only include Vertex settings if configured

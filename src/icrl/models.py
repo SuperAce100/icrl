@@ -2,7 +2,8 @@
 
 import os
 import uuid
-from typing import Any
+from datetime import datetime
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -137,17 +138,128 @@ class StepExample(BaseModel):
         return f"Observation: {obs}\nReasoning: {reasoning}\nAction: {action}"
 
 
+class CodeArtifact(BaseModel):
+    """A code change artifact from a trajectory, captured at creation time.
+
+    Used for deferred validation to check if code changes persisted.
+    """
+
+    file_path: str
+    change_type: Literal["write", "edit"]
+
+    # For writes: hash of full content written
+    # For edits: hash of new_text that was inserted
+    content_hash: str
+
+    # Working directory where change was made
+    working_dir: str  # Absolute path to repo root where change was made
+    git_commit: str | None = None  # Commit hash after the change (kept for reference)
+
+    # For edits: store snippet to help find the lines later
+    # (first N chars of new_text for matching)
+    content_snippet: str = ""
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class DeferredValidation(BaseModel):
+    """Result of a deferred validation check.
+
+    Deferred validation answers: "Now that time has passed,
+    was this trajectory actually good?" This is distinct from
+    immediate approval (user says yes/no at creation time).
+    """
+
+    validated_at: datetime = Field(default_factory=datetime.utcnow)
+    validator_type: str  # "code_persistence", "supersession", etc.
+    score: float  # 0.0 (bad) to 1.0 (good)
+    reason: str = ""
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
 class CurationMetadata(BaseModel):
-    """Metadata for tracking trajectory utility in curation."""
+    """Metadata for tracking trajectory utility in curation.
+
+    Tracks multiple signals:
+    1. Retrieval feedback: When retrieved as an example, did it help?
+    2. Deferred validation: Did the outcomes actually hold up over time?
+
+    The utility_score combines these signals to determine trajectory quality.
+    """
 
     trajectory_id: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # --- Retrieval-based signals (indirect deferred feedback) ---
     times_retrieved: int = 0
     times_led_to_success: int = 0
-    utility_score: float = 0.0
+
+    # --- Code artifacts for persistence tracking ---
+    code_artifacts: list[CodeArtifact] = Field(default_factory=list)
+
+    # --- Deferred validation history ---
+    validations: list[DeferredValidation] = Field(default_factory=list)
+
+    # --- Computed scores ---
+    retrieval_score: float | None = None  # Success rate from retrievals
+    persistence_score: float | None = None  # Latest persistence validation score
+    utility_score: float = 1.0  # Combined score (starts optimistic - user approved it)
+
+    # --- Status ---
+    is_deprecated: bool = False
+    deprecated_at: datetime | None = None
+    deprecation_reason: str | None = None
+    superseded_by: str | None = None  # ID of trajectory that superseded this one
+
+    def add_validation(self, validation: DeferredValidation) -> None:
+        """Record a deferred validation result."""
+        self.validations.append(validation)
+
+        # Update persistence score if this is a code persistence validation
+        if validation.validator_type == "code_persistence":
+            self.persistence_score = validation.score
+
+        self._update_utility()
+
+    def deprecate(self, reason: str, superseded_by: str | None = None) -> None:
+        """Mark this trajectory as deprecated."""
+        self.is_deprecated = True
+        self.deprecated_at = datetime.utcnow()
+        self.deprecation_reason = reason
+        self.superseded_by = superseded_by
+
+    def _update_utility(self) -> None:
+        """Update overall utility from all available signals."""
+        scores: list[float] = []
+        weights: list[float] = []
+
+        # Signal 1: Retrieval success rate (if enough data)
+        if self.times_retrieved >= 3:
+            self.retrieval_score = self.times_led_to_success / self.times_retrieved
+            scores.append(self.retrieval_score)
+            weights.append(1.0)
+
+        # Signal 2: Persistence score (if validated)
+        if self.persistence_score is not None:
+            scores.append(self.persistence_score)
+            # Weight persistence more heavily - it's direct evidence
+            weights.append(2.0)
+
+        if scores:
+            self.utility_score = sum(s * w for s, w in zip(scores, weights)) / sum(
+                weights
+            )
+        else:
+            # No signals yet - stay optimistic (user approved it initially)
+            self.utility_score = 1.0
 
     def update_utility(self) -> None:
-        """Update utility score based on retrieval statistics."""
+        """Update utility score based on all available signals.
+
+        Public method for backward compatibility.
+        """
+        # Update retrieval score if we have data
         if self.times_retrieved > 0:
-            self.utility_score = self.times_led_to_success / self.times_retrieved
-        else:
-            self.utility_score = 0.0
+            self.retrieval_score = self.times_led_to_success / self.times_retrieved
+
+        self._update_utility()
