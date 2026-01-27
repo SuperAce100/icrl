@@ -22,3 +22,6 @@ harbor_*
 sgicl_v*
 
 credentials.json
+
+# ICRL per-project trajectory databases
+.icrl/

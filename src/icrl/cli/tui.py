@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.prompt import Confirm, Prompt
 
-from icrl.cli.config import Config, get_default_db_path
+from icrl.cli.config import Config, get_project_db_path
 from icrl.cli.prompts import SYSTEM_PROMPT
 from icrl.cli.providers import (
     AnthropicVertexToolProvider,
@@ -527,7 +527,8 @@ def run_tui(
         )
         console.print("Type a task and press Enter. '/clear' to reset, 'exit' to quit.")
 
-    db_path = config.db_path or str(get_default_db_path())
+    # Use project-specific database based on working directory
+    db_path = config.db_path or str(get_project_db_path(working_dir))
     database = TrajectoryDatabase(db_path)
 
     model_display = format_model_name(config.model)

@@ -17,10 +17,37 @@ def get_config_dir() -> Path:
 
 
 def get_default_db_path() -> Path:
-    """Get the default database path."""
+    """Get the default (global) database path.
+    
+    This is the fallback path used when no working directory is specified.
+    For per-project isolation, use get_project_db_path() instead.
+    """
     data_dir = get_config_dir() / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     return data_dir / "trajectories"
+
+
+def get_project_db_path(working_dir: Path | str | None = None) -> Path:
+    """Get the per-project database path.
+    
+    This stores trajectories in a `.icrl/trajectories` directory within the
+    specified working directory, ensuring examples are isolated per-project.
+    
+    Args:
+        working_dir: The working directory for the project.
+                    If None, uses the current working directory.
+    
+    Returns:
+        Path to the project-specific trajectory database.
+    """
+    if working_dir is None:
+        working_dir = Path.cwd()
+    else:
+        working_dir = Path(working_dir)
+    
+    project_db = working_dir / ".icrl" / "trajectories"
+    project_db.mkdir(parents=True, exist_ok=True)
+    return project_db
 
 
 @dataclass
