@@ -11,6 +11,9 @@ import litellm
 # Disable LiteLLM's async logging worker to avoid event loop mismatch errors
 litellm.disable_logging_worker = True
 
+# Suppress the "Provider List" debug message
+litellm.suppress_debug_info = True
+
 from litellm.exceptions import BadRequestError  # noqa: E402
 
 from icrl._debug import log as _debug_log  # noqa: E402
@@ -68,7 +71,7 @@ class AnthropicVertexProvider:
 
     def __init__(
         self,
-        model: str = "claude-3-5-sonnet",
+        model: str = "claude-opus-4-5",
         temperature: float = 0.7,
         max_tokens: int | None = None,
         system_prompt: str | None = None,
@@ -88,8 +91,8 @@ class AnthropicVertexProvider:
                              Falls back to GOOGLE_APPLICATION_CREDENTIALS env var.
             project_id: GCP project ID. Falls back to VERTEXAI_PROJECT env var
                        or extracted from credentials file.
-            location: GCP region (e.g., "us-east5"). Falls back to VERTEXAI_LOCATION
-                     env var or defaults to "us-east5".
+            location: GCP region (e.g., "global", "us-east5"). Falls back to 
+                     VERTEXAI_LOCATION env var or defaults to "global".
             **kwargs: Additional arguments passed to litellm.acompletion.
         """
         # Resolve model name
@@ -188,17 +191,12 @@ class AnthropicVertexProvider:
                     "credentials.json contains a project_id field."
                 )
 
-        # Set location (default to us-east5 for Anthropic models)
-        # Note: "global" is not a valid region for Anthropic models on Vertex AI
-        if location and location != "global":
+        # Set location (default to global for Anthropic models on Vertex AI)
+        if location:
             os.environ["VERTEXAI_LOCATION"] = location
             self._location = location
         else:
-            env_location = os.environ.get("VERTEXAI_LOCATION", "us-east5")
-            # "global" is not valid for Anthropic models, default to us-east5
-            if env_location == "global":
-                env_location = "us-east5"
-            self._location = env_location
+            self._location = os.environ.get("VERTEXAI_LOCATION", "global")
             os.environ["VERTEXAI_LOCATION"] = self._location
 
     @property

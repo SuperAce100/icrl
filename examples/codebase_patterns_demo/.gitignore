@@ -1,0 +1,8 @@
+# Demo-specific ignores
+.demo_trajectories/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Don't ignore the mock_codebase itself
+!mock_codebase/
