@@ -22,3 +22,9 @@ harbor_*
 sgicl_v*
 
 credentials.json
+icrl-ts/node_modules/
+icrl-ts/web-example/.next/
+icrl-ts/web-example/node_modules/
+.env*
+next-env.d.ts
+tsconfig.tsbuildinfo
