@@ -1,124 +1,172 @@
-# ICRL RLHF Demo
+# ICRL Web Demo
 
-An interactive web demo showing **Reinforcement Learning from Human Feedback (RLHF)** using the ICRL (In-Context Reinforcement Learning) system.
+An interactive web demo showing **In-Context Reinforcement Learning (ICRL)** with Human Feedback using Anthropic Claude on Vertex AI.
+
+## Features
+
+- **Multi-database support**: Create and manage multiple ICRL databases
+- **System prompt configuration**: Customize the AI's behavior per database
+- **Human feedback loop**: Choose between generated answers or write your own
+- **Persistent storage**: All data stored in Convex cloud database
+- **Modern UI**: Built with shadcn/ui components and Tailwind CSS
 
 ## How It Works
 
 1. **Ask a Question**: Type any question you want answered
 2. **Retrieval**: The system searches for similar examples in the database
-3. **Generation**: Two different answer options are generated (influenced by retrieved examples)
+3. **Generation**: Two different answer options are generated using Claude (influenced by retrieved examples)
 4. **Human Feedback**: You choose the better answer, or write your own
 5. **Learning**: Your preference is stored in the database
 6. **Improvement**: Future answers are influenced by accumulated preferences
 
-This demonstrates the core ICRL loop:
-- **Retrieve** → Find relevant examples
-- **Generate** → Create responses using examples as context
-- **Feedback** → Human selects preferred output
-- **Store** → Add to database for future retrieval
-
 ## Quick Start
 
-### With Bun (Recommended)
+### 1. Install Dependencies
 
 ```bash
-# Install dependencies
-bun install
-
-# Set up environment
-cp .env.example .env
-# Edit .env and add your OpenAI API key
-
-# Run development server
-bun dev
+pnpm install
 ```
 
-### With npm
+### 2. Set Up Convex
+
+Create a Convex account at [convex.dev](https://convex.dev) and initialize your project:
 
 ```bash
-npm install
-cp .env.example .env
-npm run dev
+npx convex dev
+```
+
+This will:
+- Create a Convex project
+- Generate the `_generated` folder with proper types
+- Give you a `NEXT_PUBLIC_CONVEX_URL` to use
+
+### 3. Configure Environment Variables
+
+Create a `.env.local` file with:
+
+```env
+# Convex URL (from step 2)
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+
+# Google Cloud credentials (paste entire JSON contents)
+GOOGLE_CREDENTIALS_JSON={"type":"service_account","project_id":"...","private_key":"...","client_email":"..."}
+
+# Optional: Override Vertex AI region (default: us-east5)
+ANTHROPIC_VERTEX_REGION=us-east5
+```
+
+#### Getting Google Cloud Credentials
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create or select a project
+3. Enable the Vertex AI API
+4. Go to IAM & Admin > Service Accounts
+5. Create a service account with Vertex AI User role
+6. Create a JSON key and download it
+7. Copy the entire JSON contents into `GOOGLE_CREDENTIALS_JSON`
+
+### 4. Run Development Server
+
+```bash
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Environment Variables
+## Deployment on Vercel
+
+### Environment Variables
+
+Set these in your Vercel project settings:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `OPENAI_API_KEY` | Yes* | OpenAI API key for generating answers |
+| `NEXT_PUBLIC_CONVEX_URL` | Yes | Your Convex deployment URL |
+| `GOOGLE_CREDENTIALS_JSON` | Yes | Full GCP service account JSON |
+| `ANTHROPIC_VERTEX_REGION` | No | Vertex AI region (default: us-east5) |
 
-*The app will work without an API key using mock responses, but real LLM-generated answers require the key.
+### Deploy
 
-## Features
+```bash
+vercel
+```
 
-### Ask & Train Tab
-- Ask any question
-- See which examples were retrieved from the database
-- Choose between two generated answers
-- Write your own answer if neither is good
-- Feedback is immediately stored
-
-### Database Tab
-- View all stored examples
-- See retrieval statistics
-- Delete examples
-- Track custom vs. selected answers
+Or connect your GitHub repo for automatic deployments.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        User Interface                        │
+│                     Next.js Frontend                         │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │  Question   │→ │   Choose    │→ │  Feedback Stored    │  │
-│  │   Input     │  │   Answer    │  │  (Success!)         │  │
+│  │  Database   │  │   System    │  │   Ask & Train       │  │
+│  │  Selector   │  │   Prompt    │  │   Interface         │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      Server Actions                          │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │  Retrieve   │→ │  Generate   │→ │  Store Feedback     │  │
-│  │  Examples   │  │  Answers    │  │  (Add to DB)        │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+│                    Server Actions                            │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  Anthropic Vertex AI (Claude) for answer generation │    │
+│  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    Example Database                          │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  { question, chosenAnswer, rejectedAnswer, stats }   │   │
-│  └──────────────────────────────────────────────────────┘   │
+│                    Convex Database                           │
+│  ┌──────────────────┐  ┌──────────────────────────────┐     │
+│  │  databases       │  │  examples                    │     │
+│  │  - name          │  │  - question                  │     │
+│  │  - systemPrompt  │  │  - chosenAnswer              │     │
+│  │  - description   │  │  - rejectedAnswer            │     │
+│  └──────────────────┘  │  - timesRetrieved            │     │
+│                        └──────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
-- **Runtime**: Bun / Node.js
-- **Styling**: Tailwind CSS
-- **LLM**: OpenAI GPT-4o-mini
-- **Database**: In-memory (demo only)
+- **Framework**: Next.js 16 (App Router)
+- **UI**: shadcn/ui + Tailwind CSS v4
+- **Database**: Convex (real-time, serverless)
+- **LLM**: Anthropic Claude via Vertex AI
+- **Deployment**: Vercel
 
-## Production Considerations
+## Project Structure
 
-For a production deployment, you would want to:
+```
+web-example/
+├── convex/              # Convex backend
+│   ├── schema.ts        # Database schema
+│   ├── databases.ts     # Database CRUD
+│   └── examples.ts      # Examples CRUD
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx   # Root layout with providers
+│   │   ├── page.tsx     # Main page with tabs
+│   │   └── providers.tsx # Convex provider
+│   ├── components/
+│   │   ├── ui/          # shadcn components
+│   │   ├── database-selector.tsx
+│   │   ├── system-prompt-editor.tsx
+│   │   ├── examples-list.tsx
+│   │   ├── question-input.tsx
+│   │   ├── answer-choice.tsx
+│   │   └── success-message.tsx
+│   └── lib/
+│       ├── actions.ts   # Server actions
+│       ├── anthropic-vertex.ts # LLM provider
+│       └── utils.ts     # Utilities
+└── package.json
+```
 
-1. **Persistent Database**: Use PostgreSQL, MongoDB, or similar
-2. **Vector Store**: Use Pinecone, Weaviate, or pgvector for semantic search
-3. **Embeddings**: Use OpenAI embeddings or sentence-transformers
-4. **Authentication**: Add user accounts to track individual preferences
-5. **Rate Limiting**: Protect API endpoints
-6. **Curation**: Implement automatic pruning of low-quality examples
+## Development Without API Keys
 
-## Learn More
-
-- [ICRL Documentation](https://github.com/SuperAce100/icrl)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [OpenAI API](https://platform.openai.com/docs)
+The app will work without Anthropic Vertex credentials using mock responses. This is useful for:
+- UI development
+- Testing the Convex integration
+- Demos without API costs
 
 ## License
 
