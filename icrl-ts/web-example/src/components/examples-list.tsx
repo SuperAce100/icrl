@@ -31,7 +31,9 @@ import {
   MessageSquare,
   RefreshCw,
 } from "lucide-react";
-import type { Id, Example as ExampleType } from "../../convex/_generated/dataModel";
+import type { Id, Doc } from "../../convex/_generated/dataModel";
+
+type ExampleDoc = Doc<"examples">;
 
 interface ExamplesListProps {
   databaseId: Id<"databases"> | null;
@@ -158,7 +160,7 @@ export function ExamplesList({ databaseId }: ExamplesListProps) {
         ) : (
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-3">
-              {examples.map((example: ExampleType) => (
+              {examples.map((example: ExampleDoc) => (
                 <div
                   key={example._id}
                   className="border rounded-lg overflow-hidden"

@@ -17,22 +17,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Save, RotateCcw, Info } from "lucide-react";
 import type { Id } from "../../convex/_generated/dataModel";
 
-const DEFAULT_SYSTEM_PROMPT = `You are a helpful assistant. You will be given a question and some examples of good answers to similar questions.
+const DEFAULT_SYSTEM_PROMPT = `You are a helpful, knowledgeable assistant. You provide clear, accurate, and thoughtful responses.
 
-Your task is to generate TWO different answers to the question:
-- Answer A: A high-quality, detailed, helpful answer (similar in style to the examples)
-- Answer B: A different but also reasonable answer (could be shorter, different perspective, or alternative approach)
-
-Both answers should be valid, but they should be noticeably different from each other.
-
-Here are examples of good answers:
-{examples}
-
-Respond in this exact JSON format:
-{
-  "answerA": "Your first answer here",
-  "answerB": "Your second answer here"
-}`;
+Your responses should be:
+- Informative and well-structured
+- Friendly but professional in tone
+- Concise yet comprehensive`;
 
 interface SystemPromptEditorProps {
   databaseId: Id<"databases"> | null;
@@ -101,18 +91,17 @@ export function SystemPromptEditor({ databaseId }: SystemPromptEditorProps) {
       <CardHeader>
         <CardTitle>System Prompt</CardTitle>
         <CardDescription>
-          Configure the system prompt used for generating answer options. Use{" "}
-          <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{examples}"}</code>{" "}
-          as a placeholder for retrieved examples.
+          Configure the AI&apos;s persona and response style. This defines how the
+          assistant behaves when answering questions.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            The system prompt controls how the AI generates answer options. Include{" "}
-            <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{examples}"}</code>{" "}
-            where you want retrieved examples to be inserted.
+            Define the assistant&apos;s personality, expertise, and tone. The training
+            instructions (generating two answers, using examples) are automatically
+            appended during the Ask &amp; Train flow.
           </AlertDescription>
         </Alert>
 

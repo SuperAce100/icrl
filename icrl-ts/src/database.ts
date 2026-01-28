@@ -1,149 +1,103 @@
 /**
- * Trajectory database with filesystem storage and vector similarity search.
+ * Trajectory database with pluggable storage and vector similarity search.
  *
- * This is a simplified TypeScript implementation that uses a basic
- * cosine similarity search. For production use with large datasets,
- * consider using a vector database like Pinecone, Weaviate, or hnswlib-node.
+ * This class manages trajectories, embeddings, and curation metadata.
+ * Storage is delegated to a StorageAdapter, allowing different backends
+ * (filesystem, Convex, PostgreSQL, etc.).
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import { v4 as uuidv4 } from "uuid";
 import {
   Trajectory,
-  TrajectorySchema,
   StepExample,
   CurationMetadata,
-  CurationMetadataSchema,
   updateCurationUtility,
 } from "./models";
 import type { Embedder } from "./protocols";
+import type { StorageAdapter, StoredEmbedding } from "./storage";
 
-/**
- * Normalize a vector to unit length for cosine similarity.
- */
-function normalize(vec: number[]): number[] {
-  const norm = Math.sqrt(vec.reduce((sum, v) => sum + v * v, 0));
-  if (norm === 0) return vec;
-  return vec.map((v) => v / norm);
+export interface TrajectoryDatabaseOptions {
+  /** Maximum characters to use for embedding text (default: 2000) */
+  maxEmbedChars?: number;
 }
 
 /**
- * Compute cosine similarity between two normalized vectors.
- */
-function cosineSimilarity(a: number[], b: number[]): number {
-  return a.reduce((sum, ai, i) => sum + ai * (b[i] ?? 0), 0);
-}
-
-/**
- * Database for storing and retrieving trajectories.
+ * Database for storing and retrieving trajectories with semantic search.
  *
- * Trajectories are stored as JSON files on the filesystem.
- * Uses cosine similarity for vector search (swap in a proper vector DB for scale).
+ * Uses a StorageAdapter for persistence and an Embedder for generating
+ * vector representations for similarity search.
+ *
+ * @example
+ * ```typescript
+ * // With filesystem adapter (Node.js)
+ * const adapter = new FileSystemAdapter("./trajectories");
+ * const embedder = new OpenAIEmbedder(openai);
+ * const db = new TrajectoryDatabase(adapter, embedder);
+ * await db.load();
+ *
+ * // With Convex adapter (web)
+ * const adapter = new ConvexAdapter(convexClient);
+ * const db = new TrajectoryDatabase(adapter, embedder);
+ * await db.load();
+ * ```
  */
 export class TrajectoryDatabase {
-  private readonly dbPath: string;
+  private readonly storage: StorageAdapter;
   private readonly embedder: Embedder;
-  private trajectories: Map<string, Trajectory> = new Map();
-  private curationMetadata: Map<string, CurationMetadata> = new Map();
-
-  // Vector index (simple in-memory for now)
-  private trajectoryEmbeddings: Map<string, number[]> = new Map();
-  private stepExamples: StepExample[] = [];
-  private stepEmbeddings: number[][] = [];
-
   private readonly maxEmbedChars: number;
 
-  constructor(dbPath: string, embedder: Embedder, options: { maxEmbedChars?: number } = {}) {
-    this.dbPath = dbPath;
+  // In-memory caches for fast access
+  private trajectories: Map<string, Trajectory> = new Map();
+  private curationMetadata: Map<string, CurationMetadata> = new Map();
+  private stepExamples: StepExample[] = [];
+
+  constructor(
+    storage: StorageAdapter,
+    embedder: Embedder,
+    options: TrajectoryDatabaseOptions = {}
+  ) {
+    this.storage = storage;
     this.embedder = embedder;
     this.maxEmbedChars = options.maxEmbedChars ?? 2000;
-
-    // Ensure directory exists
-    if (!fs.existsSync(dbPath)) {
-      fs.mkdirSync(dbPath, { recursive: true });
-    }
   }
 
   /**
-   * Load trajectories and index from disk.
+   * Get the storage adapter.
+   */
+  getStorage(): StorageAdapter {
+    return this.storage;
+  }
+
+  /**
+   * Get the embedder.
+   */
+  getEmbedder(): Embedder {
+    return this.embedder;
+  }
+
+  /**
+   * Load trajectories and index from storage.
    */
   async load(): Promise<void> {
-    const trajDir = path.join(this.dbPath, "trajectories");
+    // Initialize storage
+    await this.storage.init();
 
     // Load trajectories
-    if (fs.existsSync(trajDir)) {
-      const files = fs.readdirSync(trajDir).filter((f) => f.endsWith(".json"));
-      for (const file of files) {
-        const data = JSON.parse(fs.readFileSync(path.join(trajDir, file), "utf-8"));
-        const traj = TrajectorySchema.parse(data);
-        this.trajectories.set(traj.id, traj);
-      }
+    const trajectories = await this.storage.getAllTrajectories();
+    this.trajectories.clear();
+    for (const traj of trajectories) {
+      this.trajectories.set(traj.id, traj);
     }
 
     // Load curation metadata
-    const curationFile = path.join(this.dbPath, "curation.json");
-    if (fs.existsSync(curationFile)) {
-      const data = JSON.parse(fs.readFileSync(curationFile, "utf-8"));
-      for (const item of data) {
-        const meta = CurationMetadataSchema.parse({
-          ...item,
-          createdAt: new Date(item.createdAt),
-          deprecatedAt: item.deprecatedAt ? new Date(item.deprecatedAt) : null,
-        });
-        this.curationMetadata.set(meta.trajectoryId, meta);
-      }
+    const metadata = await this.storage.getAllCurationMetadata();
+    this.curationMetadata.clear();
+    for (const meta of metadata) {
+      this.curationMetadata.set(meta.trajectoryId, meta);
     }
 
-    // Rebuild embeddings index
-    await this.rebuildIndex();
-  }
-
-  /**
-   * Rebuild the vector index from loaded trajectories.
-   */
-  private async rebuildIndex(): Promise<void> {
-    this.trajectoryEmbeddings.clear();
-    this.stepExamples = [];
-    this.stepEmbeddings = [];
-
-    if (this.trajectories.size === 0) return;
-
-    // Build trajectory-level embeddings
-    const trajTexts: string[] = [];
-    const trajIds: string[] = [];
-
-    for (const [id, traj] of this.trajectories) {
-      trajTexts.push(this.truncateForEmbedding(`${traj.goal}\n${traj.plan}`));
-      trajIds.push(id);
-    }
-
-    const trajEmbeddings = await this.embedder.embed(trajTexts);
-    trajIds.forEach((id, i) => {
-      this.trajectoryEmbeddings.set(id, normalize(trajEmbeddings[i]!));
-    });
-
-    // Build step-level index
-    const stepTexts: string[] = [];
-
-    for (const [trajId, traj] of this.trajectories) {
-      traj.steps.forEach((step, stepIdx) => {
-        this.stepExamples.push({
-          goal: traj.goal,
-          plan: traj.plan,
-          observation: step.observation,
-          reasoning: step.reasoning,
-          action: step.action,
-          trajectoryId: trajId,
-          stepIndex: stepIdx,
-        });
-        stepTexts.push(this.truncateForEmbedding(`${step.observation}\n${step.reasoning}`));
-      });
-    }
-
-    if (stepTexts.length > 0) {
-      const embeddings = await this.embedder.embed(stepTexts);
-      this.stepEmbeddings = embeddings.map(normalize);
-    }
+    // Build step examples cache
+    this.stepExamples = await this.storage.getAllStepExamples();
   }
 
   private truncateForEmbedding(text: string): string {
@@ -153,9 +107,19 @@ export class TrajectoryDatabase {
 
   /**
    * Add a trajectory to the database.
+   *
+   * Generates embeddings for the trajectory and its steps, then stores
+   * everything in the storage adapter.
    */
   async add(trajectory: Trajectory): Promise<void> {
+    // Ensure trajectory has an ID
+    if (!trajectory.id) {
+      trajectory.id = uuidv4();
+    }
+
+    // Store trajectory
     this.trajectories.set(trajectory.id, trajectory);
+    await this.storage.saveTrajectory(trajectory);
 
     // Create curation metadata
     const meta: CurationMetadata = {
@@ -173,20 +137,31 @@ export class TrajectoryDatabase {
       supersededBy: null,
     };
     this.curationMetadata.set(trajectory.id, meta);
+    await this.storage.saveCurationMetadata(meta);
 
-    // Update embeddings
+    // Generate and store trajectory embedding
     const trajText = this.truncateForEmbedding(`${trajectory.goal}\n${trajectory.plan}`);
     const [trajEmbed] = await this.embedder.embed([trajText]);
-    this.trajectoryEmbeddings.set(trajectory.id, normalize(trajEmbed!));
 
-    // Add step embeddings
+    const trajEmbedding: StoredEmbedding = {
+      id: `traj-${trajectory.id}`,
+      embedding: trajEmbed!,
+      type: "trajectory",
+      trajectoryId: trajectory.id,
+    };
+    await this.storage.saveEmbedding(trajEmbedding);
+
+    // Generate and store step embeddings
+    const stepEmbeddings: StoredEmbedding[] = [];
     const stepTexts = trajectory.steps.map((step) =>
       this.truncateForEmbedding(`${step.observation}\n${step.reasoning}`)
     );
 
     if (stepTexts.length > 0) {
       const stepEmbeds = await this.embedder.embed(stepTexts);
+
       trajectory.steps.forEach((step, stepIdx) => {
+        // Add to step examples cache
         this.stepExamples.push({
           goal: trajectory.goal,
           plan: trajectory.plan,
@@ -196,28 +171,19 @@ export class TrajectoryDatabase {
           trajectoryId: trajectory.id,
           stepIndex: stepIdx,
         });
-        this.stepEmbeddings.push(normalize(stepEmbeds[stepIdx]!));
+
+        // Create embedding record
+        stepEmbeddings.push({
+          id: `step-${trajectory.id}-${stepIdx}`,
+          embedding: stepEmbeds[stepIdx]!,
+          type: "step",
+          trajectoryId: trajectory.id,
+          stepIndex: stepIdx,
+        });
       });
+
+      await this.storage.saveEmbeddings(stepEmbeddings);
     }
-
-    // Save to disk
-    this.saveTrajectory(trajectory);
-    this.saveCuration();
-  }
-
-  private saveTrajectory(trajectory: Trajectory): void {
-    const trajDir = path.join(this.dbPath, "trajectories");
-    if (!fs.existsSync(trajDir)) {
-      fs.mkdirSync(trajDir, { recursive: true });
-    }
-    const filePath = path.join(trajDir, `${trajectory.id}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(trajectory, null, 2));
-  }
-
-  private saveCuration(): void {
-    const curationFile = path.join(this.dbPath, "curation.json");
-    const data = Array.from(this.curationMetadata.values());
-    fs.writeFileSync(curationFile, JSON.stringify(data, null, 2));
   }
 
   /**
@@ -226,19 +192,19 @@ export class TrajectoryDatabase {
   async search(query: string, k: number = 3): Promise<Trajectory[]> {
     if (this.trajectories.size === 0) return [];
 
-    const queryEmbed = normalize(await this.embedder.embedSingle(this.truncateForEmbedding(query)));
+    const queryEmbed = await this.embedder.embedSingle(
+      this.truncateForEmbedding(query)
+    );
 
-    // Compute similarities
-    const scores: Array<{ id: string; score: number }> = [];
-    for (const [id, embed] of this.trajectoryEmbeddings) {
-      scores.push({ id, score: cosineSimilarity(queryEmbed, embed) });
-    }
+    const results = await this.storage.searchByEmbedding(
+      queryEmbed,
+      "trajectory",
+      k
+    );
 
-    // Sort by score descending and take top k
-    scores.sort((a, b) => b.score - a.score);
-    const topK = scores.slice(0, k);
-
-    return topK.map((s) => this.trajectories.get(s.id)!).filter(Boolean);
+    return results
+      .map((r) => this.trajectories.get(r.trajectoryId))
+      .filter((t): t is Trajectory => t !== undefined);
   }
 
   /**
@@ -247,19 +213,21 @@ export class TrajectoryDatabase {
   async searchSteps(query: string, k: number = 3): Promise<StepExample[]> {
     if (this.stepExamples.length === 0) return [];
 
-    const queryEmbed = normalize(await this.embedder.embedSingle(this.truncateForEmbedding(query)));
+    const queryEmbed = await this.embedder.embedSingle(
+      this.truncateForEmbedding(query)
+    );
 
-    // Compute similarities
-    const scores = this.stepEmbeddings.map((embed, i) => ({
-      index: i,
-      score: cosineSimilarity(queryEmbed, embed),
-    }));
+    const results = await this.storage.searchByEmbedding(queryEmbed, "step", k);
 
-    // Sort by score descending and take top k
-    scores.sort((a, b) => b.score - a.score);
-    const topK = scores.slice(0, k);
-
-    return topK.map((s) => this.stepExamples[s.index]!).filter(Boolean);
+    // Map results back to step examples
+    return results
+      .map((r) =>
+        this.stepExamples.find(
+          (ex) =>
+            ex.trajectoryId === r.trajectoryId && ex.stepIndex === r.stepIndex
+        )
+      )
+      .filter((ex): ex is StepExample => ex !== undefined);
   }
 
   /**
@@ -279,36 +247,29 @@ export class TrajectoryDatabase {
   /**
    * Remove a trajectory by ID.
    */
-  remove(id: string): boolean {
+  async remove(id: string): Promise<boolean> {
     const existed = this.trajectories.delete(id);
+
     if (existed) {
-      this.trajectoryEmbeddings.delete(id);
+      // Remove from storage
+      await this.storage.deleteTrajectory(id);
+      await this.storage.deleteCurationMetadata(id);
+      await this.storage.deleteEmbeddingsForTrajectory(id);
+
+      // Remove from caches
       this.curationMetadata.delete(id);
-
-      // Remove step examples for this trajectory
-      const indicesToRemove = new Set<number>();
-      this.stepExamples.forEach((ex, i) => {
-        if (ex.trajectoryId === id) indicesToRemove.add(i);
-      });
-
-      this.stepExamples = this.stepExamples.filter((_, i) => !indicesToRemove.has(i));
-      this.stepEmbeddings = this.stepEmbeddings.filter((_, i) => !indicesToRemove.has(i));
-
-      // Remove file
-      const filePath = path.join(this.dbPath, "trajectories", `${id}.json`);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-
-      this.saveCuration();
+      this.stepExamples = this.stepExamples.filter(
+        (ex) => ex.trajectoryId !== id
+      );
     }
+
     return existed;
   }
 
   /**
    * Record that a trajectory was retrieved and whether it led to success.
    */
-  recordRetrieval(trajectoryId: string, ledToSuccess: boolean): void {
+  async recordRetrieval(trajectoryId: string, ledToSuccess: boolean): Promise<void> {
     const meta = this.curationMetadata.get(trajectoryId);
     if (meta) {
       meta.timesRetrieved++;
@@ -316,7 +277,7 @@ export class TrajectoryDatabase {
         meta.timesLedToSuccess++;
       }
       updateCurationUtility(meta);
-      this.saveCuration();
+      await this.storage.saveCurationMetadata(meta);
     }
   }
 

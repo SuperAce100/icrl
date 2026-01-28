@@ -3,12 +3,12 @@
  */
 
 import type { Trajectory } from "./models";
-import type { Environment, LLMProvider, OnStepCallback } from "./protocols";
+import type { Environment, LLMProvider, OnStepCallback, Embedder } from "./protocols";
+import type { StorageAdapter } from "./storage";
 import { TrajectoryDatabase } from "./database";
 import { TrajectoryRetriever } from "./retriever";
 import { ReActLoop } from "./loop";
 import { CurationManager } from "./curation";
-import type { Embedder } from "./protocols";
 
 /**
  * Options for creating an ICRL Agent.
@@ -16,8 +16,8 @@ import type { Embedder } from "./protocols";
 export interface AgentOptions {
   /** The LLM provider for generating completions */
   llm: LLMProvider;
-  /** Path to the trajectory database directory */
-  dbPath: string;
+  /** Storage adapter for persisting trajectories (e.g., FileSystemAdapter, ConvexAdapter) */
+  storage: StorageAdapter;
   /** Embedder for semantic similarity search */
   embedder: Embedder;
   /** Template for planning prompts. Placeholders: {goal}, {examples} */
@@ -55,14 +55,14 @@ export interface AgentOptions {
  * @example
  * ```typescript
  * import OpenAI from "openai";
- * import { Agent, OpenAIProvider, OpenAIEmbedder } from "icrl";
+ * import { Agent, OpenAIProvider, OpenAIEmbedder, FileSystemAdapter } from "icrl";
  *
  * const openai = new OpenAI();
  *
  * const agent = new Agent({
  *   llm: new OpenAIProvider(openai, { model: "gpt-4o" }),
  *   embedder: new OpenAIEmbedder(openai),
- *   dbPath: "./trajectories",
+ *   storage: new FileSystemAdapter("./trajectories"),
  *   planPrompt: "Goal: {goal}\n\nExamples:\n{examples}\n\nCreate a plan:",
  *   reasonPrompt: "Goal: {goal}\nPlan: {plan}\nObservation: {observation}\nThink step by step:",
  *   actPrompt: "Goal: {goal}\nPlan: {plan}\nReasoning: {reasoning}\nNext action:",
@@ -88,8 +88,8 @@ export class Agent {
     this.llm = options.llm;
     this.verifyTrajectory = options.verifyTrajectory;
 
-    // Create database
-    this.database = new TrajectoryDatabase(options.dbPath, options.embedder);
+    // Create database with storage adapter
+    this.database = new TrajectoryDatabase(options.storage, options.embedder);
 
     // Create retriever
     this.retriever = new TrajectoryRetriever(this.database, options.k ?? 3);
@@ -161,7 +161,7 @@ export class Agent {
 
       if (shouldStore) {
         await this.database.add(trajectory);
-        this.curation.maybeCurate();
+        await this.curation.maybeCurate();
       }
     }
 

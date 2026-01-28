@@ -107,3 +107,49 @@ export const getStats = query({
     };
   },
 });
+
+// Get examples for a database
+export const getExamples = query({
+  args: {
+    databaseId: v.id("databases"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    let query = ctx.db
+      .query("examples")
+      .withIndex("by_database_created", (q) => q.eq("databaseId", args.databaseId))
+      .order("desc");
+
+    const examples = await query.collect();
+
+    // Apply limit if provided
+    if (args.limit && args.limit > 0) {
+      return examples.slice(0, args.limit);
+    }
+
+    return examples;
+  },
+});
+
+// Add a new example
+export const addExample = mutation({
+  args: {
+    databaseId: v.id("databases"),
+    question: v.string(),
+    chosenAnswer: v.string(),
+    rejectedAnswer: v.optional(v.string()),
+    isCustom: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return await ctx.db.insert("examples", {
+      databaseId: args.databaseId,
+      question: args.question,
+      chosenAnswer: args.chosenAnswer,
+      rejectedAnswer: args.rejectedAnswer,
+      isCustom: args.isCustom,
+      createdAt: now,
+      timesRetrieved: 0,
+    });
+  },
+});

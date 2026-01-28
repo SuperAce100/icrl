@@ -5,11 +5,9 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 import { DatabaseSelector } from "@/components/database-selector";
 import { QuestionInput } from "@/components/question-input";
 import { AnswerChoice } from "@/components/answer-choice";
-import { SuccessMessage } from "@/components/success-message";
 import { ExamplesList } from "@/components/examples-list";
 import { SystemPromptEditor } from "@/components/system-prompt-editor";
 import { generateAnswers, checkApiStatus } from "@/lib/actions";
@@ -22,7 +20,7 @@ import {
 } from "lucide-react";
 import type { Id } from "../../convex/_generated/dataModel";
 
-type AppState = "input" | "choosing" | "success";
+type AppState = "input" | "choosing";
 
 interface GeneratedData {
   question: string;
@@ -41,7 +39,6 @@ export default function Home() {
   const [generatedData, setGeneratedData] = useState<GeneratedData | null>(
     null
   );
-  const [feedbackMessage, setFeedbackMessage] = useState("");
   const [apiStatus, setApiStatus] = useState<{
     configured: boolean;
     message: string;
@@ -52,12 +49,6 @@ export default function Home() {
   const selectedDb = useQuery(
     api.databases.get,
     selectedDbId ? { id: selectedDbId } : "skip"
-  );
-  const searchExamples = useQuery(
-    api.examples.searchByKeyword,
-    selectedDbId && generatedData
-      ? { databaseId: selectedDbId, query: generatedData.question, limit: 3 }
-      : "skip"
   );
   const createExample = useMutation(api.examples.create);
 
@@ -78,20 +69,13 @@ export default function Home() {
 
     setIsLoading(true);
     try {
-      // Get examples for context (we'll use keyword search from Convex)
-      const examplesResult = await fetch(
-        `/api/search-examples?databaseId=${selectedDbId}&query=${encodeURIComponent(question)}`
-      ).catch(() => null);
-
-      let retrievedExamples: Array<{
+      // Generate answers (examples will be fetched server-side in the future)
+      // For now, we pass an empty array - the system still works without examples
+      const retrievedExamples: Array<{
         question: string;
         chosenAnswer: string;
       }> = [];
 
-      // For now, we'll pass an empty array since we need server-side search
-      // In production, you'd use a Convex action or API route
-
-      // Generate answers
       const { answerA, answerB } = await generateAnswers(
         question,
         retrievedExamples,
@@ -129,12 +113,8 @@ export default function Home() {
         isCustom,
       });
 
-      setFeedbackMessage(
-        isCustom
-          ? "Your custom answer has been added to the database!"
-          : "Your preference has been recorded and added to the database!"
-      );
-      setState("success");
+      // Go straight back to input screen
+      handleReset();
     } catch (error) {
       console.error("Error submitting feedback:", error);
       alert("Failed to save feedback. Please try again.");
@@ -145,7 +125,6 @@ export default function Home() {
   const handleReset = () => {
     setState("input");
     setGeneratedData(null);
-    setFeedbackMessage("");
   };
 
   return (
@@ -267,13 +246,6 @@ export default function Home() {
                     onSelect={handleAnswerSelect}
                     onBack={handleReset}
                     isSubmitting={isSubmitting}
-                  />
-                )}
-
-                {state === "success" && (
-                  <SuccessMessage
-                    message={feedbackMessage}
-                    onReset={handleReset}
                   />
                 )}
               </div>

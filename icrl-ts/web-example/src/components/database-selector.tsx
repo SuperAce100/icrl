@@ -31,7 +31,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, MoreVertical, Pencil, Trash2, Database } from "lucide-react";
-import type { Id, Database as DatabaseType } from "../../convex/_generated/dataModel";
+import type { Id, Doc } from "../../convex/_generated/dataModel";
+
+type DatabaseDoc = Doc<"databases">;
 
 interface DatabaseSelectorProps {
   selectedId: Id<"databases"> | null;
@@ -55,7 +57,7 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
     description: string;
   } | null>(null);
 
-  const selectedDatabase = databases?.find((db: DatabaseType) => db._id === selectedId);
+  const selectedDatabase = databases?.find((db: DatabaseDoc) => db._id === selectedId);
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
@@ -125,7 +127,7 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
           <SelectValue placeholder="Select database..." />
         </SelectTrigger>
         <SelectContent>
-          {databases?.map((db: DatabaseType) => (
+          {databases?.map((db: DatabaseDoc) => (
             <SelectItem key={db._id} value={db._id}>
               {db.name}
             </SelectItem>

@@ -38,11 +38,11 @@ export class CurationManager {
    * Check if curation should run and run it if so.
    * @returns True if curation was performed, false otherwise.
    */
-  maybeCurate(): boolean {
+  async maybeCurate(): Promise<boolean> {
     this.episodesSinceCuration++;
 
     if (this.episodesSinceCuration >= this.curateEvery) {
-      this.curate();
+      await this.curate();
       this.episodesSinceCuration = 0;
       return true;
     }
@@ -54,7 +54,7 @@ export class CurationManager {
    * Run curation to prune low-utility trajectories.
    * @returns List of trajectory IDs that were removed.
    */
-  curate(): string[] {
+  async curate(): Promise<string[]> {
     const removedIds: string[] = [];
 
     for (const trajectory of this.database.getAll()) {
@@ -64,7 +64,7 @@ export class CurationManager {
       if (metadata.timesRetrieved < this.minRetrievals) continue;
 
       if (metadata.utilityScore < this.threshold) {
-        if (this.database.remove(trajectory.id)) {
+        if (await this.database.remove(trajectory.id)) {
           removedIds.push(trajectory.id);
         }
       }

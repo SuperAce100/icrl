@@ -9,7 +9,9 @@
  */
 
 import type * as databases from "../databases.js";
+import type * as embeddings from "../embeddings.js";
 import type * as examples from "../examples.js";
+import type * as trajectories from "../trajectories.js";
 
 import type {
   ApiFromModules,
@@ -19,7 +21,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   databases: typeof databases;
+  embeddings: typeof embeddings;
   examples: typeof examples;
+  trajectories: typeof trajectories;
 }>;
 
 /**

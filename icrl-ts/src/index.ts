@@ -8,14 +8,14 @@
  * @example
  * ```typescript
  * import OpenAI from "openai";
- * import { Agent, OpenAIProvider, OpenAIEmbedder } from "icrl";
+ * import { Agent, OpenAIProvider, OpenAIEmbedder, FileSystemAdapter } from "icrl";
  *
  * const openai = new OpenAI();
  *
  * const agent = new Agent({
  *   llm: new OpenAIProvider(openai, { model: "gpt-4o" }),
  *   embedder: new OpenAIEmbedder(openai),
- *   dbPath: "./trajectories",
+ *   storage: new FileSystemAdapter("./trajectories"),
  *   planPrompt: "Goal: {goal}\n\nExamples:\n{examples}\n\nCreate a plan:",
  *   reasonPrompt: "Goal: {goal}\nPlan: {plan}\nObservation: {observation}\nThink step by step:",
  *   actPrompt: "Goal: {goal}\nPlan: {plan}\nReasoning: {reasoning}\nNext action:",
@@ -75,8 +75,21 @@ export type {
   AgentCallbacks,
 } from "./protocols";
 
+// Storage adapters
+export type {
+  StorageAdapter,
+  StoredEmbedding,
+  EmbeddingSearchResult,
+} from "./storage";
+export { BaseStorageAdapter } from "./storage";
+
+// Built-in adapters
+export { FileSystemAdapter } from "./adapters";
+export type { FileSystemAdapterOptions } from "./adapters";
+
 // Database
 export { TrajectoryDatabase } from "./database";
+export type { TrajectoryDatabaseOptions } from "./database";
 
 // Retriever
 export { TrajectoryRetriever } from "./retriever";
@@ -94,9 +107,12 @@ export {
   OpenAIProvider,
   OpenAIEmbedder,
   AnthropicProvider,
+  AnthropicVertexProvider,
+  ANTHROPIC_VERTEX_MODEL_ALIASES,
 } from "./providers";
 export type {
   OpenAIProviderOptions,
   OpenAIEmbedderOptions,
   AnthropicProviderOptions,
+  AnthropicVertexProviderOptions,
 } from "./providers";
