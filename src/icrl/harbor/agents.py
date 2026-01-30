@@ -178,11 +178,22 @@ def _create_step_callback(
 
     def callback(step: Step, step_context: StepContext) -> None:
         """Record step information to the trajectory log."""
+        # Extract detailed info about retrieved examples
+        retrieved_examples = []
+        for ex in step_context.examples:
+            retrieved_examples.append({
+                "trajectory_id": ex.trajectory_id,
+                "step_index": ex.step_index,
+                "goal": ex.goal[:150] if ex.goal else "",
+                "action": ex.action[:200] if ex.action else "",
+            })
+
         step_data = {
             "observation": step.observation[:500] if step.observation else "",
             "reasoning": step.reasoning or "",
             "action": step.action or "",
             "examples_used": len(step_context.examples),
+            "retrieved_examples": retrieved_examples,
         }
         trajectory_log.append(step_data)
 
