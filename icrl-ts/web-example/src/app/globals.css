@@ -78,9 +78,9 @@
   --secondary-foreground: #292524;
   --muted: #f5f5f4;
   --muted-foreground: #78716c;
-  /* Accent is blue */
-  --accent: #49a1d9;
-  --accent-foreground: #ffffff;
+  /* Accent is light gray */
+  --accent: #f5f5f4;
+  --accent-foreground: #292524;
   --destructive: #ef4444;
   --border: #d6d3d1;
   --input: #d6d3d1;
@@ -117,9 +117,9 @@
   --secondary-foreground: #e7e5e4;
   --muted: #292524;
   --muted-foreground: #a8a29e;
-  /* Accent is blue */
-  --accent: #49a1d9;
-  --accent-foreground: #ffffff;
+  /* Accent is dark gray */
+  --accent: #3d3a38;
+  --accent-foreground: #e7e5e4;
   --destructive: #ef4444;
   --border: #44403c;
   --input: #44403c;
