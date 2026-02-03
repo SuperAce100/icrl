@@ -378,93 +378,30 @@ export async function generateSuggestions(
 async function generateSuggestionsWithHaiku(examples: Example[]): Promise<string[]> {
   // Check if API is configured
   if (!isAnthropicVertexConfigured()) {
-    console.warn("Anthropic Vertex not configured, returning fallback suggestions");
-    return getFallbackSuggestions(examples);
+    throw new Error("Anthropic Vertex not configured. Please set GOOGLE_CREDENTIALS_JSON.");
   }
 
   const examplesSummary = summarizeExamplesForCurriculum(examples);
   const prompt = SUGGESTION_GENERATION_PROMPT.replace("{examples_summary}", examplesSummary);
 
-  try {
-    const response = await generateCompletion({
-      messages: [{ role: "user", content: "Generate 5 diverse prompt suggestions for training." }],
-      systemPrompt: prompt,
-      model: "claude-haiku-4-5",
-      temperature: 0.9, // Higher temperature for more diverse suggestions
-      maxTokens: 1000,
-    });
+  const response = await generateCompletion({
+    messages: [{ role: "user", content: "Generate 5 diverse prompt suggestions for training." }],
+    systemPrompt: prompt,
+    model: "claude-haiku-4-5",
+    temperature: 0.9, // Higher temperature for more diverse suggestions
+    maxTokens: 1000,
+  });
 
-    // Parse JSON response
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      if (Array.isArray(parsed.suggestions) && parsed.suggestions.length > 0) {
-        return parsed.suggestions.slice(0, 5);
-      }
+  // Parse JSON response
+  const jsonMatch = response.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (Array.isArray(parsed.suggestions) && parsed.suggestions.length > 0) {
+      return parsed.suggestions.slice(0, 5);
     }
-
-    // Fallback if parsing fails
-    return getFallbackSuggestions(examples);
-  } catch (error) {
-    console.error("Error calling Haiku for suggestions:", error);
-    return getFallbackSuggestions(examples);
-  }
-}
-
-/**
- * Get fallback suggestions based on existing examples.
- */
-function getFallbackSuggestions(examples: Example[]): string[] {
-  const baseSuggestions = [
-    "What's the best way to learn a new skill quickly?",
-    "How do I stay motivated when facing challenges?",
-    "What are some tips for effective time management?",
-    "How can I improve my decision-making process?",
-    "What strategies help with creative problem-solving?",
-  ];
-
-  // If we have examples, try to generate complementary suggestions
-  if (examples.length > 0) {
-    // Check for topics not covered
-    const existingTopics = examples.map((ex) => ex.question.toLowerCase());
-    const hasLearning = existingTopics.some((t) => t.includes("learn"));
-    const hasProductivity = existingTopics.some(
-      (t) => t.includes("product") || t.includes("efficien")
-    );
-    const hasHealth = existingTopics.some((t) => t.includes("health") || t.includes("sleep"));
-    const hasCommunication = existingTopics.some(
-      (t) => t.includes("communic") || t.includes("speak")
-    );
-    const hasFinance = existingTopics.some(
-      (t) => t.includes("money") || t.includes("save") || t.includes("financ")
-    );
-
-    const diverseSuggestions: string[] = [];
-    if (!hasLearning)
-      diverseSuggestions.push("What's the most effective way to learn something new?");
-    if (!hasProductivity) diverseSuggestions.push("How can I be more productive in my daily work?");
-    if (!hasHealth)
-      diverseSuggestions.push("What habits contribute to better mental and physical health?");
-    if (!hasCommunication)
-      diverseSuggestions.push("How do I communicate more effectively with others?");
-    if (!hasFinance)
-      diverseSuggestions.push("What are smart strategies for personal financial planning?");
-
-    // Fill remaining with base suggestions
-    while (diverseSuggestions.length < 5) {
-      const remaining = baseSuggestions.filter((s) => !diverseSuggestions.includes(s));
-      if (remaining.length > 0) {
-        diverseSuggestions.push(remaining[0]);
-        baseSuggestions.splice(baseSuggestions.indexOf(remaining[0]), 1);
-      } else {
-        break;
-      }
-    }
-
-    return diverseSuggestions.slice(0, 5);
   }
 
-  return baseSuggestions;
+  throw new Error("Failed to parse suggestions response from model");
 }
 
 export interface YoloRoundResult {
@@ -512,15 +449,7 @@ export async function generateYoloRound(
     };
   } catch (error) {
     console.error("Error generating YOLO round:", error);
-    // Generate fallback content
-    const fallbackPrompt = "What's the best approach to continuous learning and self-improvement?";
-    const fallbackAnswers = generateMockAnswers(fallbackPrompt, []);
-    return {
-      prompt: fallbackPrompt,
-      answerA: fallbackAnswers.answerA,
-      answerB: fallbackAnswers.answerB,
-      retrievedExamples: [],
-    };
+    throw error;
   }
 }
 
@@ -531,66 +460,30 @@ export async function generateYoloRound(
 async function generateYoloPromptWithHaiku(examples: Example[]): Promise<string> {
   // Check if API is configured
   if (!isAnthropicVertexConfigured()) {
-    console.warn("Anthropic Vertex not configured, returning mock prompt");
-    return generateMockYoloPrompt(examples);
+    throw new Error("Anthropic Vertex not configured. Please set GOOGLE_CREDENTIALS_JSON.");
   }
 
   const examplesSummary = summarizeExamplesForCurriculum(examples);
   const prompt = YOLO_PROMPT_GENERATION.replace("{examples_summary}", examplesSummary);
 
-  try {
-    const response = await generateCompletion({
-      messages: [{ role: "user", content: "Generate a novel prompt for training." }],
-      systemPrompt: prompt,
-      model: "claude-haiku-4-5",
-      temperature: 0.9, // Higher temperature for diverse generation
-      maxTokens: 500,
-    });
+  const response = await generateCompletion({
+    messages: [{ role: "user", content: "Generate a novel prompt for training." }],
+    systemPrompt: prompt,
+    model: "claude-haiku-4-5",
+    temperature: 0.9, // Higher temperature for diverse generation
+    maxTokens: 500,
+  });
 
-    // Parse JSON response
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      if (parsed.prompt) {
-        return parsed.prompt;
-      }
-    }
-
-    // Fallback if parsing fails
-    return generateMockYoloPrompt(examples);
-  } catch (error) {
-    console.error("Error calling Haiku for YOLO prompt:", error);
-    return generateMockYoloPrompt(examples);
-  }
-}
-
-/**
- * Generate a mock prompt for YOLO mode when API is not configured.
- */
-function generateMockYoloPrompt(examples: Example[]): string {
-  const mockPrompts = [
-    "What's the most effective approach to learning a new technical skill?",
-    "How can I improve my focus during deep work sessions?",
-    "What strategies help with making difficult decisions?",
-    "How do I build better habits that actually stick?",
-    "What's the best way to give and receive constructive feedback?",
-  ];
-
-  // Pick one that doesn't overlap with existing examples
-  const existingQuestions = examples.map((ex) => ex.question.toLowerCase());
-  for (const mockPrompt of mockPrompts) {
-    const isNovel = !existingQuestions.some(
-      (q) =>
-        q.includes(mockPrompt.toLowerCase().slice(0, 20)) ||
-        mockPrompt.toLowerCase().includes(q.slice(0, 20))
-    );
-    if (isNovel) {
-      return mockPrompt;
+  // Parse JSON response
+  const jsonMatch = response.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (parsed.prompt) {
+      return parsed.prompt;
     }
   }
 
-  // Default to first one if all overlap
-  return mockPrompts[0];
+  throw new Error("Failed to parse YOLO prompt response from model");
 }
 
 /**

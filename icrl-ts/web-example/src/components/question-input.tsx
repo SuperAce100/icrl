@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, Loader2, RefreshCw, Wand2 } from "lucide-react";
+import { Sparkles, Loader2, RefreshCw, Wand2, AlertCircle } from "lucide-react";
 import { generateSuggestions } from "@/lib/actions";
 
 interface QuestionInputProps {
@@ -17,20 +17,12 @@ interface QuestionInputProps {
   disabled?: boolean;
 }
 
-// Fallback suggestions while loading or if AI generation fails
-const fallbackSuggestions = [
-  "What's the best way to learn a new skill?",
-  "How do I stay motivated when facing challenges?",
-  "What are some tips for effective communication?",
-  "How can I improve my problem-solving abilities?",
-  "What's a good strategy for managing time effectively?",
-];
-
 export function QuestionInput({ databaseId, onSubmit, isLoading, disabled }: QuestionInputProps) {
   const [question, setQuestion] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>(fallbackSuggestions);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [suggestionsFromCache, setSuggestionsFromCache] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
 
   // Refs to prevent double-triggering in React Strict Mode
   const isFetchingRef = useRef(false);
@@ -50,14 +42,17 @@ export function QuestionInput({ databaseId, onSubmit, isLoading, disabled }: Que
       lastDatabaseIdRef.current = databaseId;
 
       setIsLoadingSuggestions(true);
+      setSuggestionsError(null);
       try {
         const result = await generateSuggestions(databaseId, forceRefresh);
         setSuggestions(result.suggestions);
         setSuggestionsFromCache(result.fromCache);
       } catch (error) {
         console.error("Error fetching suggestions:", error);
-        setSuggestions(fallbackSuggestions);
-        setSuggestionsFromCache(false);
+        setSuggestions([]);
+        setSuggestionsError(
+          error instanceof Error ? error.message : "Failed to generate suggestions"
+        );
       } finally {
         setIsLoadingSuggestions(false);
         isFetchingRef.current = false;
@@ -157,7 +152,20 @@ export function QuestionInput({ databaseId, onSubmit, isLoading, disabled }: Que
                 <Skeleton key={i} className="h-6 w-32" />
               ))}
             </div>
-          ) : (
+          ) : suggestionsError ? (
+            <div className="flex items-center gap-2 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              <span>{suggestionsError}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefreshSuggestions}
+                className="h-6 px-2 text-xs"
+              >
+                Retry
+              </Button>
+            </div>
+          ) : suggestions.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {suggestions.map((suggestion, i) => (
                 <Badge
@@ -170,6 +178,8 @@ export function QuestionInput({ databaseId, onSubmit, isLoading, disabled }: Que
                 </Badge>
               ))}
             </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No suggestions available</p>
           )}
         </div>
       </CardContent>
