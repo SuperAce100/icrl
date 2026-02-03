@@ -4,7 +4,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Protocol
 
-from icrl.cli.config import Config, get_default_db_path
+from icrl.cli.config import Config, get_project_db_path
 from icrl.cli.prompts import SYSTEM_PROMPT
 from icrl.cli.providers import (
     AnthropicVertexToolProvider,
@@ -105,8 +105,10 @@ class AgentRunner:
         self.last_examples_count: int = 0
         self.last_db_size: int = 0
 
-        # Initialize database
-        db_path = config.db_path or str(get_default_db_path())
+        # Initialize database (per-project by default)
+        # If config.db_path is set, use that (allows explicit override)
+        # Otherwise, use the project-specific database in the working directory
+        db_path = config.db_path or str(get_project_db_path(self._working_dir))
         self._database = TrajectoryDatabase(db_path)
 
     async def run(

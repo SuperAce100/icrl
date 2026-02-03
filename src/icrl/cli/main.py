@@ -29,7 +29,7 @@ from rich.prompt import Confirm  # noqa: E402
 from rich.table import Table  # noqa: E402
 
 from icrl import __version__  # noqa: E402
-from icrl.cli.config import Config, get_config_dir, get_default_db_path  # noqa: E402
+from icrl.cli.config import Config, get_config_dir, get_default_db_path, get_project_db_path  # noqa: E402
 from icrl.cli.runner import AgentRunner, SimpleCallbacks  # noqa: E402
 from icrl.cli.tools.base import ToolResult  # noqa: E402
 from icrl.database import TrajectoryDatabase  # noqa: E402
@@ -672,10 +672,24 @@ def config_reset() -> None:
 
 # Database subcommands
 @db_app.command("stats")
-def db_stats() -> None:
+def db_stats(
+    working_dir: Annotated[
+        Path | None,
+        typer.Option("--dir", "-d", help="Working directory (uses project-local database)"),
+    ] = None,
+    use_global: Annotated[
+        bool,
+        typer.Option("--global", "-g", help="Use global database instead of project-local"),
+    ] = False,
+) -> None:
     """Show database statistics."""
     config = Config.load()
-    db_path = config.db_path or str(get_default_db_path())
+    work_dir = working_dir or Path.cwd()
+    
+    if use_global:
+        db_path = config.db_path or str(get_default_db_path())
+    else:
+        db_path = config.db_path or str(get_project_db_path(work_dir))
 
     db = TrajectoryDatabase(db_path)
 
@@ -714,10 +728,23 @@ def db_stats() -> None:
 @db_app.command("list")
 def db_list(
     limit: Annotated[int, typer.Option("--limit", "-n", help="Max items to show")] = 10,
+    working_dir: Annotated[
+        Path | None,
+        typer.Option("--dir", "-d", help="Working directory (uses project-local database)"),
+    ] = None,
+    use_global: Annotated[
+        bool,
+        typer.Option("--global", "-g", help="Use global database instead of project-local"),
+    ] = False,
 ) -> None:
     """List trajectories in the database."""
     config = Config.load()
-    db_path = config.db_path or str(get_default_db_path())
+    work_dir = working_dir or Path.cwd()
+    
+    if use_global:
+        db_path = config.db_path or str(get_default_db_path())
+    else:
+        db_path = config.db_path or str(get_project_db_path(work_dir))
 
     from icrl.database import TrajectoryDatabase
 
@@ -748,10 +775,23 @@ def db_list(
 @db_app.command("show")
 def db_show(
     trajectory_id: Annotated[str, typer.Argument(help="Trajectory ID (or prefix)")],
+    working_dir: Annotated[
+        Path | None,
+        typer.Option("--dir", "-d", help="Working directory (uses project-local database)"),
+    ] = None,
+    use_global: Annotated[
+        bool,
+        typer.Option("--global", "-g", help="Use global database instead of project-local"),
+    ] = False,
 ) -> None:
     """Show details of a specific trajectory."""
     config = Config.load()
-    db_path = config.db_path or str(get_default_db_path())
+    work_dir = working_dir or Path.cwd()
+    
+    if use_global:
+        db_path = config.db_path or str(get_default_db_path())
+    else:
+        db_path = config.db_path or str(get_project_db_path(work_dir))
 
     from icrl.database import TrajectoryDatabase
 
@@ -788,10 +828,23 @@ def db_show(
 def db_search(
     query: Annotated[str, typer.Argument(help="Search query")],
     k: Annotated[int, typer.Option("--k", "-k", help="Number of results")] = 5,
+    working_dir: Annotated[
+        Path | None,
+        typer.Option("--dir", "-d", help="Working directory (uses project-local database)"),
+    ] = None,
+    use_global: Annotated[
+        bool,
+        typer.Option("--global", "-g", help="Use global database instead of project-local"),
+    ] = False,
 ) -> None:
     """Search for similar trajectories."""
     config = Config.load()
-    db_path = config.db_path or str(get_default_db_path())
+    work_dir = working_dir or Path.cwd()
+    
+    if use_global:
+        db_path = config.db_path or str(get_default_db_path())
+    else:
+        db_path = config.db_path or str(get_project_db_path(work_dir))
 
     from icrl.database import TrajectoryDatabase
 
@@ -822,15 +875,28 @@ def db_clear(
         bool,
         typer.Option("--force", "-f", help="Skip confirmation"),
     ] = False,
+    working_dir: Annotated[
+        Path | None,
+        typer.Option("--dir", "-d", help="Working directory (uses project-local database)"),
+    ] = None,
+    use_global: Annotated[
+        bool,
+        typer.Option("--global", "-g", help="Use global database instead of project-local"),
+    ] = False,
 ) -> None:
     """Clear all trajectories from the database."""
+    config = Config.load()
+    work_dir = working_dir or Path.cwd()
+    
+    if use_global:
+        db_path = config.db_path or str(get_default_db_path())
+    else:
+        db_path = config.db_path or str(get_project_db_path(work_dir))
+    
     if not force:
-        confirm = typer.confirm("Are you sure you want to clear all trajectories?")
+        confirm = typer.confirm(f"Are you sure you want to clear all trajectories in {db_path}?")
         if not confirm:
             raise typer.Abort()
-
-    config = Config.load()
-    db_path = config.db_path or str(get_default_db_path())
 
     import shutil
 
@@ -850,8 +916,12 @@ def db_validate(
     ] = None,
     working_dir: Annotated[
         Path | None,
-        typer.Option("--dir", "-d", help="Working directory for validation"),
+        typer.Option("--dir", "-d", help="Working directory (uses project-local database and validation)"),
     ] = None,
+    use_global: Annotated[
+        bool,
+        typer.Option("--global", "-g", help="Use global database instead of project-local"),
+    ] = False,
     include_deprecated: Annotated[
         bool,
         typer.Option("--include-deprecated", help="Include deprecated trajectories"),
@@ -865,10 +935,14 @@ def db_validate(
     from rich.table import Table
 
     config = Config.load()
-    db_path = config.db_path or str(get_default_db_path())
-    database = TrajectoryDatabase(db_path)
-
     work_dir = working_dir or Path.cwd()
+    
+    if use_global:
+        db_path = config.db_path or str(get_default_db_path())
+    else:
+        db_path = config.db_path or str(get_project_db_path(work_dir))
+    
+    database = TrajectoryDatabase(db_path)
 
     if trajectory_id:
         # Validate single trajectory
@@ -922,12 +996,27 @@ def db_validate(
 
 
 @db_app.command("deprecated")
-def db_deprecated() -> None:
+def db_deprecated(
+    working_dir: Annotated[
+        Path | None,
+        typer.Option("--dir", "-d", help="Working directory (uses project-local database)"),
+    ] = None,
+    use_global: Annotated[
+        bool,
+        typer.Option("--global", "-g", help="Use global database instead of project-local"),
+    ] = False,
+) -> None:
     """List deprecated trajectories."""
     from rich.table import Table
 
     config = Config.load()
-    db_path = config.db_path or str(get_default_db_path())
+    work_dir = working_dir or Path.cwd()
+    
+    if use_global:
+        db_path = config.db_path or str(get_default_db_path())
+    else:
+        db_path = config.db_path or str(get_project_db_path(work_dir))
+    
     database = TrajectoryDatabase(db_path)
 
     deprecated = database.get_deprecated_trajectories()
@@ -971,6 +1060,14 @@ def db_prune(
         bool,
         typer.Option("--force", "-f", help="Skip confirmation"),
     ] = False,
+    working_dir: Annotated[
+        Path | None,
+        typer.Option("--dir", "-d", help="Working directory (uses project-local database)"),
+    ] = None,
+    use_global: Annotated[
+        bool,
+        typer.Option("--global", "-g", help="Use global database instead of project-local"),
+    ] = False,
 ) -> None:
     """Prune low-utility and deprecated trajectories.
 
@@ -978,7 +1075,13 @@ def db_prune(
     below the specified threshold.
     """
     config = Config.load()
-    db_path = config.db_path or str(get_default_db_path())
+    work_dir = working_dir or Path.cwd()
+    
+    if use_global:
+        db_path = config.db_path or str(get_default_db_path())
+    else:
+        db_path = config.db_path or str(get_project_db_path(work_dir))
+    
     database = TrajectoryDatabase(db_path)
 
     # Find trajectories to prune
@@ -1026,8 +1129,12 @@ def db_prune(
 def db_extract_artifacts(
     working_dir: Annotated[
         Path | None,
-        typer.Option("--dir", "-d", help="Working directory for artifact extraction"),
+        typer.Option("--dir", "-d", help="Working directory (uses project-local database and extraction)"),
     ] = None,
+    use_global: Annotated[
+        bool,
+        typer.Option("--global", "-g", help="Use global database instead of project-local"),
+    ] = False,
 ) -> None:
     """Extract code artifacts from existing trajectories.
 
@@ -1037,10 +1144,14 @@ def db_extract_artifacts(
     from icrl.validators.code import extract_code_artifacts
 
     config = Config.load()
-    db_path = config.db_path or str(get_default_db_path())
-    database = TrajectoryDatabase(db_path)
-
     work_dir = working_dir or Path.cwd()
+    
+    if use_global:
+        db_path = config.db_path or str(get_default_db_path())
+    else:
+        db_path = config.db_path or str(get_project_db_path(work_dir))
+    
+    database = TrajectoryDatabase(db_path)
 
     updated = 0
     for traj_id, trajectory in database._trajectories.items():

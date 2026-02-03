@@ -104,8 +104,11 @@ Start by exploring the codebase to find the relevant code."""
     async def step(self, action: str) -> tuple[str, bool, bool]:
         """Execute an action in the environment.
 
+        Like the original Terminus harness, this executes each command in the
+        response individually with its own timeout, then returns the combined output.
+
         Args:
-            action: The shell command to execute.
+            action: The raw LLM response containing commands.
 
         Returns:
             Tuple of (observation, done, success) where:
@@ -114,7 +117,6 @@ Start by exploring the codebase to find the relevant code."""
             - success: Whether the goal was achieved
         """
         self._action_count += 1
-        action = self._clean_command(action)
 
         if self._action_count >= self._max_actions:
             return (
@@ -124,23 +126,115 @@ Start by exploring the codebase to find the relevant code."""
             )
 
         try:
-            if self._is_completion_signal(action):
+            # Parse the response to extract commands with their timeouts
+            commands, is_task_complete = self._parse_xml_response(action)
+
+            # If task is marked complete, run submit
+            if is_task_complete:
                 observation, done, success = await self._handle_submit()
                 self._last_output = observation
                 return observation, done, success
 
-            output, return_code = await self._execute_command_async(action)
-            self._last_output = output
+            # Execute each command individually (like original harness)
+            all_outputs: list[str] = []
+            last_return_code = 0
 
-            self._maybe_trace_step(action, output)
-            self._maybe_write_agent_log(action, output, return_code)
+            for cmd, timeout in commands:
+                if not cmd:
+                    continue
 
-            return output, False, False
+                # Check if this command is a submit
+                if self._is_completion_signal(cmd):
+                    observation, done, success = await self._handle_submit()
+                    self._last_output = observation
+                    return observation, done, success
+
+                # Execute with command-specific timeout
+                output, return_code = await self._execute_command_async(
+                    cmd, timeout_override=timeout
+                )
+                last_return_code = return_code
+
+                self._maybe_trace_step(cmd, output)
+                self._maybe_write_agent_log(cmd, output, return_code)
+
+                all_outputs.append(output)
+
+            # Combine all outputs
+            combined_output = "\n".join(all_outputs) if all_outputs else "(no output)"
+            self._last_output = combined_output
+
+            return combined_output, False, False
 
         except Exception as e:
             error_msg = f"Error executing command: {e}"
             self._last_output = error_msg
             return error_msg, False, False
+
+    def _parse_xml_response(self, action: str) -> tuple[list[tuple[str, float]], bool]:
+        """Parse XML response to extract commands with their timeouts.
+
+        Like the original Terminus harness, extracts individual commands
+        with their timeout_sec (duration) values.
+
+        Args:
+            action: Raw LLM response string.
+
+        Returns:
+            Tuple of (list of (command, timeout) tuples, is_task_complete)
+        """
+        import re
+
+        action = action.strip()
+        commands: list[tuple[str, float]] = []
+        is_task_complete = False
+
+        # Check for task completion signal
+        if "<task_complete>true</task_complete>" in action.lower():
+            is_task_complete = True
+
+        # Strip outer <response> tags if present
+        response_match = re.search(
+            r"<response>(.*)</response>", action, re.DOTALL | re.IGNORECASE
+        )
+        if response_match:
+            action = response_match.group(1).strip()
+
+        # Extract keystrokes with their duration attributes
+        # Pattern: <keystrokes duration="X">command</keystrokes>
+        keystrokes_pattern = r'<keystrokes(?:\s+duration=["\']?(\d*\.?\d+)["\']?)?[^>]*>([\s\S]*?)</keystrokes>'
+        matches = re.findall(keystrokes_pattern, action, re.IGNORECASE)
+
+        for duration_str, keystroke in matches:
+            cmd = keystroke.strip()
+            if not cmd:
+                continue
+
+            # Parse duration (default to 1.0 if not specified)
+            try:
+                timeout = float(duration_str) if duration_str else 1.0
+            except ValueError:
+                timeout = 1.0
+
+            # Map duration to actual timeout (duration is wait time, add buffer)
+            # Minimum 5 seconds, scale up for longer durations
+            actual_timeout = max(5.0, timeout * 2 + 3)
+
+            # Handle control sequences
+            if cmd in ("C-c", "C-d"):
+                # For control sequences, we'd need tmux integration
+                # For now, skip them as we can't send raw keystrokes via exec
+                continue
+
+            commands.append((cmd, actual_timeout))
+
+        # If no XML keystrokes found, fall back to legacy parsing
+        if not commands and not is_task_complete:
+            legacy_cmd = self._clean_command_legacy(action)
+            if legacy_cmd:
+                commands.append((legacy_cmd, self._timeout_sec))
+
+        return commands, is_task_complete
 
     async def _handle_submit(self) -> tuple[str, bool, bool]:
         """Handle the `submit` meta-action.
@@ -298,20 +392,26 @@ Start by exploring the codebase to find the relevant code."""
         except Exception:
             return
 
-    async def _execute_command_async(self, command: str) -> tuple[str, int]:
+    async def _execute_command_async(
+        self, command: str, timeout_override: float | None = None
+    ) -> tuple[str, int]:
         """Execute a command via Harbor's environment asynchronously.
 
         Args:
             command: The shell command to execute.
+            timeout_override: Optional timeout to use instead of default.
 
         Returns:
             Tuple of (formatted output, return_code). Output combines stdout/stderr
             and is truncated if too long.
         """
+        timeout = (
+            timeout_override if timeout_override is not None else self._timeout_sec
+        )
         try:
             result = await self._environment.exec(
                 command,
-                timeout_sec=self._timeout_sec,
+                timeout_sec=int(timeout),
             )
 
             output_parts = []
@@ -358,10 +458,11 @@ Start by exploring the codebase to find the relevant code."""
             # endregion agent log (debug-mode)
             return f"Execution error: {e}", 1
 
-    def _clean_command(self, action: str) -> str:
-        """Clean and extract the actual command from agent output.
+    def _clean_command_legacy(self, action: str) -> str:
+        """Legacy command extraction for non-XML responses.
 
-        Handles cases where the agent wraps commands in markdown code blocks.
+        Handles cases where the agent wraps commands in markdown code blocks
+        or other formats (fallback when XML parsing fails).
 
         Args:
             action: Raw action string from the agent.
@@ -369,7 +470,40 @@ Start by exploring the codebase to find the relevant code."""
         Returns:
             Cleaned command string.
         """
+        import re
+
         action = action.strip()
+
+        # Check for task completion signal
+        if "submit" in action.lower() and len(action) < 50:
+            return "submit"
+
+        # If action still looks like XML with no extractable commands, return echo error
+        if action.startswith("<") and ("analysis>" in action or "plan>" in action):
+            return "echo 'Error: Could not parse XML response'"
+
+        # Handle XML-style tags that Claude sometimes uses: <bash>command</bash>
+        xml_match = re.search(
+            r"<(?:bash|shell|command|cmd)>(.*?)</(?:bash|shell|command|cmd)>",
+            action,
+            re.DOTALL,
+        )
+        if xml_match:
+            action = xml_match.group(1).strip()
+
+        # Also handle unclosed XML tags: <bash>command
+        if (
+            action.startswith("<bash>")
+            or action.startswith("<shell>")
+            or action.startswith("<command>")
+        ):
+            action = re.sub(r"^<(?:bash|shell|command|cmd)>", "", action).strip()
+        if (
+            action.endswith("</bash>")
+            or action.endswith("</shell>")
+            or action.endswith("</command>")
+        ):
+            action = re.sub(r"</(?:bash|shell|command|cmd)>$", "", action).strip()
 
         # Handle markdown code blocks: ```bash\ncommand\n``` or ```\ncommand\n```
         if action.startswith("```"):

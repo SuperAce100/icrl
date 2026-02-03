@@ -64,9 +64,9 @@ class AnthropicVertexProvider:
         "claude-sonnet-4.5": "vertex_ai/claude-sonnet-4-5@20251101",
         "claude-sonnet-4-5": "vertex_ai/claude-sonnet-4-5@20251101",
         "claude-4.5-sonnet": "vertex_ai/claude-sonnet-4-5@20251101",
-        "claude-haiku-4.5": "vertex_ai/claude-haiku-4-5@20251101",
-        "claude-haiku-4-5": "vertex_ai/claude-haiku-4-5@20251101",
-        "claude-4.5-haiku": "vertex_ai/claude-haiku-4-5@20251101",
+        "claude-haiku-4.5": "vertex_ai/claude-haiku-4-5",
+        "claude-haiku-4-5": "vertex_ai/claude-haiku-4-5",
+        "claude-4.5-haiku": "vertex_ai/claude-haiku-4-5",
     }
 
     def __init__(

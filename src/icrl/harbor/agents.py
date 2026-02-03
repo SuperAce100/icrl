@@ -42,11 +42,86 @@ from icrl.harbor.prompts import (
     REASON_PROMPT,
     SYSTEM_PROMPT,
 )
+from icrl.providers.anthropic_vertex import AnthropicVertexProvider
 
 # Disable LiteLLM's async logging worker to avoid event loop mismatch errors
 litellm.disable_logging_worker = True
 # Drop unsupported params for newer models like GPT-5
 litellm.drop_params = True
+
+
+def _is_vertex_model(model: str) -> bool:
+    """Check if model should use Vertex AI provider."""
+    # Explicit vertex_ai/ prefix
+    if model.startswith("vertex_ai/"):
+        return True
+    # Claude model aliases that should use Vertex when credentials are available
+    vertex_aliases = {
+        "claude-opus-4.5",
+        "claude-opus-4-5",
+        "claude-4.5-opus",
+        "claude-sonnet-4.5",
+        "claude-sonnet-4-5",
+        "claude-4.5-sonnet",
+        "claude-haiku-4.5",
+        "claude-haiku-4-5",
+        "claude-4.5-haiku",
+        "claude-sonnet-4",
+        "claude-4-sonnet",
+        "claude-opus-4",
+        "claude-4-opus",
+        "claude-3-7-sonnet",
+        "claude-3.7-sonnet",
+        "claude-3-5-sonnet",
+        "claude-3.5-sonnet",
+        "claude-3-5-haiku",
+        "claude-3-opus",
+        "claude-3-sonnet",
+        "claude-3-haiku",
+    }
+    if model in vertex_aliases:
+        # Only use Vertex if credentials are configured
+        creds = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        if creds and Path(creds).exists():
+            return True
+    # Environment variable override
+    if os.environ.get("ICRL_USE_VERTEX_AI", "").lower() in {"1", "true", "yes"}:
+        if "claude" in model.lower():
+            return True
+    return False
+
+
+def _create_llm_provider(
+    model: str, temperature: float, max_tokens: int, system_prompt: str
+):
+    """Create the appropriate LLM provider based on model type."""
+    if _is_vertex_model(model):
+        # Use Vertex AI for Claude models
+        credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        location = os.environ.get("VERTEXAI_LOCATION", "us-east5")
+        # "global" is not valid for Anthropic models
+        if location == "global":
+            location = "us-east5"
+        project_id = os.environ.get("VERTEXAI_PROJECT")
+
+        return AnthropicVertexProvider(
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            system_prompt=system_prompt,
+            credentials_path=credentials_path,
+            project_id=project_id,
+            location=location,
+        )
+    else:
+        # Use LiteLLM for other models (OpenAI, etc.)
+        return LiteLLMProvider(
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            system_prompt=system_prompt,
+        )
+
 
 if TYPE_CHECKING:
     from harbor.environments.base import BaseEnvironment
@@ -68,11 +143,11 @@ def _get_model() -> str:
 
 def _get_k() -> int:
     """Get the number of examples to retrieve from environment or default."""
-    # Default to 3 (paper-style) and never allow K=1 (too brittle).
+    # Default to 5 for richer context and never allow K=1 (too brittle).
     try:
-        k = int(os.environ.get("ICRL_K", "3"))
+        k = int(os.environ.get("ICRL_K", "5"))
     except ValueError:
-        k = 3
+        k = 5
     return max(2, k)
 
 
@@ -120,11 +195,24 @@ def _create_step_callback(
 
     def callback(step: Step, step_context: StepContext) -> None:
         """Record step information to the trajectory log."""
+        # Extract detailed info about retrieved examples
+        retrieved_examples = []
+        for ex in step_context.examples:
+            retrieved_examples.append(
+                {
+                    "trajectory_id": ex.trajectory_id,
+                    "step_index": ex.step_index,
+                    "goal": ex.goal[:150] if ex.goal else "",
+                    "action": ex.action[:200] if ex.action else "",
+                }
+            )
+
         step_data = {
             "observation": step.observation[:500] if step.observation else "",
             "reasoning": step.reasoning or "",
             "action": step.action or "",
             "examples_used": len(step_context.examples),
+            "retrieved_examples": retrieved_examples,
         }
         trajectory_log.append(step_data)
 
@@ -223,7 +311,7 @@ class ICRLTrainAgent(BaseAgent):
         # Initialize the LLM provider with system prompt
         # GPT-5 only supports temperature=1, use 0.3 for other models
         temp = 1.0 if "gpt-5" in model.lower() else 0.3
-        llm = LiteLLMProvider(
+        llm = _create_llm_provider(
             model=model,
             temperature=temp,
             max_tokens=_get_max_completion_tokens(),
@@ -246,7 +334,7 @@ class ICRLTrainAgent(BaseAgent):
         adapter = HarborEnvironmentAdapter(
             environment=environment,
             max_actions=max_steps + 10,
-            timeout_sec=180,
+            timeout_sec=300,  # 5 min timeout for complex tasks
         )
 
         # Run in training mode - only stores when agent signals completion (submit)
@@ -347,7 +435,7 @@ class ICRLZeroShotAgent(BaseAgent):
             temp_db_path = f"{tmpdir}/empty_db"
 
             temp = 1.0 if "gpt-5" in model.lower() else 0.3
-            llm = LiteLLMProvider(
+            llm = _create_llm_provider(
                 model=model,
                 temperature=temp,
                 max_tokens=_get_max_completion_tokens(),
@@ -372,7 +460,7 @@ class ICRLZeroShotAgent(BaseAgent):
             adapter = HarborEnvironmentAdapter(
                 environment=environment,
                 max_actions=max_steps + 10,
-                timeout_sec=180,
+                timeout_sec=300,  # 5 min timeout for complex tasks
             )
 
             trajectory = await agent.run(adapter, instruction)
@@ -473,7 +561,7 @@ class ICRLTestAgent(BaseAgent):
             return
 
         temp = 1.0 if "gpt-5" in model.lower() else 0.3
-        llm = LiteLLMProvider(
+        llm = _create_llm_provider(
             model=model,
             temperature=temp,
             max_tokens=_get_max_completion_tokens(),
@@ -496,7 +584,7 @@ class ICRLTestAgent(BaseAgent):
         adapter = HarborEnvironmentAdapter(
             environment=environment,
             max_actions=max_steps + 10,
-            timeout_sec=180,
+            timeout_sec=300,  # 5 min timeout for complex tasks
         )
 
         # Record retrieved examples for analysis

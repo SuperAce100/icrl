@@ -23,3 +23,12 @@ sgicl_v*
 
 credentials.json
 debug.log
+icrl-ts/node_modules/
+icrl-ts/web-example/.next/
+icrl-ts/web-example/node_modules/
+.env*
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# ICRL per-project trajectory databases
+.icrl/

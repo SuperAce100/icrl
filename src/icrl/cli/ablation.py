@@ -11,12 +11,12 @@ import asyncio
 import subprocess
 import tempfile
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from collections.abc import Callable
 from typing import Any
 
-from icrl.cli.config import Config
+from icrl.cli.config import Config, get_project_db_path
 from icrl.cli.runner import AgentRunner, SimpleCallbacks
 from icrl.models import Trajectory
 
@@ -267,15 +267,34 @@ class AblationRunner:
 
         Args:
             goal: The task to accomplish
-            working_dir: Working directory for this run
+            working_dir: Working directory for this run (e.g., worktree)
             use_examples: Whether to use in-context examples
             callbacks: Optional callbacks for progress
 
         Returns:
             AblationResult with trajectory and metadata
         """
+        # Use the original project's database, not the worktree's
+        # This ensures we retrieve examples from the project being ablated
+        config = Config(
+            model=self._config.model,
+            temperature=self._config.temperature,
+            max_tokens=self._config.max_tokens,
+            max_steps=self._config.max_steps,
+            k=self._config.k,
+            context_compression_threshold=self._config.context_compression_threshold,
+            enable_prompt_caching=self._config.enable_prompt_caching,
+            show_stats=self._config.show_stats,
+            auto_approve=self._config.auto_approve,
+            # Use the original project's database path
+            db_path=str(get_project_db_path(self._working_dir)),
+            vertex_credentials_path=self._config.vertex_credentials_path,
+            vertex_project_id=self._config.vertex_project_id,
+            vertex_location=self._config.vertex_location,
+        )
+        
         runner = AgentRunner(
-            config=self._config,
+            config=config,
             callbacks=callbacks,
             working_dir=working_dir,
         )
