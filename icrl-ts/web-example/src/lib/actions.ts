@@ -281,6 +281,36 @@ Respond in this exact JSON format:
   "reasoning": "What new territory this explores that's different from all existing examples"
 }`;
 
+// YOLO mode prompt for generating MULTIPLE novel prompts at once (more efficient)
+const YOLO_BATCH_PROMPT_GENERATION = `You are a curriculum designer for an AI training system.
+
+Your task: Generate {count} COMPLETELY NOVEL prompts that explore NEW TERRITORY not covered by existing examples.
+
+CRITICAL RULES:
+- NEVER generate duplicates or rephrasings of any existing example
+- NEVER generate something semantically similar to what's already covered
+- Each prompt MUST explore a COMPLETELY DIFFERENT domain or topic
+- The {count} prompts should ALL be different from EACH OTHER too
+- Think EXPANSIVELY - venture into entirely new subject areas
+- Be BOLD and creative - maximum diversity is the goal
+
+EXISTING EXAMPLES (DO NOT duplicate, rephrase, or create variations of ANY of these):
+{examples_summary}
+
+Generate {count} prompts that:
+- Each explores an ENTIRELY NEW topic or domain
+- Cover DIFFERENT categories from each other (mix of tech, science, arts, business, personal, health, creativity, etc.)
+- Would MASSIVELY expand the training coverage into uncharted territory
+- Are clear and specific enough to generate meaningful responses
+
+Think of the example space as a map. Generate prompts that explore {count} DIFFERENT regions, all FAR from existing examples AND far from each other.
+
+Respond in this exact JSON format:
+{
+  "prompts": ["prompt1", "prompt2", "prompt3", ...],
+  "reasoning": "Brief explanation of the diverse territories covered"
+}`;
+
 /**
  * Create a summary of existing examples for curriculum learning.
  * Includes all examples to help the AI avoid duplicates and identify gaps.
@@ -484,6 +514,101 @@ async function generateYoloPromptWithHaiku(examples: Example[]): Promise<string>
   }
 
   throw new Error("Failed to parse YOLO prompt response from model");
+}
+
+/**
+ * Generate multiple prompts at once using Claude Haiku.
+ * More efficient than generating one at a time.
+ */
+async function generateMultipleYoloPromptsWithHaiku(
+  examples: Example[],
+  count: number
+): Promise<string[]> {
+  // Check if API is configured
+  if (!isAnthropicVertexConfigured()) {
+    throw new Error("Anthropic Vertex not configured. Please set GOOGLE_CREDENTIALS_JSON.");
+  }
+
+  const examplesSummary = summarizeExamplesForCurriculum(examples);
+  const prompt = YOLO_BATCH_PROMPT_GENERATION.replace(/{count}/g, count.toString()).replace(
+    "{examples_summary}",
+    examplesSummary
+  );
+
+  const response = await generateCompletion({
+    messages: [{ role: "user", content: `Generate ${count} novel prompts for training.` }],
+    systemPrompt: prompt,
+    model: "claude-haiku-4-5",
+    temperature: 0.9,
+    maxTokens: 1500,
+  });
+
+  // Parse JSON response
+  const jsonMatch = response.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (Array.isArray(parsed.prompts) && parsed.prompts.length > 0) {
+      return parsed.prompts.slice(0, count);
+    }
+  }
+
+  throw new Error("Failed to parse batch prompts response from model");
+}
+
+/**
+ * Generate a single YOLO round from a pre-generated prompt.
+ * This allows parallelization of answer generation.
+ */
+async function generateYoloRoundFromPrompt(
+  databaseId: string,
+  prompt: string,
+  systemPrompt?: string
+): Promise<YoloRoundResult> {
+  // Retrieve similar examples based on the prompt
+  const retrievedExamples = await searchSimilarExamples(databaseId, prompt, 3);
+
+  // Generate answers using the retrieved examples
+  const { answerA, answerB } = await generateAnswers(prompt, retrievedExamples, systemPrompt);
+
+  return {
+    prompt,
+    answerA,
+    answerB,
+    retrievedExamples,
+  };
+}
+
+/**
+ * Generate multiple YOLO rounds in parallel.
+ * This is much faster than generating them sequentially.
+ *
+ * 1. First generates N prompts in a single API call (efficient)
+ * 2. Then parallelizes answer generation for all prompts
+ */
+export async function generateYoloRoundsParallel(
+  databaseId: string,
+  count: number,
+  systemPrompt?: string
+): Promise<YoloRoundResult[]> {
+  const client = getConvexClient();
+
+  // Get all examples for curriculum analysis (once)
+  const allExamples = await client.query(api.suggestions.getAllExamples, {
+    databaseId: databaseId as Id<"databases">,
+  });
+
+  // Step 1: Generate all prompts in a single API call
+  const prompts = await generateMultipleYoloPromptsWithHaiku(allExamples, count);
+
+  // Step 2: Generate answers for all prompts in parallel
+  const roundPromises = prompts.map((prompt) =>
+    generateYoloRoundFromPrompt(databaseId, prompt, systemPrompt)
+  );
+
+  // Wait for all rounds to complete
+  const results = await Promise.all(roundPromises);
+
+  return results;
 }
 
 /**
