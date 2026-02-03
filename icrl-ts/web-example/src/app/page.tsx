@@ -13,7 +13,8 @@ import { ExamplesList } from "@/components/examples-list";
 import { SystemPromptEditor } from "@/components/system-prompt-editor";
 import { YoloMode } from "@/components/yolo-mode";
 import { generateAnswers, checkApiStatus, searchSimilarExamples } from "@/lib/actions";
-import { Sparkles, Database, Settings, AlertTriangle, Github, Zap } from "lucide-react";
+import { Sparkles, Database, Settings, AlertTriangle, Github, Zap, BookOpen } from "lucide-react";
+import Image from "next/image";
 import type { Id } from "../../convex/_generated/dataModel";
 
 type AppState = "input" | "choosing" | "yolo";
@@ -146,36 +147,61 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-4">
+      <header className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <span>ICRL</span>
-                <span className="text-muted-foreground font-normal">Demo</span>
-              </h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                In-Context Reinforcement Learning with Human Feedback
-              </p>
+            <div className="flex items-center gap-3">
+              <Image
+                src="/logo_light.png"
+                alt="ICRL"
+                width={40}
+                height={40}
+                className="dark:hidden"
+              />
+              <Image
+                src="/logo_dark.png"
+                alt="ICRL"
+                width={40}
+                height={40}
+                className="hidden dark:block"
+              />
+              <div>
+                <h1 className="text-xl font-semibold tracking-tight">
+                  <span className="text-primary">ICRL</span>
+                  <span className="text-muted-foreground font-normal ml-2">Playground</span>
+                </h1>
+                <p className="text-xs text-muted-foreground">In-Context Reinforcement Learning</p>
+              </div>
             </div>
-            <a
-              href="https://github.com/SuperAce100/icrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Github className="h-5 w-5" />
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href="https://icrl.mintlify.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted"
+              >
+                <BookOpen className="h-4 w-4" />
+                <span className="hidden sm:inline">Docs</span>
+              </a>
+              <a
+                href="https://github.com/SuperAce100/icrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted"
+              >
+                <Github className="h-4 w-4" />
+                <span className="hidden sm:inline">GitHub</span>
+              </a>
+            </div>
           </div>
         </div>
       </header>
 
       {/* API Status Banner */}
       {apiStatus && !apiStatus.configured && (
-        <div className="bg-yellow-500/10 border-b border-yellow-500/20">
-          <div className="max-w-5xl mx-auto px-4 py-2">
-            <div className="flex items-center gap-2 text-sm text-yellow-600 dark:text-yellow-400">
+        <div className="bg-primary/5 border-b border-primary/20">
+          <div className="max-w-6xl mx-auto px-6 py-2">
+            <div className="flex items-center gap-2 text-sm text-primary">
               <AlertTriangle className="h-4 w-4" />
               <span>{apiStatus.message}</span>
             </div>
@@ -184,14 +210,14 @@ export default function Home() {
       )}
 
       {/* Database Selector */}
-      <div className="border-b">
-        <div className="max-w-5xl mx-auto px-4 py-3">
+      <div className="border-b border-border/50 bg-muted/30">
+        <div className="max-w-6xl mx-auto px-6 py-3">
           <DatabaseSelector selectedId={selectedDbId} onSelect={setSelectedDbId} />
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {!selectedDbId ? (
           <Alert>
             <Database className="h-4 w-4" />
@@ -202,61 +228,105 @@ export default function Home() {
             </AlertDescription>
           </Alert>
         ) : (
-          <Tabs defaultValue="ask" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="ask" className="flex items-center gap-2">
+          <Tabs defaultValue="ask" className="space-y-8">
+            <TabsList className="grid w-full max-w-md grid-cols-3 mx-auto">
+              <TabsTrigger
+                value="ask"
+                className="flex items-center gap-2 data-[state=active]:text-primary"
+              >
                 <Sparkles className="h-4 w-4" />
-                Ask & Train
+                Train
               </TabsTrigger>
-              <TabsTrigger value="database" className="flex items-center gap-2">
+              <TabsTrigger
+                value="database"
+                className="flex items-center gap-2 data-[state=active]:text-primary"
+              >
                 <Database className="h-4 w-4" />
-                Database
+                Memory
               </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-2">
+              <TabsTrigger
+                value="settings"
+                className="flex items-center gap-2 data-[state=active]:text-primary"
+              >
                 <Settings className="h-4 w-4" />
                 Settings
               </TabsTrigger>
             </TabsList>
 
             {/* Ask & Train Tab */}
-            <TabsContent value="ask" className="space-y-4">
-              <div className="max-w-2xl mx-auto">
+            <TabsContent value="ask" className="space-y-6">
+              <div className="w-full">
                 {/* How it works + YOLO mode button */}
                 {state === "input" && (
-                  <div className="mb-6 space-y-4">
-                    <div className="bg-muted/50 rounded-lg p-4 border">
-                      <h2 className="text-sm font-medium mb-2">How it works:</h2>
-                      <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                        <li>Enter a prompt (or use AI suggestions)</li>
-                        <li>The system retrieves similar examples from the database</li>
-                        <li>Two answer options are generated (influenced by examples)</li>
-                        <li>You choose the better answer (or write your own)</li>
-                        <li>Your choice is stored and improves future answers</li>
-                      </ol>
+                  <div className="mb-8 space-y-6">
+                    {/* Hero Section */}
+                    <div className="text-center space-y-3 mb-8">
+                      <h2 className="text-2xl font-semibold tracking-tight">Train Your AI</h2>
+                      <p className="text-muted-foreground max-w-xl mx-auto">
+                        Ask questions and choose the best answers. Your preferences are stored and
+                        used to improve future responses.
+                      </p>
+                    </div>
+
+                    {/* How it works */}
+                    <div className="bg-card rounded-xl p-6 border shadow-sm">
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+                        How it works
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div className="flex flex-col items-center text-center p-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold mb-2">
+                            1
+                          </div>
+                          <p className="text-sm">Enter a prompt</p>
+                        </div>
+                        <div className="flex flex-col items-center text-center p-3">
+                          <div className="w-10 h-10 rounded-full bg-icrl-blue/10 flex items-center justify-center text-icrl-blue font-semibold mb-2">
+                            2
+                          </div>
+                          <p className="text-sm">Retrieve examples</p>
+                        </div>
+                        <div className="flex flex-col items-center text-center p-3">
+                          <div className="w-10 h-10 rounded-full bg-icrl-yellow/30 flex items-center justify-center text-icrl-stone-dark font-semibold mb-2">
+                            3
+                          </div>
+                          <p className="text-sm">Generate options</p>
+                        </div>
+                        <div className="flex flex-col items-center text-center p-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold mb-2">
+                            4
+                          </div>
+                          <p className="text-sm">Choose the best</p>
+                        </div>
+                        <div className="flex flex-col items-center text-center p-3">
+                          <div className="w-10 h-10 rounded-full bg-icrl-blue/10 flex items-center justify-center text-icrl-blue font-semibold mb-2">
+                            5
+                          </div>
+                          <p className="text-sm">Store & learn</p>
+                        </div>
+                      </div>
                     </div>
 
                     {/* YOLO Mode Banner */}
-                    <div className="bg-linear-to-r from-yellow-500/10 to-orange-500/10 rounded-lg p-4 border border-yellow-500/30">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-yellow-500/20">
-                            <Zap className="h-5 w-5 text-yellow-500" />
+                    <div className="bg-linear-to-r from-primary/10 via-primary/5 to-icrl-yellow/10 rounded-xl p-6 border border-primary/20">
+                      <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 rounded-xl bg-primary/20">
+                            <Zap className="h-6 w-6 text-primary" />
                           </div>
                           <div>
-                            <h3 className="text-sm font-medium">YOLO Mode</h3>
-                            <p className="text-xs text-muted-foreground">
-                              Let AI generate both prompts and answers. Just pick your preference!
+                            <h3 className="font-semibold">YOLO Mode</h3>
+                            <p className="text-sm text-muted-foreground">
+                              Let AI generate prompts and answers. Just pick your preference!
                             </p>
                           </div>
                         </div>
                         <Button
-                          variant="outline"
-                          size="sm"
                           onClick={enterYoloMode}
-                          className="border-yellow-500/50 hover:bg-yellow-500/10"
+                          className="bg-primary hover:bg-primary/90 text-white"
                         >
-                          <Zap className="h-4 w-4 mr-1 text-yellow-500" />
-                          Start YOLO
+                          <Zap className="h-4 w-4 mr-2" />
+                          Start YOLO Mode
                         </Button>
                       </div>
                     </div>

@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo, Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const archivo = Archivo({
+  variable: "--font-archivo",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -14,8 +20,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ICRL Demo - In-Context Reinforcement Learning",
-  description: "Interactive demo of In-Context Reinforcement Learning with Human Feedback using Anthropic Claude on Vertex AI",
+  title: "ICRL - In-Context Reinforcement Learning",
+  description:
+    "Train AI that learns from successful experiences. Interactive demo of In-Context Reinforcement Learning with Human Feedback.",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
@@ -26,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${archivo.variable} ${inter.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>
