@@ -1,6 +1,6 @@
 /**
  * Anthropic Vertex AI provider for Claude models on Google Cloud.
- * 
+ *
  * This provider reads credentials from the GOOGLE_CREDENTIALS_JSON environment variable,
  * allowing secure deployment on Vercel without needing a credentials file.
  */
@@ -29,6 +29,9 @@ export const MODEL_ALIASES: Record<string, string> = {
   "claude-sonnet-4.5": "claude-sonnet-4-5@20251101",
   "claude-sonnet-4-5": "claude-sonnet-4-5@20251101",
   "claude-4.5-sonnet": "claude-sonnet-4-5@20251101",
+  "claude-haiku-4.5": "claude-haiku-4-5",
+  "claude-haiku-4-5": "claude-haiku-4-5",
+  "claude-4.5-haiku": "claude-haiku-4-5",
 };
 
 export interface AnthropicVertexConfig {
@@ -54,18 +57,18 @@ function getCredentials(): {
   credentials: object;
 } {
   const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON;
-  
+
   if (!credentialsJson) {
     throw new Error(
       "GOOGLE_CREDENTIALS_JSON environment variable is not set. " +
-      "Please set it to your Google Cloud service account JSON credentials."
+        "Please set it to your Google Cloud service account JSON credentials."
     );
   }
 
   try {
     const credentials = JSON.parse(credentialsJson);
     const projectId = credentials.project_id;
-    
+
     if (!projectId) {
       throw new Error("project_id not found in credentials JSON");
     }
@@ -75,7 +78,7 @@ function getCredentials(): {
     if (error instanceof SyntaxError) {
       throw new Error(
         "GOOGLE_CREDENTIALS_JSON is not valid JSON. " +
-        "Please ensure it contains the full service account credentials."
+          "Please ensure it contains the full service account credentials."
       );
     }
     throw error;
@@ -85,12 +88,10 @@ function getCredentials(): {
 /**
  * Create an Anthropic Vertex client
  */
-export function createAnthropicVertexClient(
-  config: AnthropicVertexConfig = {}
-): AnthropicVertex {
+export function createAnthropicVertexClient(config: AnthropicVertexConfig = {}): AnthropicVertex {
   const { projectId, credentials } = getCredentials();
-  
-  const region = config.region ?? process.env.ANTHROPIC_VERTEX_REGION ?? "us-east5";
+
+  const region = config.region ?? process.env.ANTHROPIC_VERTEX_REGION ?? "global";
   const finalProjectId = config.projectId ?? projectId;
 
   // Create GoogleAuth with the credentials
@@ -123,11 +124,9 @@ export interface GenerateOptions {
 /**
  * Generate a completion using Anthropic Vertex
  */
-export async function generateCompletion(
-  options: GenerateOptions
-): Promise<string> {
+export async function generateCompletion(options: GenerateOptions): Promise<string> {
   const client = createAnthropicVertexClient();
-  
+
   const model = resolveModel(options.model ?? "claude-3-5-sonnet");
   const maxTokens = options.maxTokens ?? 4096;
   const temperature = options.temperature ?? 0.7;
@@ -146,7 +145,7 @@ export async function generateCompletion(
   if (textBlock && textBlock.type === "text") {
     return textBlock.text;
   }
-  
+
   return "";
 }
 
@@ -175,7 +174,7 @@ export function getConfigStatus(): { configured: boolean; message: string } {
       };
     }
   }
-  
+
   return {
     configured: false,
     message: "GOOGLE_CREDENTIALS_JSON environment variable not set. Using mock responses.",

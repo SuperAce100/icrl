@@ -5,16 +5,18 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { DatabaseSelector } from "@/components/database-selector";
 import { QuestionInput } from "@/components/question-input";
 import { AnswerChoice } from "@/components/answer-choice";
 import { ExamplesList } from "@/components/examples-list";
 import { SystemPromptEditor } from "@/components/system-prompt-editor";
+import { YoloMode } from "@/components/yolo-mode";
 import { generateAnswers, checkApiStatus, searchSimilarExamples } from "@/lib/actions";
-import { Sparkles, Database, Settings, AlertTriangle, Github } from "lucide-react";
+import { Sparkles, Database, Settings, AlertTriangle, Github, Zap } from "lucide-react";
 import type { Id } from "../../convex/_generated/dataModel";
 
-type AppState = "input" | "choosing";
+type AppState = "input" | "choosing" | "yolo";
 
 interface GeneratedData {
   question: string;
@@ -114,6 +116,33 @@ export default function Home() {
     setGeneratedData(null);
   };
 
+  // YOLO mode: handle answer selection from auto-generated prompts
+  const handleYoloSelect = async (
+    prompt: string,
+    chosen: string,
+    rejected: string | undefined,
+    isCustom: boolean
+  ) => {
+    if (!selectedDbId) return;
+
+    await createExample({
+      databaseId: selectedDbId,
+      question: prompt,
+      chosenAnswer: chosen,
+      rejectedAnswer: rejected,
+      isCustom,
+    });
+  };
+
+  const enterYoloMode = () => {
+    setState("yolo");
+    setGeneratedData(null);
+  };
+
+  const exitYoloMode = () => {
+    setState("input");
+  };
+
   return (
     <main className="min-h-screen bg-background">
       {/* Header */}
@@ -192,23 +221,52 @@ export default function Home() {
             {/* Ask & Train Tab */}
             <TabsContent value="ask" className="space-y-4">
               <div className="max-w-2xl mx-auto">
-                {/* How it works */}
+                {/* How it works + YOLO mode button */}
                 {state === "input" && (
-                  <div className="mb-6 bg-muted/50 rounded-lg p-4 border">
-                    <h2 className="text-sm font-medium mb-2">How it works:</h2>
-                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                      <li>Ask any question</li>
-                      <li>The system retrieves similar examples from the database</li>
-                      <li>Two answer options are generated (influenced by examples)</li>
-                      <li>You choose the better answer (or write your own)</li>
-                      <li>Your choice is stored and improves future answers</li>
-                    </ol>
+                  <div className="mb-6 space-y-4">
+                    <div className="bg-muted/50 rounded-lg p-4 border">
+                      <h2 className="text-sm font-medium mb-2">How it works:</h2>
+                      <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                        <li>Enter a prompt (or use AI suggestions)</li>
+                        <li>The system retrieves similar examples from the database</li>
+                        <li>Two answer options are generated (influenced by examples)</li>
+                        <li>You choose the better answer (or write your own)</li>
+                        <li>Your choice is stored and improves future answers</li>
+                      </ol>
+                    </div>
+
+                    {/* YOLO Mode Banner */}
+                    <div className="bg-linear-to-r from-yellow-500/10 to-orange-500/10 rounded-lg p-4 border border-yellow-500/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-yellow-500/20">
+                            <Zap className="h-5 w-5 text-yellow-500" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-medium">YOLO Mode</h3>
+                            <p className="text-xs text-muted-foreground">
+                              Let AI generate both prompts and answers. Just pick your preference!
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={enterYoloMode}
+                          className="border-yellow-500/50 hover:bg-yellow-500/10"
+                        >
+                          <Zap className="h-4 w-4 mr-1 text-yellow-500" />
+                          Start YOLO
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 )}
 
                 {/* Main content based on state */}
                 {state === "input" && (
                   <QuestionInput
+                    databaseId={selectedDbId}
                     onSubmit={handleQuestionSubmit}
                     isLoading={isLoading}
                     disabled={!selectedDbId}
@@ -224,6 +282,15 @@ export default function Home() {
                     onSelect={handleAnswerSelect}
                     onBack={handleReset}
                     isSubmitting={isSubmitting}
+                  />
+                )}
+
+                {state === "yolo" && selectedDbId && (
+                  <YoloMode
+                    databaseId={selectedDbId}
+                    systemPrompt={selectedDb?.systemPrompt ?? undefined}
+                    onSelectAnswer={handleYoloSelect}
+                    onExit={exitYoloMode}
                   />
                 )}
               </div>

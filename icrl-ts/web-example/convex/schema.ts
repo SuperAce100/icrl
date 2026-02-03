@@ -77,4 +77,13 @@ export default defineSchema({
   })
     .index("by_database", ["databaseId"])
     .index("by_database_created", ["databaseId", "createdAt"]),
+
+  // Suggestion cache for AI-generated prompt suggestions
+  suggestionCache: defineTable({
+    databaseId: v.id("databases"),
+    suggestions: v.array(v.string()),
+    exampleCount: v.number(), // For cache invalidation
+    exampleHash: v.string(), // Hash of recent example prompts for smarter invalidation
+    createdAt: v.number(),
+  }).index("by_database", ["databaseId"]),
 });
