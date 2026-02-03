@@ -1,70 +1,129 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  ChevronDown,
-  ChevronUp,
-  Trash2,
-  Search,
-  MessageSquare,
-  RefreshCw,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, Search, MessageSquare, RefreshCw } from "lucide-react";
 import type { Id, Doc } from "../../convex/_generated/dataModel";
 
 type ExampleDoc = Doc<"examples">;
+
+// Hold-to-delete button component
+interface HoldToDeleteButtonProps {
+  onDelete: () => void;
+  holdDuration?: number; // in milliseconds
+  disabled?: boolean;
+}
+
+function HoldToDeleteButton({
+  onDelete,
+  holdDuration = 1500,
+  disabled = false,
+}: HoldToDeleteButtonProps) {
+  const [progress, setProgress] = useState(0);
+  const [isHolding, setIsHolding] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+
+  const startHold = useCallback(() => {
+    if (disabled) return;
+    setIsHolding(true);
+    startTimeRef.current = Date.now();
+
+    intervalRef.current = setInterval(() => {
+      if (!startTimeRef.current) return;
+      const elapsed = Date.now() - startTimeRef.current;
+      const newProgress = Math.min((elapsed / holdDuration) * 100, 100);
+      setProgress(newProgress);
+
+      if (newProgress >= 100) {
+        // Trigger delete
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        setIsHolding(false);
+        setProgress(0);
+        startTimeRef.current = null;
+        onDelete();
+      }
+    }, 16); // ~60fps update
+  }, [disabled, holdDuration, onDelete]);
+
+  const cancelHold = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setIsHolding(false);
+    setProgress(0);
+    startTimeRef.current = null;
+  }, []);
+
+  return (
+    <button
+      onMouseDown={startHold}
+      onMouseUp={cancelHold}
+      onMouseLeave={cancelHold}
+      onTouchStart={startHold}
+      onTouchEnd={cancelHold}
+      onTouchCancel={cancelHold}
+      disabled={disabled}
+      className={`
+        relative overflow-hidden inline-flex items-center justify-center gap-1 
+        px-3 py-1.5 text-sm rounded-md transition-colors
+        ${
+          disabled
+            ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
+            : "text-destructive hover:bg-destructive/10 cursor-pointer"
+        }
+        ${isHolding ? "bg-destructive/10" : ""}
+      `}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Progress fill background */}
+      <div
+        className="absolute inset-0 bg-destructive/20 transition-all duration-75"
+        style={{ width: `${progress}%` }}
+      />
+      {/* Content */}
+      <span className="relative z-10 flex items-center gap-1">
+        <Trash2 className="h-4 w-4" />
+        Hold to Delete
+      </span>
+    </button>
+  );
+}
 
 interface ExamplesListProps {
   databaseId: Id<"databases"> | null;
 }
 
 export function ExamplesList({ databaseId }: ExamplesListProps) {
-  const examples = useQuery(
-    api.examples.listByDatabase,
-    databaseId ? { databaseId } : "skip"
-  );
-  const stats = useQuery(
-    api.databases.getStats,
-    databaseId ? { id: databaseId } : "skip"
-  );
+  const examples = useQuery(api.examples.listByDatabase, databaseId ? { databaseId } : "skip");
+  const stats = useQuery(api.databases.getStats, databaseId ? { id: databaseId } : "skip");
   const deleteExample = useMutation(api.examples.remove);
 
   const [expandedId, setExpandedId] = useState<Id<"examples"> | null>(null);
-  const [deleteId, setDeleteId] = useState<Id<"examples"> | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingId, setDeletingId] = useState<Id<"examples"> | null>(null);
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
-
-    setIsDeleting(true);
+  const handleDelete = async (id: Id<"examples">) => {
+    setDeletingId(id);
     try {
-      await deleteExample({ id: deleteId });
-      setDeleteId(null);
+      await deleteExample({ id });
+      // Collapse the item if it was expanded
+      if (expandedId === id) {
+        setExpandedId(null);
+      }
     } catch (error) {
       console.error("Failed to delete example:", error);
     } finally {
-      setIsDeleting(false);
+      setDeletingId(null);
     }
   };
 
@@ -108,8 +167,8 @@ export function ExamplesList({ databaseId }: ExamplesListProps) {
           )}
         </CardTitle>
         <CardDescription>
-          Examples are used as context when generating new answers. More examples
-          lead to better personalized responses.
+          Examples are used as context when generating new answers. More examples lead to better
+          personalized responses.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -117,27 +176,21 @@ export function ExamplesList({ databaseId }: ExamplesListProps) {
         {stats && (
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-muted/50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-primary">
-                {stats.totalExamples}
-              </p>
+              <p className="text-2xl font-bold text-primary">{stats.totalExamples}</p>
               <p className="text-xs text-muted-foreground">Total Examples</p>
             </div>
             <div className="bg-muted/50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-blue-500">
-                {stats.totalRetrievals}
-              </p>
+              <p className="text-2xl font-bold text-blue-500">{stats.totalRetrievals}</p>
               <p className="text-xs text-muted-foreground">Times Retrieved</p>
             </div>
             <div className="bg-muted/50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-purple-500">
-                {stats.customAnswers}
-              </p>
+              <p className="text-2xl font-bold text-purple-500">{stats.customAnswers}</p>
               <p className="text-xs text-muted-foreground">Custom Answers</p>
             </div>
           </div>
         )}
 
-        <Separator className="mb-4" />
+
 
         {/* Examples List */}
         {!examples ? (
@@ -153,24 +206,15 @@ export function ExamplesList({ databaseId }: ExamplesListProps) {
           <div className="text-center py-12 text-muted-foreground">
             <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>No examples yet.</p>
-            <p className="text-sm">
-              Start asking questions to build your training data!
-            </p>
+            <p className="text-sm">Start asking questions to build your training data!</p>
           </div>
         ) : (
-          <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-3">
+          <div className="h-[400px] pr-4 w-full max-w-full overflow-y-auto">
+            <div className="flex flex-col gap-2">
               {examples.map((example: ExampleDoc) => (
-                <div
-                  key={example._id}
-                  className="border rounded-lg overflow-hidden"
-                >
+                <div key={example._id} className="border rounded-lg overflow-x-auto w-full">
                   <button
-                    onClick={() =>
-                      setExpandedId(
-                        expandedId === example._id ? null : example._id
-                      )
-                    }
+                    onClick={() => setExpandedId(expandedId === example._id ? null : example._id)}
                     className="w-full text-left p-4 hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-4">
@@ -185,18 +229,16 @@ export function ExamplesList({ databaseId }: ExamplesListProps) {
                             {formatDate(example.createdAt)}
                           </span>
                         </div>
-                        <p className="text-sm font-medium truncate">
-                          {example.question}
-                        </p>
+                        <p className="text-sm font-medium truncate">{example.question}</p>
                         <p className="text-xs text-muted-foreground truncate mt-1">
                           {example.chosenAnswer}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1" title="Times retrieved">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <Badge variant="outline" className="text-xs font-normal gap-1">
                           <RefreshCw className="h-3 w-3" />
-                          {example.timesRetrieved}
-                        </div>
+                          {example.timesRetrieved ?? 0} retrieved
+                        </Badge>
                         {expandedId === example._id ? (
                           <ChevronUp className="h-4 w-4" />
                         ) : (
@@ -209,70 +251,41 @@ export function ExamplesList({ databaseId }: ExamplesListProps) {
                   {expandedId === example._id && (
                     <div className="px-4 pb-4 space-y-3 border-t bg-muted/20">
                       <div className="pt-3">
-                        <p className="text-xs font-medium text-green-600 mb-1">
-                          Chosen Answer:
-                        </p>
-                        <p className="text-sm bg-background rounded p-3">
-                          {example.chosenAnswer}
-                        </p>
+                        <p className="text-xs font-medium text-green-600 mb-1">Chosen Answer:</p>
+                        <p className="text-sm bg-background rounded p-3">{example.chosenAnswer}</p>
                       </div>
                       {example.rejectedAnswer && (
                         <div>
-                          <p className="text-xs font-medium text-red-600 mb-1">
-                            Rejected Answer:
-                          </p>
+                          <p className="text-xs font-medium text-red-600 mb-1">Rejected Answer:</p>
                           <p className="text-sm bg-background rounded p-3 text-muted-foreground">
                             {example.rejectedAnswer}
                           </p>
                         </div>
                       )}
-                      <div className="flex justify-end pt-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteId(example._id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <RefreshCw className="h-3 w-3" />
+                          <span>
+                            Retrieved{" "}
+                            <strong className="text-foreground">
+                              {example.timesRetrieved ?? 0}
+                            </strong>{" "}
+                            time{(example.timesRetrieved ?? 0) !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <HoldToDeleteButton
+                          onDelete={() => handleDelete(example._id)}
+                          disabled={deletingId === example._id}
+                        />
                       </div>
                     </div>
                   )}
                 </div>
               ))}
             </div>
-          </ScrollArea>
+          </div>
         )}
       </CardContent>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Example</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this example? This action cannot be
-              undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteId(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }

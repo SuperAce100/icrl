@@ -10,14 +10,8 @@ import { QuestionInput } from "@/components/question-input";
 import { AnswerChoice } from "@/components/answer-choice";
 import { ExamplesList } from "@/components/examples-list";
 import { SystemPromptEditor } from "@/components/system-prompt-editor";
-import { generateAnswers, checkApiStatus } from "@/lib/actions";
-import {
-  Sparkles,
-  Database,
-  Settings,
-  AlertTriangle,
-  Github,
-} from "lucide-react";
+import { generateAnswers, checkApiStatus, searchSimilarExamples } from "@/lib/actions";
+import { Sparkles, Database, Settings, AlertTriangle, Github } from "lucide-react";
 import type { Id } from "../../convex/_generated/dataModel";
 
 type AppState = "input" | "choosing";
@@ -30,15 +24,11 @@ interface GeneratedData {
 }
 
 export default function Home() {
-  const [selectedDbId, setSelectedDbId] = useState<Id<"databases"> | null>(
-    null
-  );
+  const [selectedDbId, setSelectedDbId] = useState<Id<"databases"> | null>(null);
   const [state, setState] = useState<AppState>("input");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [generatedData, setGeneratedData] = useState<GeneratedData | null>(
-    null
-  );
+  const [generatedData, setGeneratedData] = useState<GeneratedData | null>(null);
   const [apiStatus, setApiStatus] = useState<{
     configured: boolean;
     message: string;
@@ -46,10 +36,7 @@ export default function Home() {
 
   // Convex queries and mutations
   const databases = useQuery(api.databases.list);
-  const selectedDb = useQuery(
-    api.databases.get,
-    selectedDbId ? { id: selectedDbId } : "skip"
-  );
+  const selectedDb = useQuery(api.databases.get, selectedDbId ? { id: selectedDbId } : "skip");
   const createExample = useMutation(api.examples.create);
 
   // Auto-select first database
@@ -69,12 +56,12 @@ export default function Home() {
 
     setIsLoading(true);
     try {
-      // Generate answers (examples will be fetched server-side in the future)
-      // For now, we pass an empty array - the system still works without examples
-      const retrievedExamples: Array<{
-        question: string;
-        chosenAnswer: string;
-      }> = [];
+      // Retrieve similar examples from the database (increments their retrieval count)
+      const retrievedExamples = await searchSimilarExamples(
+        selectedDbId,
+        question,
+        3 // Retrieve up to 3 similar examples
+      );
 
       const { answerA, answerB } = await generateAnswers(
         question,
@@ -137,9 +124,7 @@ export default function Home() {
               <h1 className="text-xl font-bold flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary" />
                 <span>ICRL</span>
-                <span className="text-muted-foreground font-normal">
-                  Demo
-                </span>
+                <span className="text-muted-foreground font-normal">Demo</span>
               </h1>
               <p className="text-xs text-muted-foreground mt-0.5">
                 In-Context Reinforcement Learning with Human Feedback
@@ -172,10 +157,7 @@ export default function Home() {
       {/* Database Selector */}
       <div className="border-b">
         <div className="max-w-5xl mx-auto px-4 py-3">
-          <DatabaseSelector
-            selectedId={selectedDbId}
-            onSelect={setSelectedDbId}
-          />
+          <DatabaseSelector selectedId={selectedDbId} onSelect={setSelectedDbId} />
         </div>
       </div>
 
@@ -186,8 +168,8 @@ export default function Home() {
             <Database className="h-4 w-4" />
             <AlertTitle>No Database Selected</AlertTitle>
             <AlertDescription>
-              Create or select a database to get started. Each database stores
-              its own examples and system prompt.
+              Create or select a database to get started. Each database stores its own examples and
+              system prompt.
             </AlertDescription>
           </Alert>
         ) : (
@@ -216,12 +198,8 @@ export default function Home() {
                     <h2 className="text-sm font-medium mb-2">How it works:</h2>
                     <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
                       <li>Ask any question</li>
-                      <li>
-                        The system retrieves similar examples from the database
-                      </li>
-                      <li>
-                        Two answer options are generated (influenced by examples)
-                      </li>
+                      <li>The system retrieves similar examples from the database</li>
+                      <li>Two answer options are generated (influenced by examples)</li>
                       <li>You choose the better answer (or write your own)</li>
                       <li>Your choice is stored and improves future answers</li>
                     </ol>
@@ -269,10 +247,7 @@ export default function Home() {
         <div className="max-w-5xl mx-auto px-4 py-6">
           <p className="text-center text-xs text-muted-foreground">
             Built with{" "}
-            <a
-              href="https://github.com/SuperAce100/icrl"
-              className="text-primary hover:underline"
-            >
+            <a href="https://github.com/SuperAce100/icrl" className="text-primary hover:underline">
               ICRL
             </a>{" "}
             &bull; In-Context Reinforcement Learning for LLM Agents

@@ -35,7 +35,7 @@ export const create = mutation({
     };
     if (args.description) doc.description = args.description;
     if (args.systemPrompt) doc.systemPrompt = args.systemPrompt;
-    
+
     const id = await ctx.db.insert("databases", doc);
     return id;
   },
@@ -98,7 +98,8 @@ export const getStats = query({
 
     const totalExamples = examples.length;
     const customAnswers = examples.filter((e) => e.isCustom).length;
-    const totalRetrievals = examples.reduce((sum, e) => sum + e.timesRetrieved, 0);
+    // Handle undefined timesRetrieved for legacy examples
+    const totalRetrievals = examples.reduce((sum, e) => sum + (e.timesRetrieved ?? 0), 0);
 
     return {
       totalExamples,

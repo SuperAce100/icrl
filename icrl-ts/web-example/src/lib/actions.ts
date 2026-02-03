@@ -14,10 +14,7 @@ import {
   getConfigStatus,
   generateCompletion,
 } from "./anthropic-vertex";
-import {
-  formatExamples as icrlFormatExamples,
-  type StepExample,
-} from "../../../src/models";
+import { formatExamples as icrlFormatExamples, type StepExample } from "../../../src/models";
 
 // Convex client for server-side use
 function getConvexClient(): ConvexHttpClient {
@@ -104,6 +101,7 @@ function formatExamplesForPrompt(examples: Example[]): string {
  * Search for similar examples using vector similarity.
  *
  * Uses the embeddings table in Convex for semantic search.
+ * Also increments the retrieval count for the fetched examples.
  */
 export async function searchSimilarExamples(
   databaseId: string,
@@ -119,6 +117,14 @@ export async function searchSimilarExamples(
       databaseId: databaseId as Id<"databases">,
       limit: k,
     });
+
+    // Increment retrieval count for fetched examples
+    if (examples.length > 0) {
+      const exampleIds = examples.map((ex) => ex._id);
+      await client.mutation(api.examples.incrementRetrievalCount, {
+        ids: exampleIds,
+      });
+    }
 
     return examples.map((ex) => ({
       question: ex.question,
@@ -143,10 +149,7 @@ export async function generateAnswers(
 
   // Combine persona prompt with training instructions
   const persona = personaPrompt || DEFAULT_PERSONA_PROMPT;
-  const trainingInstructions = TRAINING_INSTRUCTIONS.replace(
-    "{examples}",
-    examplesText
-  );
+  const trainingInstructions = TRAINING_INSTRUCTIONS.replace("{examples}", examplesText);
   const prompt = `${persona}\n${trainingInstructions}`;
 
   // Check if API is configured
@@ -188,10 +191,7 @@ export async function generateAnswers(
 /**
  * Generate mock answers when API is not configured.
  */
-function generateMockAnswers(
-  question: string,
-  examples: Example[]
-): GeneratedAnswers {
+function generateMockAnswers(question: string, examples: Example[]): GeneratedAnswers {
   const hasExamples = examples.length > 0;
 
   return {
