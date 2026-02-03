@@ -18,6 +18,19 @@ export const get = query({
   },
 });
 
+// Get a database by slug (url-safe name)
+export const getBySlug = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    const databases = await ctx.db.query("databases").collect();
+    // Find by matching slug (lowercase, hyphenated version of name)
+    return databases.find((db) => {
+      const dbSlug = db.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      return dbSlug === args.slug;
+    }) ?? null;
+  },
+});
+
 // Create a new database
 export const create = mutation({
   args: {
