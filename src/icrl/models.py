@@ -58,13 +58,13 @@ class StepContext(BaseModel):
     def format_examples(self) -> str:
         """Format retrieved step examples as a string."""
         if not self.examples:
-            return "No examples available."
+            return "(No similar examples found in database yet)"
 
         # Hard cap to prevent prompt explosions (esp. when actions contain patches).
-        max_examples = int(os.environ.get("ICRL_MAX_EXAMPLES", "3"))
-        max_chars = int(os.environ.get("ICRL_MAX_EXAMPLES_CHARS", "4000"))
+        max_examples = int(os.environ.get("ICRL_MAX_EXAMPLES", "5"))
+        max_chars = int(os.environ.get("ICRL_MAX_EXAMPLES_CHARS", "6000"))
         if max_examples <= 0 or max_chars <= 0:
-            return "No examples available."
+            return "(No similar examples found in database yet)"
 
         parts: list[str] = []
         total = 0
@@ -81,9 +81,9 @@ class StepContext(BaseModel):
 
         omitted += max(0, len(self.examples) - considered)
         if omitted > 0:
-            parts.append(f"[{omitted} example(s) omitted to fit context budget]")
+            parts.append(f"[{omitted} additional example(s) available]")
 
-        return "\n\n---\n\n".join(parts)
+        return "\n\n".join(parts)
 
     def format_history(self) -> str:
         """Format step history as a string (truncated for context window)."""
@@ -122,20 +122,32 @@ class StepExample(BaseModel):
 
     def to_example_string(self) -> str:
         """Format as in-context example with truncated observation."""
-        # Truncate observation aggressively (full obs can be 8000+ chars)
-        obs = self.observation.replace("\n", " ")
-        if len(obs) > 500:
-            obs = obs[:500] + "..."
+        # Truncate observation but keep newlines for readability
+        obs = self.observation
+        if len(obs) > 800:
+            obs = obs[:800] + "\n...[truncated]..."
 
-        reasoning = self.reasoning.replace("\n", " ").strip()
-        if len(reasoning) > 300:
-            reasoning = reasoning[:300] + "..."
+        reasoning = self.reasoning.strip()
+        if len(reasoning) > 400:
+            reasoning = reasoning[:400] + "..."
 
-        action = self.action.replace("\n", " ").strip()
-        if len(action) > 250:
-            action = action[:250] + "..."
+        action = self.action.strip()
+        if len(action) > 300:
+            action = action[:300] + "..."
 
-        return f"Observation: {obs}\nReasoning: {reasoning}\nAction: {action}"
+        # Format as a clear example with task context
+        goal_short = self.goal[:150] + "..." if len(self.goal) > 150 else self.goal
+
+        return f"""[EXAMPLE from similar task: {goal_short}]
+Output observed:
+{obs}
+
+Reasoning applied:
+{reasoning}
+
+Command executed:
+{action}
+[END EXAMPLE]"""
 
 
 class CodeArtifact(BaseModel):
