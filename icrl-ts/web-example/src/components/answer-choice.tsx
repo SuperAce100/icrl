@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Kbd } from "@/components/ui/kbd";
-import { Loader2, ArrowLeft, CornerDownLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RetrievedExample {
@@ -34,46 +34,41 @@ export function AnswerChoice({
   const [selectedOption, setSelectedOption] = useState<"A" | "B" | "custom" | null>(null);
   const customInputRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleSelectA = useCallback(() => {
+  const handleSubmit = useCallback(() => {
     if (isSubmitting) return;
-    setSelectedOption("A");
-    onSelect(answerA, answerB, false);
-  }, [isSubmitting, onSelect, answerA, answerB]);
 
-  const handleSelectB = useCallback(() => {
-    if (isSubmitting) return;
-    setSelectedOption("B");
-    onSelect(answerB, answerA, false);
-  }, [isSubmitting, onSelect, answerA, answerB]);
-
-  const handleSubmitCustom = useCallback(() => {
-    if (customAnswer.trim() && !isSubmitting) {
-      setSelectedOption("custom");
+    if (selectedOption === "A") {
+      onSelect(answerA, answerB, false);
+    } else if (selectedOption === "B") {
+      onSelect(answerB, answerA, false);
+    } else if (selectedOption === "custom" && customAnswer.trim()) {
       onSelect(customAnswer.trim(), undefined, true);
     }
-  }, [customAnswer, isSubmitting, onSelect]);
+  }, [selectedOption, isSubmitting, onSelect, answerA, answerB, customAnswer]);
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if typing in the custom answer field
-      if (document.activeElement === customInputRef.current) {
-        // Allow Enter to submit custom answer
-        if (e.key === "Enter" && !e.shiftKey && customAnswer.trim()) {
-          e.preventDefault();
-          handleSubmitCustom();
-        }
-        return;
-      }
+      // Don't trigger A/B if typing in the custom answer field
+      const isTypingCustom = document.activeElement === customInputRef.current;
 
       if (isSubmitting) return;
 
-      if (e.key.toLowerCase() === "a") {
+      if (e.key.toLowerCase() === "a" && !isTypingCustom) {
         e.preventDefault();
-        handleSelectA();
-      } else if (e.key.toLowerCase() === "b") {
+        setSelectedOption("A");
+      } else if (e.key.toLowerCase() === "b" && !isTypingCustom) {
         e.preventDefault();
-        handleSelectB();
+        setSelectedOption("B");
+      } else if (e.key === "Enter" && !e.shiftKey) {
+        // Submit on Enter if something is selected
+        if (selectedOption === "A" || selectedOption === "B") {
+          e.preventDefault();
+          handleSubmit();
+        } else if (selectedOption === "custom" && customAnswer.trim() && isTypingCustom) {
+          e.preventDefault();
+          handleSubmit();
+        }
       } else if (e.key === "Escape") {
         e.preventDefault();
         onBack();
@@ -82,11 +77,27 @@ export function AnswerChoice({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSubmitting, customAnswer, handleSelectA, handleSelectB, handleSubmitCustom, onBack]);
+  }, [isSubmitting, selectedOption, customAnswer, handleSubmit, onBack]);
+
+  // Select custom when typing
+  const handleCustomChange = (value: string) => {
+    setCustomAnswer(value);
+    if (value.trim()) {
+      setSelectedOption("custom");
+    } else if (selectedOption === "custom") {
+      setSelectedOption(null);
+    }
+  };
+
+  const canSubmit =
+    (selectedOption === "A" ||
+      selectedOption === "B" ||
+      (selectedOption === "custom" && customAnswer.trim())) &&
+    !isSubmitting;
 
   return (
     <div className="flex flex-col items-center">
-      <div className="w-full max-w-xl space-y-6">
+      <div className="w-full space-y-4">
         {/* Back button */}
         <Button
           variant="ghost"
@@ -101,92 +112,103 @@ export function AnswerChoice({
         </Button>
 
         {/* Question */}
-        <p className="text-lg font-medium">{question}</p>
+        <p className="text-xl font-medium">{question}</p>
 
-        {/* Answer Options */}
-        <div className="space-y-3">
+        {/* Answer Options - Side by Side */}
+        <div className="grid grid-cols-2 gap-4">
           {/* Option A */}
           <button
-            onClick={handleSelectA}
+            onClick={() => setSelectedOption("A")}
             disabled={isSubmitting}
             className={cn(
-              "w-full text-left p-4 rounded-xl border-2 bg-card shadow-sm transition-all",
+              "text-left p-4 py-3 rounded-lg border bg-card  transition-all h-full",
               selectedOption === "A"
                 ? "border-primary bg-primary/5"
                 : "border-border hover:border-primary/50",
               isSubmitting && "opacity-50 cursor-not-allowed"
             )}
           >
-            <div className="flex items-start gap-3">
-              <Kbd
-                className={cn(
-                  "h-7 w-7 text-sm shrink-0",
-                  selectedOption === "A" && "bg-primary text-primary-foreground"
-                )}
-              >
-                A
-              </Kbd>
+            <div className="flex items-start gap-2 justify-between flex-col h-full">
               <p className="text-sm leading-relaxed">{answerA}</p>
+              <p className="ml-auto text-xs">
+                <Kbd
+                  className={cn(
+                    "text-xs shrink-0",
+                    selectedOption === "A" && "bg-primary text-primary-foreground"
+                  )}
+                >
+                  A
+                </Kbd>{" "}
+                to select
+              </p>
             </div>
           </button>
 
           {/* Option B */}
           <button
-            onClick={handleSelectB}
+            onClick={() => setSelectedOption("B")}
             disabled={isSubmitting}
             className={cn(
-              "w-full text-left p-4 rounded-xl border-2 bg-card shadow-sm transition-all",
+              "text-left p-4 py-3 rounded-lg border bg-card  transition-all h-full",
               selectedOption === "B"
                 ? "border-primary bg-primary/5"
                 : "border-border hover:border-primary/50",
               isSubmitting && "opacity-50 cursor-not-allowed"
             )}
           >
-            <div className="flex items-start gap-3">
-              <Kbd
-                className={cn(
-                  "h-7 w-7 text-sm shrink-0",
-                  selectedOption === "B" && "bg-primary text-primary-foreground"
-                )}
-              >
-                B
-              </Kbd>
+            <div className="flex items-start gap-2 justify-between flex-col h-full">
               <p className="text-sm leading-relaxed">{answerB}</p>
+              <p className="ml-auto text-xs">
+                <Kbd
+                  className={cn(
+                    "text-xs shrink-0",
+                    selectedOption === "B" && "bg-primary text-primary-foreground"
+                  )}
+                >
+                  B
+                </Kbd>{" "}
+                to select
+              </p>
             </div>
           </button>
         </div>
 
-        {/* Custom Answer - Always visible */}
-        <div className="relative">
+        {/* Custom Answer */}
+        <div
+          className={cn(
+            "rounded-lg border transition-all bg-card focus-within:border-primary/50",
+            selectedOption === "custom"
+              ? "border-primary bg-primary/5"
+              : "border-border hover:border-primary/50"
+          )}
+        >
           <Textarea
             ref={customInputRef}
             value={customAnswer}
-            onChange={(e) => setCustomAnswer(e.target.value)}
+            onChange={(e) => handleCustomChange(e.target.value)}
             placeholder="Or write your own answer..."
             disabled={isSubmitting}
             rows={2}
-            className="pr-12 resize-none"
+            className="border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm shadow-none"
           />
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            onClick={handleSubmitCustom}
-            disabled={!customAnswer.trim() || isSubmitting}
-            className="absolute bottom-2 right-2 h-7 w-7"
-            title="Submit custom answer (Enter)"
-          >
-            <CornerDownLeft className="h-4 w-4" />
-          </Button>
         </div>
 
-        {/* Submitting indicator */}
-        {isSubmitting && (
-          <div className="flex items-center justify-center gap-2 text-primary">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">Saving...</span>
-          </div>
-        )}
+        {/* Submit Button */}
+        <div className="flex justify-end">
+          <Button onClick={handleSubmit} disabled={!canSubmit} size="sm">
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                Submit
+                <Kbd className="bg-card/30 text-white -mr-1">↵</Kbd>
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

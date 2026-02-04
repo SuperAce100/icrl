@@ -130,7 +130,6 @@ export function QuestionInput({
                 type="submit"
                 size="icon-sm"
                 disabled={!question.trim() || isLoading || disabled}
-                
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -157,13 +156,12 @@ export function QuestionInput({
                   key={i}
                   onClick={() => handleSuggestionClick(suggestion)}
                   disabled={isLoading}
-                  className="p-3 text-left text-sm rounded-lg border border-border bg-background hover:bg-muted hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-3 text-left text-sm rounded-lg border border-border bg-card/80 hover:bg-muted hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="">{suggestion}</span>
                 </button>
               ))}
             </div>
-            
           </div>
         ) : null}
       </div>
