@@ -11,32 +11,32 @@ interface HeaderProps {
 
 export function Header({ tabs, databaseSelector }: HeaderProps) {
   return (
-    <header className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-10">
-      <div className="max-w-3xl mx-auto px-6">
+    <header className="">
+      <div className="max-w-3xl mx-auto">
         {/* Top row: Logo + Tabs + DB Selector */}
         <div className="flex items-center justify-between py-3">
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <Image
-              src="/logo_light.png"
+              src="/logo_light.svg"
               alt="ICRL"
-              width={32}
+              width={62}
               height={32}
               className="dark:hidden"
             />
             <Image
-              src="/logo_dark.png"
+              src="/logo_dark.svg"
               alt="ICRL"
-              width={32}
+              width={62}
               height={32}
               className="hidden dark:block"
             />
           </Link>
 
           {/* Center: Tabs */}
-          {tabs && <div className="hidden md:block">{tabs}</div>}
-
-          {/* Right: Database selector */}
-          {databaseSelector && <div className="hidden sm:block">{databaseSelector}</div>}
+          <div className="flex items-center gap-4">
+            {tabs && <div className="hidden md:block">{tabs}</div>}
+            {databaseSelector && <div className="hidden sm:block">{databaseSelector}</div>}
+          </div>
         </div>
 
         {/* Mobile row: Tabs + Database selector */}

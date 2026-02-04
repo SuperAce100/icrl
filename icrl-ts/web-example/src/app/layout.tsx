@@ -20,12 +20,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ICRL - In-Context Reinforcement Learning",
+  title: "In-Context Reinforcement Learning",
   description:
-    "Train AI that learns from successful experiences. Interactive demo of In-Context Reinforcement Learning with Human Feedback.",
-  icons: {
-    icon: "/favicon.png",
-  },
+    "Train AI that learns from successful experiences. Interactive demo of ICRL with Human Feedback.",
 };
 
 export default function RootLayout({

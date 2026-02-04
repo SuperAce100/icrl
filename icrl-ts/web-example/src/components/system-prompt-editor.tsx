@@ -73,45 +73,33 @@ export function SystemPromptEditor({ databaseId }: SystemPromptEditorProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold">System Prompt</h2>
+        <h2 className="text-xl font-semibold">System Prompt</h2>
         <p className="text-sm text-muted-foreground mt-1">
           Configure the AI&apos;s persona and response style.
         </p>
       </div>
 
-      {/* Info Alert */}
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          Define the assistant&apos;s personality, expertise, and tone. The training instructions
-          are automatically appended during generation.
-        </AlertDescription>
-      </Alert>
-
       {/* Editor */}
-      <div className="space-y-4">
-        <div className="grid gap-2">
-          <Label htmlFor="system-prompt">Prompt Template</Label>
-          <Textarea
-            id="system-prompt"
-            value={prompt}
-            onChange={(e) => handleChange(e.target.value)}
-            placeholder="Enter your system prompt..."
-            className="min-h-[300px] font-mono text-sm"
-          />
-        </div>
+      <div className="space-y-2">
+        <Textarea
+          id="system-prompt"
+          value={prompt}
+          onChange={(e) => handleChange(e.target.value)}
+          placeholder="Enter your system prompt..."
+          className="min-h-[300px] text-sm bg-card"
+        />
 
-        <div className="flex items-center justify-between">
-          <Button variant="outline" onClick={handleReset} disabled={isSaving}>
-            <RotateCcw className="mr-2 h-4 w-4" />
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="secondary" size="sm" onClick={handleReset} disabled={isSaving}>
+            <RotateCcw className="" />
             Reset to Default
           </Button>
 
-          <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
-            <Save className="mr-2 h-4 w-4" />
+          <Button size="sm" onClick={handleSave} disabled={!hasChanges || isSaving}>
+            <Save className="" />
             {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </div>

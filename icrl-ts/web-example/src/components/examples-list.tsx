@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ChevronUp, Trash2, Search, MessageSquare, RefreshCw } from "lucide-react";
 import type { Id, Doc } from "../../convex/_generated/dataModel";
+import { cn } from "@/lib/utils";
 
 type ExampleDoc = Doc<"examples">;
 
@@ -134,43 +135,31 @@ export function ExamplesList({ databaseId }: ExamplesListProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className=" flex flex-col gap-4 h-full overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Training Examples</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Examples are used as context when generating new answers.
-          </p>
-        </div>
-        {stats && (
-          <div className="flex gap-4 text-sm">
-            <div className="flex items-center gap-1">
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              <span>{stats.totalExamples}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <span>{stats.totalRetrievals}</span>
-            </div>
-          </div>
-        )}
-      </div>
+
+      <h2 className="text-xl font-semibold">Saved Examples</h2>
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-muted/50 rounded-lg p-4 text-center">
-            <p className="text-2xl font-bold text-primary">{stats.totalExamples}</p>
-            <p className="text-xs text-muted-foreground">Total Examples</p>
+        <div className="flex flex-row gap-6">
+          <div>
+            <p className="text-5xl font-medium text-primary">{stats.totalExamples}</p>
+            <p className="text-xs font-medium tracking-wider text-muted-foreground mb-1">
+              Examples Saved
+            </p>
           </div>
-          <div className="bg-muted/50 rounded-lg p-4 text-center">
-            <p className="text-2xl font-bold text-icrl-blue">{stats.totalRetrievals}</p>
-            <p className="text-xs text-muted-foreground">Times Retrieved</p>
+          <div>
+            <p className="text-5xl font-medium text-icrl-blue">{stats.totalRetrievals}</p>
+            <p className="text-xs font-medium tracking-wider text-muted-foreground mb-1">
+              Times Retrieved
+            </p>
           </div>
-          <div className="bg-muted/50 rounded-lg p-4 text-center">
-            <p className="text-2xl font-bold text-purple-500">{stats.customAnswers}</p>
-            <p className="text-xs text-muted-foreground">Custom Answers</p>
+          <div>
+            <p className="text-5xl font-medium text-icrl-yellow">{stats.customAnswers}</p>
+            <p className="text-xs font-medium tracking-wider text-muted-foreground mb-1">
+              Custom Answers
+            </p>
           </div>
         </div>
       )}
@@ -192,9 +181,9 @@ export function ExamplesList({ databaseId }: ExamplesListProps) {
           <p className="text-sm">Start asking questions to build your training data!</p>
         </div>
       ) : (
-        <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+        <div className="space-y-2 overflow-y-auto pr-2">
           {examples.map((example: ExampleDoc) => (
-            <div key={example._id} className="border rounded-lg overflow-hidden">
+            <div key={example._id} className="border rounded-lg overflow-hidden bg-card">
               <button
                 onClick={() => setExpandedId(expandedId === example._id ? null : example._id)}
                 className="w-full text-left p-4 hover:bg-muted/50 transition-colors"
@@ -208,59 +197,40 @@ export function ExamplesList({ databaseId }: ExamplesListProps) {
                         </Badge>
                       )}
                       <span className="text-xs text-muted-foreground">
-                        {formatDate(example.createdAt)}
+                        {formatDate(example.createdAt)} · Retrieved {example.timesRetrieved ?? 0}{" "}
+                        times
                       </span>
                     </div>
-                    <p className="text-sm font-medium truncate">{example.question}</p>
-                    <p className="text-xs text-muted-foreground truncate mt-1">
-                      {example.chosenAnswer}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <Badge variant="outline" className="text-xs font-normal gap-1">
-                      <RefreshCw className="h-3 w-3" />
-                      {example.timesRetrieved ?? 0}
-                    </Badge>
-                    {expandedId === example._id ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
+                    <p className="text-sm font-medium">{example.question}</p>
                   </div>
                 </div>
               </button>
 
-              {expandedId === example._id && (
+              <div
+                className={cn(
+                  expandedId === example._id ? "h-auto" : "h-0",
+                  "flex flex-col gap-2 overflow-hidden"
+                )}
+              >
                 <div className="px-4 pb-4 space-y-3 border-t bg-muted/20">
                   <div className="pt-3">
                     <p className="text-xs font-medium text-green-600 mb-1">Chosen Answer:</p>
-                    <p className="text-sm bg-background rounded p-3">{example.chosenAnswer}</p>
+                    <p className="text-sm">{example.chosenAnswer}</p>
                   </div>
                   {example.rejectedAnswer && (
                     <div>
                       <p className="text-xs font-medium text-red-600 mb-1">Rejected Answer:</p>
-                      <p className="text-sm bg-background rounded p-3 text-muted-foreground">
-                        {example.rejectedAnswer}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{example.rejectedAnswer}</p>
                     </div>
                   )}
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <RefreshCw className="h-3 w-3" />
-                      <span>
-                        Retrieved{" "}
-                        <strong className="text-foreground">{example.timesRetrieved ?? 0}</strong>{" "}
-                        time
-                        {(example.timesRetrieved ?? 0) !== 1 ? "s" : ""}
-                      </span>
-                    </div>
+                  <div className="flex items-center justify-end pt-2">
                     <HoldToDeleteButton
                       onDelete={() => handleDelete(example._id)}
                       disabled={deletingId === example._id}
                     />
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
