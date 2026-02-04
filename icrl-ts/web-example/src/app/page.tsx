@@ -12,6 +12,25 @@ import { checkApiStatus } from "@/lib/actions";
 import { toSlug } from "@/lib/slug";
 import { Loader2, Database } from "lucide-react";
 import type { Id } from "../../convex/_generated/dataModel";
+import { GrainGradient } from "@paper-design/shaders-react";
+
+function Background() {
+  return (
+    <div className="fixed inset-0 -z-10">
+      <GrainGradient
+        style={{ width: "100%", height: "100%" }}
+        colors={["#ffedd6"]}
+        colorBack="#fafaf9"
+        softness={0.7}
+        intensity={0.15}
+        noise={0.5}
+        shape="wave"
+        speed={1}
+        scale={1.24}
+      />
+    </div>
+  );
+}
 
 export default function Home() {
   const router = useRouter();
@@ -45,7 +64,8 @@ export default function Home() {
   // Show loading while checking for databases
   if (databases === undefined) {
     return (
-      <main className="min-h-screen bg-background flex flex-col">
+      <main className="min-h-screen flex flex-col relative">
+        <Background />
         <Header />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -57,7 +77,8 @@ export default function Home() {
 
   // No databases - show welcome screen
   return (
-    <main className="min-h-screen bg-background flex flex-col">
+    <main className="min-h-screen flex flex-col relative">
+      <Background />
       <Header />
 
       {apiStatus && !apiStatus.configured && <ApiStatusBanner message={apiStatus.message} />}

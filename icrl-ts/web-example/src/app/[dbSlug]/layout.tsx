@@ -7,9 +7,10 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { DatabaseSelector } from "@/components/database-selector";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Database, Settings, Loader2, BicepsFlexed, Milestone } from "lucide-react";
+import { Database, Loader2, BicepsFlexed, Milestone } from "lucide-react";
 import { toSlug, type TabSlug } from "@/lib/slug";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { GrainGradient } from "@paper-design/shaders-react";
 
 export default function DatabaseLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
@@ -40,7 +41,20 @@ export default function DatabaseLayout({ children }: { children: React.ReactNode
   // Loading state
   if (database === undefined) {
     return (
-      <main className="min-h-screen bg-background flex flex-col">
+      <main className="min-h-screen flex flex-col relative">
+        <div className="fixed inset-0 -z-10">
+          <GrainGradient
+            style={{ width: "100%", height: "100%" }}
+            colors={["#ffedd6"]}
+            colorBack="#fafaf9"
+            softness={0.7}
+            intensity={0.15}
+            noise={0.5}
+            shape="wave"
+            speed={1}
+            scale={1.24}
+          />
+        </div>
         <Header />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -53,7 +67,20 @@ export default function DatabaseLayout({ children }: { children: React.ReactNode
   // Database not found
   if (database === null) {
     return (
-      <main className="min-h-screen bg-background flex flex-col">
+      <main className="min-h-screen flex flex-col relative">
+        <div className="fixed inset-0 -z-10">
+          <GrainGradient
+            style={{ width: "100%", height: "100%" }}
+            colors={["#ffedd6"]}
+            colorBack="#fafaf9"
+            softness={0.7}
+            intensity={0.15}
+            noise={0.5}
+            shape="wave"
+            speed={1}
+            scale={1.24}
+          />
+        </div>
         <Header
           databaseSelector={<DatabaseSelector selectedId={null} onSelect={handleDbSelect} />}
         />
@@ -99,7 +126,22 @@ export default function DatabaseLayout({ children }: { children: React.ReactNode
   );
 
   return (
-    <main className="min-h-screen bg-background flex flex-col">
+    <main className="min-h-screen flex flex-col relative">
+      {/* Grain Gradient Background */}
+      <div className="fixed inset-0 -z-10">
+        <GrainGradient
+          style={{ width: "100%", height: "100%" }}
+          colors={["#ffedd6"]}
+          colorBack="#fafaf9"
+          softness={0.7}
+          intensity={0.15}
+          noise={0.5}
+          shape="wave"
+          speed={1}
+          scale={1.24}
+        />
+      </div>
+
       <Header
         tabs={headerTabs}
         databaseSelector={<DatabaseSelector selectedId={database._id} onSelect={handleDbSelect} />}

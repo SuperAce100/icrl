@@ -160,7 +160,7 @@ export function QuestionInput({
               <button
                 onClick={onEnterYoloMode}
                 disabled={isLoading}
-                className="p-3 text-left text-sm rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-3 text-left text-sm rounded-lg border border-primary/30  bg-card bg-linear-to-br from-card to-primary/10 hover:bg-primary/5 hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-1 mb-1">
                   <Zap className="h-4 w-4 text-primary" />
