@@ -1,0 +1,112 @@
+[
+  {
+    "id": "CASE-001",
+    "title": "Late refund request from 3-year customer",
+    "situation": "Customer has been with us for 3 years, paying $200/month. They're requesting a refund for last month's charge (45 days ago) because they forgot to cancel before a vacation and didn't use the service. Policy says no refunds after 30 days.",
+    "decision": "APPROVE the refund as a one-time goodwill gesture. Customer lifetime value is $7,200+, losing them over $200 is bad business. Document as 'goodwill credit' not 'policy exception'. Send a personal note thanking them for their loyalty.",
+    "reasoning": "Long-term customers (2+ years) with good payment history get benefit of the doubt on reasonable requests. The cost of the refund is far less than the cost of churn. This is standard practice even though policy doesn't explicitly allow it.",
+    "escalation": "None needed - support lead can approve up to $500 for customers with 2+ year tenure",
+    "category": "refund",
+    "key_factors": ["customer tenure > 2 years", "reasonable request", "amount < $500", "first-time ask"],
+    "outcome": "Customer stayed, upgraded to annual plan 3 months later"
+  },
+  {
+    "id": "CASE-002",
+    "title": "Enterprise customer requesting custom DPA terms",
+    "situation": "Fortune 500 company in healthcare (HIPAA-regulated) is in final stages of a $600k/year deal. Their legal team is requesting modifications to our Data Processing Agreement - specifically around data residency and breach notification timelines. Our policy says no custom terms.",
+    "decision": "LOOP IN LEGAL immediately. For deals > $500k in regulated industries, we almost always accommodate reasonable DPA modifications. Legal has pre-approved templates for HIPAA, SOC2, and GDPR-specific addendums. Don't say 'no' - say 'let me connect you with our legal team who handles enterprise agreements.'",
+    "reasoning": "Policy says 'no custom terms' but that's for self-serve customers. Enterprise deals have always had flexibility. Healthcare/finance customers have legitimate compliance requirements. Losing a $600k deal over contract language is unacceptable.",
+    "escalation": "Legal team (enterprise-legal@acme.com) + CC the account executive",
+    "category": "contract",
+    "key_factors": ["deal size > $500k", "regulated industry", "DPA/compliance related", "reasonable modifications"],
+    "outcome": "Legal approved modified DPA in 5 days, deal closed"
+  },
+  {
+    "id": "CASE-003",
+    "title": "Customer claims double charge, demands immediate refund",
+    "situation": "Customer is angry, claiming they were charged twice for the same month. They're threatening to dispute with their credit card company. Looking at our records, I can only see one charge, but they've sent a screenshot showing two pending charges.",
+    "decision": "REFUND FIRST, investigate later. Issue the refund immediately and apologize. Then investigate whether it was a duplicate charge (our fault), a pending/posted timing issue (bank's display), or user error (two accounts). Credit card disputes cost us $25+ in fees and hurt our processor relationship.",
+    "reasoning": "When a customer shows evidence of double charge, believe them and fix it fast. The cost of being wrong (refunding $X we were owed) is much less than: 1) chargeback fees, 2) processor reputation damage, 3) angry customer reviews. We can always re-bill if investigation shows no double charge.",
+    "escalation": "None for refund. Flag to billing team for investigation after refund is issued.",
+    "category": "billing",
+    "key_factors": ["customer has evidence", "threatening chargeback", "billing dispute"],
+    "outcome": "Refunded immediately. Investigation showed bank pending/posted display issue - no actual double charge, but customer appreciated fast resolution"
+  },
+  {
+    "id": "CASE-004",
+    "title": "Competitor actively poaching our customer",
+    "situation": "Account manager reports that CompetitorX is aggressively pursuing one of our mid-market customers ($50k/year). Customer mentioned they have a meeting scheduled with CompetitorX next week and are 'evaluating options'. Customer has been with us 18 months.",
+    "decision": "ESCALATE to VP of Sales immediately. Trigger the retention playbook: 1) Schedule executive sponsor call within 48 hours, 2) Prepare competitive battlecard for CompetitorX, 3) Authorized to offer up to 25% discount on renewal, 4) Offer extended payment terms or contract flexibility. Do NOT wait for customer to formally announce they're leaving.",
+    "reasoning": "Proactive retention is 10x more effective than reactive win-back. Once they've signed with competitor, it's too late. $50k/year customer is worth fighting for. VP involvement signals we take them seriously.",
+    "escalation": "VP of Sales + Account Executive + Customer Success Manager",
+    "category": "retention",
+    "key_factors": ["active competitor threat", "customer value > $30k", "meeting scheduled with competitor"],
+    "outcome": "VP call happened, offered 20% discount + dedicated CSM. Customer stayed."
+  },
+  {
+    "id": "CASE-005",
+    "title": "User locked out, critical deadline",
+    "situation": "User is locked out of their account due to failed MFA attempts. They have a board presentation in 2 hours and need access to their dashboards. Normal security review takes 24 hours. They're on our Enterprise plan ($100k/year account).",
+    "decision": "EXPEDITE the security review. For Enterprise customers with legitimate urgent business need: 1) Verify identity through secondary channel (call their IT admin, check against known contacts), 2) Temporarily disable MFA with 24-hour auto-re-enable, 3) Log everything for security audit, 4) Follow up next day to re-enable MFA properly.",
+    "reasoning": "Policy says 24-hour review, but that's to prevent social engineering on unknown accounts. Enterprise customers have verified contacts we can call. A board presentation is a legitimate emergency. The risk of a $100k customer missing their board meeting exceeds the security risk of expedited verification.",
+    "escalation": "Security team lead can approve expedited review for Enterprise accounts",
+    "category": "security",
+    "key_factors": ["Enterprise customer", "verifiable identity through secondary channel", "legitimate time-sensitive need"],
+    "outcome": "Identity verified via IT admin callback, access restored in 20 minutes, customer made their presentation"
+  },
+  {
+    "id": "CASE-006",
+    "title": "Customer requesting data export in non-standard format",
+    "situation": "Customer is migrating to a new system and needs their data exported in JSON format. Our policy says CSV only. They have 3 years of data and manually converting CSV to JSON would take them weeks. They're a $30k/year customer.",
+    "decision": "ACCOMMODATE the request. Engineering has a script that can export to JSON - it takes 30 minutes to run. For customers with significant tenure (2+ years) or value ($20k+/year), we do custom exports. Frame it as 'one-time courtesy' so it doesn't set precedent for ongoing custom work.",
+    "reasoning": "The policy exists because custom exports take engineering time. But we have tooling for JSON specifically, and the customer's request is reasonable for a migration. Saying 'no' over a 30-minute task risks losing a $30k customer.",
+    "escalation": "Support lead approves, engineering runs the export script",
+    "category": "data",
+    "key_factors": ["reasonable technical request", "customer value > $20k", "we have existing tooling", "one-time ask"],
+    "outcome": "JSON export delivered same day, customer completed migration successfully, renewed contract"
+  },
+  {
+    "id": "CASE-007",
+    "title": "Free tier user requesting Enterprise-level support",
+    "situation": "User on free tier is demanding immediate phone support for a bug they encountered. They're threatening to leave bad reviews if we don't call them back within an hour. Policy says free tier gets 48-hour email support only.",
+    "decision": "HOLD THE LINE on policy. Politely explain support tiers and offer to help via email. Do not escalate or make exceptions. If they leave bad reviews, respond professionally and publicly. Free tier users who demand Enterprise treatment are not customers we want to convert - they'll be high-maintenance forever.",
+    "reasoning": "Unlike paying customers, free tier users haven't earned exception treatment. Making exceptions here: 1) sets bad precedent, 2) takes resources from paying customers, 3) rewards threatening behavior. The 'bad review' threat is a manipulation tactic.",
+    "escalation": "None. Support agent handles with standard free tier response.",
+    "category": "support",
+    "key_factors": ["free tier", "demanding/threatening behavior", "no business relationship"],
+    "outcome": "User left one bad review, we responded professionally, no business impact"
+  },
+  {
+    "id": "CASE-008",
+    "title": "Customer missed renewal, service suspended",
+    "situation": "Customer's annual subscription expired 10 days ago. Their credit card on file had expired and they missed our renewal emails. Service was auto-suspended per policy. They're now asking to restore access and pay immediately. They're a $15k/year customer who's been with us for 4 years.",
+    "decision": "RESTORE ACCESS immediately upon payment confirmation. Waive any late fees. For established customers (1+ year tenure), we don't penalize for payment issues - we assume good faith. Send a friendly note, not a stern warning. Offer to set up backup payment method to prevent future issues.",
+    "reasoning": "Policy says suspended accounts need 'review' but that's for fraud prevention, not loyal customers with expired cards. 4-year customer with $60k lifetime value should get immediate restoration. The 10-day gap was our emails going to spam, not intentional non-payment.",
+    "escalation": "None - support can restore immediately upon payment",
+    "category": "billing",
+    "key_factors": ["established customer", "payment method issue (not refusal)", "immediate willingness to pay"],
+    "outcome": "Access restored within 1 hour of payment, customer grateful for smooth handling"
+  },
+  {
+    "id": "CASE-009",
+    "title": "Startup requesting extended trial",
+    "situation": "YC-backed startup is in our 14-day trial. They're asking for a 30-day extension because their CTO is on paternity leave and they can't properly evaluate until he returns. They're likely to be a $20-40k/year customer based on their team size.",
+    "decision": "APPROVE the extension. For qualified startups (YC, a]6z, Sequoia-backed, etc.) or companies with clear buying intent, we extend trials up to 45 days total. Add them to the 'high-potential' nurture track. Have an AE reach out to schedule a proper demo when CTO returns.",
+    "reasoning": "Trial extensions for legitimate reasons convert better than rushed evaluations. YC-backed signals quality and growth potential. The cost of 30 more days of free usage is trivial compared to potential $20k+ deal.",
+    "escalation": "Sales team should be notified for follow-up, but support can approve extension",
+    "category": "sales",
+    "key_factors": ["qualified prospect", "legitimate reason for delay", "high conversion potential"],
+    "outcome": "Trial extended, CTO returned, converted to $35k/year deal"
+  },
+  {
+    "id": "CASE-010",
+    "title": "Customer requesting retroactive discount",
+    "situation": "Customer just discovered we ran a 30% off promotion last month. They signed up 2 weeks before the promotion at full price. They're asking if we can apply the discount retroactively. They're on a $500/month plan.",
+    "decision": "DECLINE the retroactive discount, but offer a gesture. Policy is clear: discounts aren't retroactive. However, offer them the promotional rate on their NEXT renewal if they commit to annual. This turns a 'no' into a future 'yes' and locks in the customer.",
+    "reasoning": "Retroactive discounts set a terrible precedent - everyone would wait for promotions then ask for backpay. But we can redirect the conversation to future value. The annual commitment is worth more than the one-time discount.",
+    "escalation": "None - support can offer the 'discount on next renewal with annual commitment' deal",
+    "category": "billing",
+    "key_factors": ["retroactive request", "reasonable customer", "opportunity to convert to annual"],
+    "outcome": "Customer accepted annual plan with 30% discount, increased LTV significantly"
+  }
+]

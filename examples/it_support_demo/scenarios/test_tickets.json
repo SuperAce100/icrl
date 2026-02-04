@@ -1,0 +1,82 @@
+[
+  {
+    "id": "TEST-001",
+    "title": "VPN stuck on connecting",
+    "issue": "I just updated my Mac to the latest version and now VPN won't connect. It just shows 'Connecting...' and spins forever. I've tried restarting my laptop and reinstalling GlobalProtect but nothing works. I need to access internal systems for a deadline today!",
+    "expected_keywords": ["IPv6", "disable", "Sonoma", "System Preferences", "Network", "TCP/IP"],
+    "expected_root_cause": "GlobalProtect IPv6 compatibility issue with macOS Sonoma",
+    "similar_to_seed": "TKT-1001",
+    "category": "VPN",
+    "vanilla_likely_response": "Generic troubleshooting: check credentials, reinstall VPN client, contact IT, check internet connection"
+  },
+  {
+    "id": "TEST-002",
+    "title": "Phone email stopped working",
+    "issue": "My Outlook app on my iPhone stopped syncing this morning. I'm not getting any new emails on my phone but they show up fine on my laptop. I already tried force-closing the app and restarting my phone. What's going on?",
+    "expected_keywords": ["MFA", "token", "expired", "90 days", "remove account", "re-add", "delete"],
+    "expected_root_cause": "MFA token expiration after 90 days",
+    "similar_to_seed": "TKT-1042",
+    "category": "Email",
+    "vanilla_likely_response": "Generic troubleshooting: check internet, reinstall Outlook, check account settings, contact Microsoft support"
+  },
+  {
+    "id": "TEST-003",
+    "title": "Database connection timeout",
+    "issue": "I'm a new engineer and I can't connect to the staging database. I have the right credentials because I can see it in the admin panel, but when I try to connect from my terminal I get a connection timeout. I'm sitting in the office right now.",
+    "expected_keywords": ["WiFi", "ACME-Guest", "ACME-Corp", "network", "VPN", "guest"],
+    "expected_root_cause": "Connected to guest WiFi which can't reach internal resources",
+    "similar_to_seed": "TKT-1089",
+    "category": "Database",
+    "vanilla_likely_response": "Generic troubleshooting: check if database is up, verify credentials, check firewall, contact DBA team"
+  },
+  {
+    "id": "TEST-004",
+    "title": "Git push permission denied",
+    "issue": "I'm trying to push my code to GitHub but it keeps saying 'Authentication failed for https://github.com/acme/repo.git'. I'm 100% sure my password is correct because I just used it to log into github.com. This is really frustrating!",
+    "expected_keywords": ["Personal Access Token", "PAT", "deprecated", "password authentication", "token", "Developer Settings"],
+    "expected_root_cause": "GitHub deprecated password authentication, need to use Personal Access Token",
+    "similar_to_seed": "TKT-1203",
+    "category": "Git",
+    "vanilla_likely_response": "Generic troubleshooting: reset password, check SSH keys, verify remote URL, check repository permissions"
+  },
+  {
+    "id": "TEST-005",
+    "title": "Slack messages not appearing",
+    "issue": "I keep missing important Slack messages. My teammates say they're messaging me but I don't see any notifications. I checked Slack settings and notifications are set to 'All new messages'. What else could it be?",
+    "expected_keywords": ["Focus Mode", "moon", "Do Not Disturb", "System Preferences", "Notifications", "menu bar"],
+    "expected_root_cause": "macOS Focus Mode is blocking notifications",
+    "similar_to_seed": "TKT-1156",
+    "category": "Slack",
+    "vanilla_likely_response": "Generic troubleshooting: check Slack notification settings, reinstall Slack, check system notification settings"
+  },
+  {
+    "id": "TEST-006",
+    "title": "Screen share shows black",
+    "issue": "When I try to share my screen in Zoom, everyone else just sees a black screen. I can see my screen fine on my end. This happens in every meeting and it's really embarrassing. I'm on a Mac.",
+    "expected_keywords": ["Screen Recording", "permission", "Security & Privacy", "Privacy", "zoom.us", "restart"],
+    "expected_root_cause": "Zoom doesn't have Screen Recording permission in macOS",
+    "similar_to_seed": "TKT-1267",
+    "category": "Zoom",
+    "vanilla_likely_response": "Generic troubleshooting: update Zoom, restart computer, check Zoom settings, try a different browser"
+  },
+  {
+    "id": "TEST-007",
+    "title": "Can't open shared Drive folder",
+    "issue": "My manager shared a Google Drive folder with me but when I click the link I get 'You need access - request access or switch accounts'. But she definitely shared it with the team. Other people can access it fine.",
+    "expected_keywords": ["Google account", "personal", "Gmail", "ACME account", "switch account", "profile", "signed in"],
+    "expected_root_cause": "Browser is using personal Google account instead of work account",
+    "similar_to_seed": "TKT-1298",
+    "category": "Google Drive",
+    "vanilla_likely_response": "Generic troubleshooting: request access again, check sharing settings, contact the owner, try incognito mode"
+  },
+  {
+    "id": "TEST-008",
+    "title": "Docker can't pull images",
+    "issue": "I'm trying to set up my development environment but Docker can't pull any images. I get timeout errors. My laptop can access the internet fine - I can browse websites and everything. Just Docker doesn't work.",
+    "expected_keywords": ["DNS", "daemon.json", "8.8.8.8", "Google DNS", "restart Docker"],
+    "expected_root_cause": "Docker DNS configuration conflicts with corporate network",
+    "similar_to_seed": "TKT-1334",
+    "category": "Docker",
+    "vanilla_likely_response": "Generic troubleshooting: check Docker settings, restart Docker, check firewall, verify Docker Hub is up"
+  }
+]

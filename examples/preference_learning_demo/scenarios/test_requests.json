@@ -1,0 +1,226 @@
+[
+  {
+    "id": "TEST-001",
+    "request": "How do I cherry-pick a commit from another branch?",
+    "category": "git",
+    "expected_responses": {
+      "expert_terse": {
+        "style": "Single command with minimal comment",
+        "max_lines": 5,
+        "must_contain": ["git cherry-pick"],
+        "must_not_contain": ["let me explain", "here's how", "step by step"],
+        "example": "git cherry-pick <commit-hash>\n# or for a range: git cherry-pick A^..B"
+      },
+      "learner_detailed": {
+        "style": "Full explanation with context",
+        "min_lines": 15,
+        "must_contain": ["cherry-pick", "what", "why", "example", "warning"],
+        "must_not_contain": [],
+        "example": "## What is Cherry-Pick?\n\nCherry-picking lets you apply a specific commit from one branch to another..."
+      },
+      "manager_summary": {
+        "style": "High-level overview",
+        "max_lines": 15,
+        "must_contain": ["impact", "risk", "when", "who"],
+        "must_not_contain": ["git cherry-pick", "```bash", "$ git"],
+        "example": "## Cherry-Pick - Overview\n\n**What it does**: Copies a specific commit from one branch to another..."
+      }
+    }
+  },
+  {
+    "id": "TEST-002",
+    "request": "How do I set up a Python virtual environment?",
+    "category": "python",
+    "expected_responses": {
+      "expert_terse": {
+        "style": "Commands only",
+        "max_lines": 4,
+        "must_contain": ["python", "venv", "activate"],
+        "must_not_contain": ["virtual environment is", "this creates", "you should"],
+        "example": "python -m venv venv\nsource venv/bin/activate  # or venv\\Scripts\\activate on Windows"
+      },
+      "learner_detailed": {
+        "style": "Full tutorial",
+        "min_lines": 20,
+        "must_contain": ["virtual environment", "why", "isolate", "dependencies", "pip"],
+        "must_not_contain": [],
+        "example": "## Python Virtual Environments\n\nA virtual environment is an isolated Python installation..."
+      },
+      "manager_summary": {
+        "style": "Overview for non-technical",
+        "max_lines": 12,
+        "must_contain": ["purpose", "benefit", "team", "standard"],
+        "must_not_contain": ["python -m venv", "source", "activate"],
+        "example": "## Virtual Environments - Overview\n\n**Purpose**: Isolate project dependencies..."
+      }
+    }
+  },
+  {
+    "id": "TEST-003",
+    "request": "How do I resolve a git merge conflict?",
+    "category": "git",
+    "expected_responses": {
+      "expert_terse": {
+        "style": "Quick steps",
+        "max_lines": 8,
+        "must_contain": ["<<<<", "====", ">>>>", "git add"],
+        "must_not_contain": ["merge conflict occurs when", "don't worry"],
+        "example": "# edit conflicted files, remove <<<< ==== >>>> markers\ngit add <files>\ngit commit"
+      },
+      "learner_detailed": {
+        "style": "Comprehensive guide",
+        "min_lines": 25,
+        "must_contain": ["conflict", "HEAD", "markers", "step", "example", "tip"],
+        "must_not_contain": [],
+        "example": "## Understanding Merge Conflicts\n\nA merge conflict happens when Git can't automatically combine changes..."
+      },
+      "manager_summary": {
+        "style": "Impact-focused",
+        "max_lines": 15,
+        "must_contain": ["impact", "time", "risk", "who should"],
+        "must_not_contain": ["<<<<", ">>>>", "git add"],
+        "example": "## Merge Conflicts - Overview\n\n**What happened**: Two branches modified the same code..."
+      }
+    }
+  },
+  {
+    "id": "TEST-004",
+    "request": "How do I check disk usage on Linux?",
+    "category": "linux",
+    "expected_responses": {
+      "expert_terse": {
+        "style": "Commands only",
+        "max_lines": 4,
+        "must_contain": ["df", "du"],
+        "must_not_contain": ["disk usage is", "this shows", "let me explain"],
+        "example": "df -h          # filesystem usage\ndu -sh */      # directory sizes"
+      },
+      "learner_detailed": {
+        "style": "Full explanation",
+        "min_lines": 18,
+        "must_contain": ["df", "du", "difference", "human-readable", "example"],
+        "must_not_contain": [],
+        "example": "## Checking Disk Usage in Linux\n\nThere are two main commands for checking disk usage..."
+      },
+      "manager_summary": {
+        "style": "Overview",
+        "max_lines": 12,
+        "must_contain": ["purpose", "when", "action"],
+        "must_not_contain": ["df -h", "du -sh", "```bash"],
+        "example": "## Disk Usage Check - Overview\n\n**Purpose**: Identify how much storage is being used..."
+      }
+    }
+  },
+  {
+    "id": "TEST-005",
+    "request": "How do I create a new branch and push it to remote?",
+    "category": "git",
+    "expected_responses": {
+      "expert_terse": {
+        "style": "Two commands",
+        "max_lines": 3,
+        "must_contain": ["checkout -b", "push"],
+        "must_not_contain": ["first you need", "this will", "branches are"],
+        "example": "git checkout -b feature-name\ngit push -u origin feature-name"
+      },
+      "learner_detailed": {
+        "style": "Tutorial with context",
+        "min_lines": 15,
+        "must_contain": ["branch", "checkout", "push", "-u", "upstream", "why"],
+        "must_not_contain": [],
+        "example": "## Creating and Pushing a New Branch\n\nBranches let you work on features without affecting main..."
+      },
+      "manager_summary": {
+        "style": "Process overview",
+        "max_lines": 12,
+        "must_contain": ["workflow", "team", "when"],
+        "must_not_contain": ["git checkout", "git push", "-u origin"],
+        "example": "## Branch Creation - Overview\n\n**Purpose**: Start work on a new feature or fix..."
+      }
+    }
+  },
+  {
+    "id": "TEST-006",
+    "request": "How do I view the last 10 lines of a log file in real-time?",
+    "category": "linux",
+    "expected_responses": {
+      "expert_terse": {
+        "style": "Single command",
+        "max_lines": 2,
+        "must_contain": ["tail", "-f"],
+        "must_not_contain": ["this command", "will show", "real-time means"],
+        "example": "tail -f -n 10 /path/to/logfile.log"
+      },
+      "learner_detailed": {
+        "style": "Full explanation",
+        "min_lines": 15,
+        "must_contain": ["tail", "follow", "-f", "-n", "Ctrl+C", "example"],
+        "must_not_contain": [],
+        "example": "## Monitoring Log Files in Real-Time\n\nThe `tail` command shows the end of a file..."
+      },
+      "manager_summary": {
+        "style": "Use case focused",
+        "max_lines": 10,
+        "must_contain": ["monitoring", "debugging", "when"],
+        "must_not_contain": ["tail -f", "-n 10", "```"],
+        "example": "## Log Monitoring - Overview\n\n**Purpose**: Watch log output as it happens..."
+      }
+    }
+  },
+  {
+    "id": "TEST-007",
+    "request": "How do I rollback a database migration in Django?",
+    "category": "django",
+    "expected_responses": {
+      "expert_terse": {
+        "style": "Command with migration name",
+        "max_lines": 4,
+        "must_contain": ["migrate", "python manage.py"],
+        "must_not_contain": ["migrations are", "this will", "be careful"],
+        "example": "python manage.py migrate app_name 0003_previous_migration\n# or to zero: python manage.py migrate app_name zero"
+      },
+      "learner_detailed": {
+        "style": "Full guide with warnings",
+        "min_lines": 20,
+        "must_contain": ["migrate", "rollback", "previous", "warning", "data loss", "showmigrations"],
+        "must_not_contain": [],
+        "example": "## Rolling Back Django Migrations\n\nSometimes you need to undo a migration..."
+      },
+      "manager_summary": {
+        "style": "Risk-focused overview",
+        "max_lines": 15,
+        "must_contain": ["risk", "data", "impact", "when", "who"],
+        "must_not_contain": ["python manage.py", "migrate app_name"],
+        "example": "## Migration Rollback - Overview\n\n**What it does**: Reverts database schema changes..."
+      }
+    }
+  },
+  {
+    "id": "TEST-008",
+    "request": "How do I compress a folder into a tar.gz file?",
+    "category": "linux",
+    "expected_responses": {
+      "expert_terse": {
+        "style": "Single command",
+        "max_lines": 2,
+        "must_contain": ["tar", "-czvf"],
+        "must_not_contain": ["tar is", "compression", "this creates"],
+        "example": "tar -czvf archive.tar.gz folder/"
+      },
+      "learner_detailed": {
+        "style": "Explanation with flags",
+        "min_lines": 15,
+        "must_contain": ["tar", "create", "gzip", "verbose", "flags", "extract"],
+        "must_not_contain": [],
+        "example": "## Creating a Compressed Archive\n\nThe `tar` command combines files into an archive..."
+      },
+      "manager_summary": {
+        "style": "Purpose-focused",
+        "max_lines": 10,
+        "must_contain": ["purpose", "when", "size"],
+        "must_not_contain": ["tar -czvf", "-c -z -v -f"],
+        "example": "## File Compression - Overview\n\n**Purpose**: Bundle files for transfer or backup..."
+      }
+    }
+  }
+]

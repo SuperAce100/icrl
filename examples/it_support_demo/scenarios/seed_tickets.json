@@ -1,0 +1,102 @@
+[
+  {
+    "id": "TKT-1001",
+    "title": "VPN not connecting after macOS update",
+    "issue": "User updated to macOS Sonoma and now GlobalProtect VPN won't connect. It shows 'Connecting...' forever and eventually times out. Reinstalling didn't help.",
+    "resolution": "This is a known issue with GlobalProtect 6.1 and macOS Sonoma's IPv6 stack. The fix is:\n1. Open System Preferences → Network\n2. Select the VPN connection\n3. Click Advanced\n4. Go to TCP/IP tab\n5. Set 'Configure IPv6' to 'Link-local only' or disable it\n6. Click OK and Apply\n7. Try connecting again\n\nThis resolves the issue immediately. GlobalProtect has acknowledged the bug and a fix is expected in version 6.2.",
+    "root_cause": "GlobalProtect 6.1 has a compatibility bug with macOS Sonoma's new IPv6 implementation. The VPN client gets stuck in an IPv6 negotiation loop.",
+    "category": "VPN",
+    "resolution_time_minutes": 5,
+    "frequency": "Very common since Sonoma release"
+  },
+  {
+    "id": "TKT-1042",
+    "title": "Outlook not syncing on iPhone",
+    "issue": "User reports Outlook on iPhone stopped syncing emails. Was working fine until this morning. Desktop Outlook works fine. Already tried restarting phone and reinstalling app.",
+    "resolution": "This is almost always caused by MFA token expiration. Microsoft enforces a 90-day token refresh but doesn't notify users - the app just silently stops syncing.\n\nFix:\n1. On iPhone, go to Settings → Mail → Accounts\n2. Find the ACME/Outlook account and delete it\n3. Re-add the account: Settings → Mail → Accounts → Add Account → Microsoft 365\n4. Sign in and complete the MFA prompt\n5. Wait 2-3 minutes for initial sync\n\nThis happens every ~90 days. If user reports this repeatedly, set a calendar reminder for them.",
+    "root_cause": "Microsoft 365 MFA tokens expire after 90 days. The Outlook mobile app doesn't prompt for re-authentication - it just fails silently.",
+    "category": "Email",
+    "resolution_time_minutes": 3,
+    "frequency": "Common - happens to everyone every 90 days"
+  },
+  {
+    "id": "TKT-1089",
+    "title": "Cannot connect to production database",
+    "issue": "New engineer reports they can't connect to the production database. Getting connection timeout errors. They have the correct credentials and can see the database in the admin panel.",
+    "resolution": "First question to ask: 'What WiFi network are you connected to?'\n\nACME-Guest network cannot reach internal resources including databases. This is by design (network segmentation).\n\nFix:\n1. Check WiFi network - if on ACME-Guest, switch to ACME-Corp\n2. If working remotely, connect to VPN first\n3. Try the connection again\n\nThis is extremely common for new hires who connect to Guest network on their first day because it doesn't require credentials.",
+    "root_cause": "Network segmentation - ACME-Guest is isolated from internal resources. Production databases are only accessible from ACME-Corp network or via VPN.",
+    "category": "Database",
+    "resolution_time_minutes": 2,
+    "frequency": "Very common for new hires"
+  },
+  {
+    "id": "TKT-1156",
+    "title": "Not receiving Slack notifications",
+    "issue": "User complains they're missing Slack messages. Notifications aren't appearing even though they're set to 'All new messages'. Checked Slack settings and everything looks correct.",
+    "resolution": "Check for macOS Focus Mode first - this is the cause 90% of the time.\n\nLook for the moon icon in the menu bar. If present, Focus Mode is blocking notifications.\n\nFix:\n1. Click the moon icon in menu bar → Turn off Focus\n   OR\n2. System Preferences → Focus → Select active focus mode → Under 'Allowed Notifications' add Slack\n\nAlso check:\n- System Preferences → Notifications → Slack → Ensure 'Allow Notifications' is ON\n- Slack app → Preferences → Notifications → Ensure not set to 'Nothing'\n\nUsers often enable Focus Mode accidentally via keyboard shortcut (Cmd+Shift+D) or by clicking the wrong thing in Control Center.",
+    "root_cause": "macOS Focus Mode blocks notifications by default. Users enable it accidentally or forget they turned it on.",
+    "category": "Slack",
+    "resolution_time_minutes": 2,
+    "frequency": "Common"
+  },
+  {
+    "id": "TKT-1203",
+    "title": "Git push authentication failed",
+    "issue": "Engineer reports 'git push origin main' fails with 'Authentication failed'. They're entering their GitHub password correctly. This started happening recently - was working before.",
+    "resolution": "GitHub deprecated password authentication in August 2021. Users with old git configurations still hit this.\n\nFix - Create a Personal Access Token:\n1. Go to GitHub.com → Settings (click profile pic)\n2. Developer Settings (bottom of left sidebar)\n3. Personal Access Tokens → Tokens (classic)\n4. Generate New Token\n5. Give it a name, set expiration, select 'repo' scope\n6. Copy the token immediately (you won't see it again)\n7. Use this token as your password when git prompts\n\nTo avoid repeated prompts:\n```bash\ngit config --global credential.helper osxkeychain  # macOS\ngit config --global credential.helper store        # Linux\n```\n\nAlternatively, switch to SSH authentication for a permanent fix.",
+    "root_cause": "GitHub removed password authentication. Users need Personal Access Tokens or SSH keys.",
+    "category": "Git",
+    "resolution_time_minutes": 5,
+    "frequency": "Common for users with old git setups"
+  },
+  {
+    "id": "TKT-1267",
+    "title": "Zoom screen sharing shows black screen",
+    "issue": "User trying to share screen in Zoom but recipients only see a black screen. User can see their own screen fine. Happens in every meeting.",
+    "resolution": "This is a macOS permissions issue - Zoom needs Screen Recording permission.\n\nFix:\n1. System Preferences → Security & Privacy → Privacy tab\n2. Select 'Screen Recording' in the left sidebar\n3. Check the box next to 'zoom.us'\n4. If Zoom isn't listed, click '+' and add it from Applications\n5. Restart Zoom completely (Cmd+Q, not just close window)\n\nNote: This permission is required after every macOS major update. Users will hit this again after upgrading to new macOS versions.",
+    "root_cause": "macOS requires explicit Screen Recording permission. Zoom can't capture screen content without it.",
+    "category": "Zoom",
+    "resolution_time_minutes": 3,
+    "frequency": "Common after macOS updates"
+  },
+  {
+    "id": "TKT-1298",
+    "title": "Can't access Google Drive files",
+    "issue": "User reports they can't open shared Google Drive files. Getting 'You need access' error even though they were shared with the team.",
+    "resolution": "Check which Google account they're signed into. Users often have personal Gmail accounts that take priority over their ACME Google Workspace account.\n\nFix:\n1. Go to drive.google.com\n2. Click profile picture in top right\n3. Check which account is active\n4. If it's personal Gmail, click 'Add another account' or switch to ACME account\n5. Alternatively, open link in incognito window and sign in with ACME account\n\nFor persistent issues:\n- Chrome → Settings → 'You and Google' → 'Manage your Google Account' → make ACME account the default\n- Or use Chrome profiles (one for personal, one for work)",
+    "root_cause": "Browser is using personal Google account instead of ACME Google Workspace account. Shared files are only accessible to the correct account.",
+    "category": "Google Drive",
+    "resolution_time_minutes": 2,
+    "frequency": "Very common"
+  },
+  {
+    "id": "TKT-1334",
+    "title": "Docker containers can't reach internet",
+    "issue": "Developer reports Docker containers can't pull images or reach external APIs. Getting timeout errors. Host machine has internet access.",
+    "resolution": "This is almost always a DNS issue with Docker's default configuration on corporate networks.\n\nFix:\n1. Create or edit ~/.docker/daemon.json:\n```json\n{\n  \"dns\": [\"8.8.8.8\", \"8.8.4.4\"]\n}\n```\n2. Restart Docker Desktop\n3. Try pulling an image: `docker pull alpine`\n\nAlternative fix if above doesn't work:\n- Check if corporate proxy is required\n- Set HTTP_PROXY and HTTPS_PROXY in Docker Desktop settings\n\nThis happens because Docker inherits DNS from the host, but corporate DNS servers sometimes don't respond to Docker's queries correctly.",
+    "root_cause": "Docker's default DNS configuration conflicts with corporate network DNS. Containers can't resolve external hostnames.",
+    "category": "Docker",
+    "resolution_time_minutes": 5,
+    "frequency": "Common for new developer setups"
+  },
+  {
+    "id": "TKT-1389",
+    "title": "Two-factor authentication not receiving codes",
+    "issue": "User not receiving SMS codes for two-factor authentication. Tried multiple times, waited several minutes. Phone has signal and can receive other texts.",
+    "resolution": "SMS-based 2FA is unreliable. First, try these immediate fixes:\n1. Wait 5 minutes - carrier delays are common\n2. Check if phone number is correct in account settings\n3. Try 'Resend code' option\n\nIf still not working, switch to authenticator app (more reliable):\n1. Log in using backup codes (user should have saved these)\n2. Go to Security Settings → Two-Factor Authentication\n3. Add 'Authenticator App' as a method\n4. Use Microsoft Authenticator or Google Authenticator\n5. Scan the QR code\n6. Disable SMS as primary method\n\nIf no backup codes, IT admin can temporarily disable 2FA for password reset.",
+    "root_cause": "SMS delivery is unreliable - carrier issues, rate limiting, or international routing problems. Authenticator apps are more reliable.",
+    "category": "Authentication",
+    "resolution_time_minutes": 10,
+    "frequency": "Occasional"
+  },
+  {
+    "id": "TKT-1412",
+    "title": "Laptop extremely slow after update",
+    "issue": "User reports laptop became extremely slow after a Windows/macOS update. Takes minutes to open applications. Already tried restarting multiple times.",
+    "resolution": "Post-update slowness is usually caused by background indexing and optimization processes. These typically resolve within 24-48 hours.\n\nImmediate checks:\n1. Check Activity Monitor (macOS) or Task Manager (Windows) for high CPU processes\n2. Common culprits: Spotlight indexing (mds_stores), Windows Search indexing, antivirus scans\n\nIf it's indexing:\n- Let it complete (can take several hours)\n- Keep laptop plugged in and awake\n- Avoid heavy tasks during this time\n\nIf not indexing-related:\n1. Check available disk space (need at least 10-15% free)\n2. Check RAM usage - close unnecessary apps\n3. For macOS: Reset SMC and PRAM\n4. For Windows: Run 'sfc /scannow' in admin Command Prompt\n\nIf still slow after 48 hours, schedule a hardware diagnostic.",
+    "root_cause": "Post-update background processes (indexing, optimization) consume significant resources. Usually resolves automatically.",
+    "category": "Performance",
+    "resolution_time_minutes": 5,
+    "frequency": "Common after major OS updates"
+  }
+]

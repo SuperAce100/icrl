@@ -1,0 +1,107 @@
+[
+  {
+    "id": "SEED-EXPERT-001",
+    "profile": "expert_terse",
+    "request": "How do I squash the last 3 commits?",
+    "response": "git rebase -i HEAD~3\n# change 'pick' to 'squash' (or 's') for commits 2 and 3\n# save, then edit the combined commit message",
+    "reasoning": "Expert user - give the command directly with minimal inline comments"
+  },
+  {
+    "id": "SEED-EXPERT-002",
+    "profile": "expert_terse",
+    "request": "Find all Python files modified in the last week",
+    "response": "find . -name '*.py' -mtime -7",
+    "reasoning": "Expert user - single command, no explanation needed"
+  },
+  {
+    "id": "SEED-EXPERT-003",
+    "profile": "expert_terse",
+    "request": "How do I undo the last commit but keep changes?",
+    "response": "git reset --soft HEAD~1",
+    "reasoning": "Expert user - they know what soft reset does"
+  },
+  {
+    "id": "SEED-EXPERT-004",
+    "profile": "expert_terse",
+    "request": "Kill process on port 8080",
+    "response": "lsof -ti:8080 | xargs kill -9",
+    "reasoning": "Expert user - one-liner, no safety warnings needed"
+  },
+  {
+    "id": "SEED-EXPERT-005",
+    "profile": "expert_terse",
+    "request": "Docker: remove all stopped containers",
+    "response": "docker container prune -f",
+    "reasoning": "Expert user - they know what prune does"
+  },
+  {
+    "id": "SEED-LEARNER-001",
+    "profile": "learner_detailed",
+    "request": "How do I squash the last 3 commits?",
+    "response": "## Squashing Commits with Interactive Rebase\n\nSquashing combines multiple commits into one. This is useful for cleaning up your commit history before merging.\n\n### Step-by-Step Guide\n\n1. **Start interactive rebase**:\n   ```bash\n   git rebase -i HEAD~3\n   ```\n   This opens your editor showing the last 3 commits.\n\n2. **Modify the commit list**:\n   You'll see something like:\n   ```\n   pick abc1234 First commit message\n   pick def5678 Second commit message\n   pick ghi9012 Third commit message\n   ```\n   \n   Change `pick` to `squash` (or just `s`) for commits you want to combine:\n   ```\n   pick abc1234 First commit message\n   squash def5678 Second commit message\n   squash ghi9012 Third commit message\n   ```\n\n3. **Save and close** the editor.\n\n4. **Edit the combined commit message**:\n   Another editor opens where you can write a new message for the squashed commit.\n\n### ⚠️ Important Notes\n\n- The first commit must stay as `pick`\n- Only squash commits that haven't been pushed yet\n- If you've already pushed, you'll need to force push: `git push --force`\n\n### Why Squash?\n\n- Cleaner git history\n- Easier code reviews\n- Each commit represents a complete feature",
+    "reasoning": "Learner user - full explanation with context, warnings, and reasoning"
+  },
+  {
+    "id": "SEED-LEARNER-002",
+    "profile": "learner_detailed",
+    "request": "Find all Python files modified in the last week",
+    "response": "## Finding Recently Modified Python Files\n\nHere's how to find all Python files that were modified in the last 7 days:\n\n### The Command\n\n```bash\nfind . -name '*.py' -mtime -7\n```\n\n### Breaking It Down\n\n| Part | Meaning |\n|------|--------|\n| `find .` | Search starting from current directory |\n| `-name '*.py'` | Match files ending in .py |\n| `-mtime -7` | Modified within the last 7 days |\n\n### Useful Variations\n\n**Last 24 hours:**\n```bash\nfind . -name '*.py' -mtime -1\n```\n\n**Show with details:**\n```bash\nfind . -name '*.py' -mtime -7 -ls\n```\n\n**Exclude virtual environments:**\n```bash\nfind . -name '*.py' -mtime -7 -not -path './venv/*'\n```\n\n### 💡 Tip\n\nThe `-mtime` flag uses days. For hours, use `-mmin`:\n```bash\nfind . -name '*.py' -mmin -60  # Last hour\n```",
+    "reasoning": "Learner user - explain the command, break it down, show variations"
+  },
+  {
+    "id": "SEED-LEARNER-003",
+    "profile": "learner_detailed",
+    "request": "How do I undo the last commit but keep changes?",
+    "response": "## Undoing a Commit While Keeping Your Changes\n\nSometimes you commit too early or with the wrong message. Here's how to undo it safely.\n\n### The Command\n\n```bash\ngit reset --soft HEAD~1\n```\n\n### What This Does\n\n1. **Moves HEAD back** one commit\n2. **Keeps your changes staged** (ready to commit again)\n3. **Doesn't touch your files** - your code stays exactly as it is\n\n### Understanding Reset Modes\n\n| Mode | Staged Changes | Working Directory |\n|------|---------------|-------------------|\n| `--soft` | ✅ Kept | ✅ Kept |\n| `--mixed` (default) | ❌ Unstaged | ✅ Kept |\n| `--hard` | ❌ Deleted | ❌ Deleted |\n\n### ⚠️ Warning\n\nIf you've already pushed this commit:\n- Others may have pulled it\n- You'll need `git push --force` which can cause issues\n- Consider `git revert` instead for shared branches\n\n### After Resetting\n\nYour changes are staged and ready. You can:\n- `git commit -m 'New message'` - commit with a better message\n- `git reset HEAD` - unstage to modify further\n- `git diff --staged` - review what's staged",
+    "reasoning": "Learner user - explain what happens, show alternatives, warn about pitfalls"
+  },
+  {
+    "id": "SEED-LEARNER-004",
+    "profile": "learner_detailed",
+    "request": "Kill process on port 8080",
+    "response": "## Killing a Process Running on Port 8080\n\nWhen a port is already in use, you need to find and stop the process using it.\n\n### Quick Solution\n\n```bash\nlsof -ti:8080 | xargs kill -9\n```\n\n### Step-by-Step Approach\n\nIf you prefer to see what you're killing first:\n\n1. **Find what's using the port:**\n   ```bash\n   lsof -i:8080\n   ```\n   This shows the process name, PID, and user.\n\n2. **Kill the process:**\n   ```bash\n   kill -9 <PID>\n   ```\n   Replace `<PID>` with the number from step 1.\n\n### Understanding the Commands\n\n| Command | What It Does |\n|---------|-------------|\n| `lsof -i:8080` | List open files on port 8080 |\n| `-t` flag | Output only the PID (for piping) |\n| `kill -9` | Force kill (SIGKILL) |\n| `xargs` | Pass the PID to kill command |\n\n### ⚠️ Caution\n\n- `kill -9` is forceful - the process can't clean up\n- Try `kill <PID>` first (graceful shutdown)\n- Make sure you're not killing something important!\n\n### Common Culprits on 8080\n\n- Development servers (Django, Flask, Node)\n- Docker containers\n- Previous crashed processes",
+    "reasoning": "Learner user - explain the one-liner, show step-by-step alternative, add context"
+  },
+  {
+    "id": "SEED-LEARNER-005",
+    "profile": "learner_detailed",
+    "request": "Docker: remove all stopped containers",
+    "response": "## Removing Stopped Docker Containers\n\nOver time, stopped containers accumulate and take up disk space. Here's how to clean them up.\n\n### Quick Command\n\n```bash\ndocker container prune -f\n```\n\nThe `-f` flag skips the confirmation prompt.\n\n### What Gets Removed?\n\n- All containers with status `Exited`\n- All containers with status `Dead`\n- NOT running containers\n- NOT paused containers\n\n### See Before You Delete\n\n```bash\n# List all stopped containers first\ndocker ps -a --filter status=exited\n\n# Then prune (with confirmation)\ndocker container prune\n```\n\n### More Cleanup Options\n\n| Command | What It Removes |\n|---------|----------------|\n| `docker container prune` | Stopped containers |\n| `docker image prune` | Dangling images |\n| `docker volume prune` | Unused volumes |\n| `docker system prune` | All of the above |\n| `docker system prune -a` | Above + unused images |\n\n### 💡 Tip\n\nTo see how much space you'll recover:\n```bash\ndocker system df\n```\n\n### ⚠️ Warning\n\n`docker system prune -a` is aggressive - it removes all unused images, not just dangling ones. Be careful in production!",
+    "reasoning": "Learner user - explain what happens, show related commands, add warnings"
+  },
+  {
+    "id": "SEED-MANAGER-001",
+    "profile": "manager_summary",
+    "request": "How do I squash the last 3 commits?",
+    "response": "## Squashing Commits - Overview\n\n**What it does**: Combines multiple commits into a single, cleaner commit.\n\n**Why it matters**:\n- Cleaner project history\n- Easier code reviews\n- Each commit represents a complete, logical change\n\n**Impact**: No functional change to the code - only affects git history.\n\n**Risk**: Low for local branches. Medium if commits were already pushed (requires coordination with team).\n\n**Time**: 2-5 minutes.\n\n**Who should do it**: The developer who owns the branch, before merging to main.\n\n**When to use**:\n- Before merging a feature branch\n- When commit history is messy (\"WIP\", \"fix typo\", \"oops\")\n- When preparing for code review\n\nNeed the technical steps, or should the developer handle this?",
+    "reasoning": "Manager user - high-level overview, business context, no commands"
+  },
+  {
+    "id": "SEED-MANAGER-002",
+    "profile": "manager_summary",
+    "request": "Find all Python files modified in the last week",
+    "response": "## Finding Recent Python Changes - Overview\n\n**Purpose**: Identify which Python files have been modified recently.\n\n**Use cases**:\n- Code review scope\n- Deployment impact assessment\n- Tracking active development areas\n\n**Output**: List of file paths that changed in the last 7 days.\n\n**Who can run this**: Any developer with repository access.\n\n**Time**: Instant (< 1 second).\n\n**Next steps**:\n- Review the list with the team\n- Cross-reference with recent tickets/PRs\n- Identify if changes need additional testing\n\nWant me to have someone run this and summarize the results?",
+    "reasoning": "Manager user - focus on purpose and next steps, not the command"
+  },
+  {
+    "id": "SEED-MANAGER-003",
+    "profile": "manager_summary",
+    "request": "How do I undo the last commit but keep changes?",
+    "response": "## Undoing a Commit - Overview\n\n**Situation**: A commit was made that needs to be revised (wrong message, incomplete changes, etc.).\n\n**What happens**:\n- The commit is removed from history\n- All code changes are preserved\n- Developer can re-commit with corrections\n\n**Impact**:\n- No code is lost\n- Git history is modified\n- If already pushed, requires coordination\n\n**Risk**:\n- Low if commit wasn't pushed yet\n- Medium if pushed (other developers may have pulled it)\n\n**Time**: < 1 minute.\n\n**Decision point**: If the commit was already pushed to a shared branch, consider whether to:\n1. Undo and force-push (simpler, but affects others)\n2. Add a new corrective commit (safer for shared branches)\n\nShould the developer proceed, or do we need to coordinate with the team first?",
+    "reasoning": "Manager user - focus on impact, risk, and decision points"
+  },
+  {
+    "id": "SEED-MANAGER-004",
+    "profile": "manager_summary",
+    "request": "Kill process on port 8080",
+    "response": "## Port 8080 Conflict - Overview\n\n**Situation**: Something is already using port 8080, blocking a new service from starting.\n\n**Common causes**:\n- Previous development server still running\n- Crashed process that didn't clean up\n- Docker container using the port\n\n**Resolution**: Identify and stop the conflicting process.\n\n**Impact**: The blocking process will be terminated.\n\n**Risk**: Low - development ports are typically safe to kill. Verify it's not a production service.\n\n**Time**: < 1 minute.\n\n**Who should handle**: The developer experiencing the issue.\n\n**Prevention**: Consider using different ports for different services, or scripts that clean up on exit.\n\nIs this blocking someone's work right now?",
+    "reasoning": "Manager user - context, impact, and whether action is needed"
+  },
+  {
+    "id": "SEED-MANAGER-005",
+    "profile": "manager_summary",
+    "request": "Docker: remove all stopped containers",
+    "response": "## Docker Cleanup - Overview\n\n**Purpose**: Remove stopped Docker containers to free up disk space.\n\n**What gets removed**:\n- Containers that have exited/stopped\n- NOT running containers\n- NOT your images or volumes\n\n**Impact**:\n- Frees disk space\n- Cleans up clutter from `docker ps -a`\n- No effect on running services\n\n**Risk**: Very low. Only removes containers that are already stopped.\n\n**Space recovered**: Varies. Run `docker system df` to see current usage.\n\n**Frequency**: Recommend weekly or when disk space is low.\n\n**Who should do it**: Any developer, or automate in CI/CD cleanup.\n\n**Related maintenance**:\n- Image cleanup (more aggressive)\n- Volume cleanup (be careful - may contain data)\n- Full system prune (most aggressive)\n\nWant me to set up automated cleanup for the team?",
+    "reasoning": "Manager user - focus on impact, risk, and team-level considerations"
+  }
+]

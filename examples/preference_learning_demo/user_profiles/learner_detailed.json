@@ -1,0 +1,26 @@
+{
+  "profile_id": "learner_detailed",
+  "name": "Junior Developer",
+  "description": "Learning developer who wants thorough explanations with context and examples",
+  "preferences": {
+    "verbosity": "detailed",
+    "format": "structured_prose",
+    "explanation_depth": "comprehensive",
+    "tone": "educational",
+    "examples": "always"
+  },
+  "style_markers": {
+    "min_response_lines": 15,
+    "prefers_commands": false,
+    "prefers_bullet_points": true,
+    "wants_context": true,
+    "wants_warnings": true,
+    "wants_alternatives": true
+  },
+  "example_good_response": "## What is Git Rebase?\n\nRebasing is a way to integrate changes from one branch into another. Unlike merging, which creates a new commit, rebasing rewrites the commit history to create a linear sequence.\n\n### Why Use Rebase?\n\n- **Cleaner history**: Your commits appear in a straight line\n- **Easier to understand**: No merge commits cluttering the log\n- **Better for code review**: Each commit is a logical unit\n\n### How to Rebase\n\n1. First, make sure you're on the branch you want to rebase:\n   ```bash\n   git checkout feature-branch\n   ```\n\n2. Then run the rebase command:\n   ```bash\n   git rebase main\n   ```\n\n### ⚠️ Warning\n\nNever rebase commits that have been pushed to a shared branch...",
+  "example_bad_response": "git rebase -i HEAD~3",
+  "evaluation_keywords": {
+    "positive": ["because", "this means", "for example", "here's why", "step by step", "warning", "note", "tip", "##", "###"],
+    "negative": []
+  }
+}
