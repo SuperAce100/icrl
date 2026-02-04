@@ -113,7 +113,7 @@ export function AnswerChoice({
         </Button>
 
         {/* Question */}
-        <p className="text-xl font-medium">{question}</p>
+        <p className="text-2xl font-medium">{question}</p>
 
         {/* Answer Options - Side by Side */}
         <div className="grid grid-cols-2 gap-4">

@@ -5,7 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, ChevronUp, Trash2, Search, MessageSquare, RefreshCw } from "lucide-react";
+import { Trash2, MessageSquare } from "lucide-react";
 import type { Id, Doc } from "../../convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 
@@ -25,34 +25,42 @@ function HoldToDeleteButton({
 }: HoldToDeleteButtonProps) {
   const [progress, setProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
-  const startHold = useCallback(() => {
-    if (disabled) return;
-    setIsHolding(true);
-    startTimeRef.current = Date.now();
+  const startHold = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (disabled) return;
 
-    intervalRef.current = setInterval(() => {
-      if (!startTimeRef.current) return;
-      const elapsed = Date.now() - startTimeRef.current;
-      const newProgress = Math.min((elapsed / holdDuration) * 100, 100);
-      setProgress(newProgress);
+      setIsHolding(true);
+      startTimeRef.current = Date.now();
 
-      if (newProgress >= 100) {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
+      intervalRef.current = setInterval(() => {
+        if (!startTimeRef.current) return;
+        const elapsed = Date.now() - startTimeRef.current;
+        const newProgress = Math.min((elapsed / holdDuration) * 100, 100);
+        setProgress(newProgress);
+
+        if (newProgress >= 100) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          setIsHolding(false);
+          setProgress(0);
+          startTimeRef.current = null;
+          onDelete();
         }
-        setIsHolding(false);
-        setProgress(0);
-        startTimeRef.current = null;
-        onDelete();
-      }
-    }, 16);
-  }, [disabled, holdDuration, onDelete]);
+      }, 16);
+    },
+    [disabled, holdDuration, onDelete]
+  );
 
-  const cancelHold = useCallback(() => {
+  const cancelHold = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -64,6 +72,7 @@ function HoldToDeleteButton({
 
   return (
     <button
+      type="button"
       onMouseDown={startHold}
       onMouseUp={cancelHold}
       onMouseLeave={cancelHold}
@@ -71,13 +80,17 @@ function HoldToDeleteButton({
       onTouchEnd={cancelHold}
       onTouchCancel={cancelHold}
       disabled={disabled}
-      className={`
-        relative overflow-hidden inline-flex items-center justify-center gap-1 
-        px-3 py-1.5 text-sm rounded-md transition-colors
-        ${disabled ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground" : "text-destructive hover:bg-destructive/10 cursor-pointer"}
-        ${isHolding ? "bg-destructive/10" : ""}
-      `}
-      onClick={(e) => e.stopPropagation()}
+      className={cn(
+        "relative overflow-hidden inline-flex items-center justify-center gap-1 px-3 py-1.5 text-sm rounded-md transition-colors select-none",
+        disabled
+          ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
+          : "text-destructive hover:bg-destructive/10 cursor-pointer",
+        isHolding && "bg-destructive/10"
+      )}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
     >
       <div
         className="absolute inset-0 bg-destructive/20 transition-all duration-75"

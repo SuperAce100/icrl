@@ -139,7 +139,10 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[240px] p-0 overflow-hidden shadow-foreground/5 rounded-lg" align="end">
+        <PopoverContent
+          className="w-[240px] p-0 overflow-hidden shadow-foreground/5 rounded-lg"
+          align="end"
+        >
           {/* Database List */}
           <div className="max-h-[200px] overflow-y-auto">
             {databases?.length === 0 ? (
@@ -217,7 +220,7 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
               Create a new ICRL database to store examples and train your model.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 ">
             <div className="grid gap-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -228,7 +231,7 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="system-prompt">System Prompt (optional)</Label>
+              <Label htmlFor="system-prompt">Instructions (optional)</Label>
               <Textarea
                 id="system-prompt"
                 value={newSystemPrompt}
@@ -237,7 +240,8 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
                 rows={4}
               />
               <p className="text-xs text-muted-foreground">
-                Instructions to guide how the AI responds. You can change this later.
+                Start your assistant off with a basic idea of what they should do. This doesn&apos;t
+                have to be perfect, but will serve as a baseline for the in context RLHF process.
               </p>
             </div>
           </div>
