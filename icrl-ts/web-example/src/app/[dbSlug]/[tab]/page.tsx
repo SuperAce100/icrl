@@ -119,13 +119,9 @@ export default function TabPage() {
     });
   };
 
-  const handleYoloModeChange = (enabled: boolean) => {
-    if (enabled) {
-      setState("yolo");
-      setGeneratedData(null);
-    } else {
-      setState("input");
-    }
+  const enterYoloMode = () => {
+    setState("yolo");
+    setGeneratedData(null);
   };
 
   const exitYoloMode = () => {
@@ -142,8 +138,7 @@ export default function TabPage() {
             onSubmit={handleQuestionSubmit}
             isLoading={isLoading}
             disabled={false}
-            yoloMode={false}
-            onYoloModeChange={handleYoloModeChange}
+            onEnterYoloMode={enterYoloMode}
           />
         )}
 

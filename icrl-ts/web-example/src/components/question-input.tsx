@@ -2,10 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Loader2, RefreshCw, Zap } from "lucide-react";
+import { ArrowRight, Loader2, Zap } from "lucide-react";
 import { generateSuggestions } from "@/lib/actions";
 import Image from "next/image";
 
@@ -14,8 +12,7 @@ interface QuestionInputProps {
   onSubmit: (question: string) => void;
   isLoading: boolean;
   disabled?: boolean;
-  yoloMode?: boolean;
-  onYoloModeChange?: (enabled: boolean) => void;
+  onEnterYoloMode?: () => void;
 }
 
 export function QuestionInput({
@@ -23,8 +20,7 @@ export function QuestionInput({
   onSubmit,
   isLoading,
   disabled,
-  yoloMode = false,
-  onYoloModeChange,
+  onEnterYoloMode,
 }: QuestionInputProps) {
   const [question, setQuestion] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -106,6 +102,7 @@ export function QuestionInput({
             className="block dark:hidden"
           />
         </div>
+
         {/* Input Container */}
         <form onSubmit={handleSubmit}>
           <div className="relative">
@@ -117,32 +114,11 @@ export function QuestionInput({
               placeholder="Enter a prompt to train..."
               disabled={isLoading || disabled}
               rows={3}
-              className="w-full resize-none rounded-lg border border-input bg-card px-4 py-3 pr-24 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:border-ring transition-all"
+              className="w-full resize-none rounded-lg border border-input bg-card px-4 py-3 pr-14 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:border-ring transition-all"
             />
 
-            {/* Bottom bar with YOLO toggle and submit */}
-            <div className="absolute bottom-3.5 right-2 flex items-center gap-2">
-              {/* YOLO Toggle */}
-              {onYoloModeChange && (
-                <div className="flex items-center gap-2">
-                  <Label
-                    htmlFor="yolo-toggle"
-                    className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1"
-                  >
-                    <Zap className="h-3 w-3" />
-                    YOLO
-                  </Label>
-                  <Switch
-                    id="yolo-toggle"
-                    checked={yoloMode}
-                    onCheckedChange={onYoloModeChange}
-                    disabled={isLoading}
-                    className="scale-75"
-                  />
-                </div>
-              )}
-
-              {/* Submit Button */}
+            {/* Submit Button */}
+            <div className="absolute bottom-3.5 right-2">
               <Button
                 type="submit"
                 size="icon-sm"
@@ -166,22 +142,37 @@ export function QuestionInput({
               <Skeleton key={i} className="h-16 rounded-lg" />
             ))}
           </div>
-        ) : suggestions.length > 0 ? (
-          <div className="relative">
-            <div className="grid grid-cols-2 gap-2 px-2">
-              {suggestions.slice(0, 6).map((suggestion, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  disabled={isLoading}
-                  className="p-3 text-left text-sm rounded-lg border border-border bg-card/80 hover:bg-muted hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="">{suggestion}</span>
-                </button>
-              ))}
-            </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 px-2">
+            {/* Suggestion buttons */}
+            {suggestions.slice(0, onEnterYoloMode ? 5 : 6).map((suggestion, i) => (
+              <button
+                key={i}
+                onClick={() => handleSuggestionClick(suggestion)}
+                disabled={isLoading}
+                className="p-3 text-left text-sm rounded-lg border border-border bg-card/80 hover:bg-muted hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span>{suggestion}</span>
+              </button>
+            ))}
+            {/* YOLO Mode Button */}
+            {onEnterYoloMode && (
+              <button
+                onClick={onEnterYoloMode}
+                disabled={isLoading}
+                className="p-3 text-left text-sm rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="flex items-center gap-1 mb-1">
+                  <Zap className="h-4 w-4 text-primary" />
+                  <span className="font-medium text-primary">YOLO Mode</span>
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  Quickly build up your database using automatically generated prompts.
+                </span>
+              </button>
+            )}
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );

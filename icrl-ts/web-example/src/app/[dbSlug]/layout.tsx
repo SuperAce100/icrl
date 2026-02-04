@@ -7,7 +7,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { DatabaseSelector } from "@/components/database-selector";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Database, Settings, Loader2, BicepsFlexed } from "lucide-react";
+import { Sparkles, Database, Settings, Loader2, BicepsFlexed, Milestone } from "lucide-react";
 import { toSlug, type TabSlug } from "@/lib/slug";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -91,7 +91,7 @@ export default function DatabaseLayout({ children }: { children: React.ReactNode
           value="settings"
           className="flex items-center gap-1.5 text-sm data-[state=active]:text-primary data-[state=active]:bg-transparent"
         >
-          <Settings className="h-3.5 w-3.5" />
+          <Milestone className="h-3.5 w-3.5" />
           Instructions
         </TabsTrigger>
       </TabsList>
