@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Kbd } from "@/components/ui/kbd";
 import { Loader2, ArrowLeft, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Markdown from "@/components/ui/markdown";
 
 interface RetrievedExample {
   question: string;
@@ -129,7 +130,7 @@ export function AnswerChoice({
             )}
           >
             <div className="flex items-start gap-2 justify-between flex-col h-full">
-              <p className="text-sm leading-relaxed">{answerA}</p>
+              <Markdown className="text-sm leading-relaxed">{answerA}</Markdown>
               <p className="ml-auto text-xs">
                 <Kbd
                   className={cn(
@@ -157,7 +158,7 @@ export function AnswerChoice({
             )}
           >
             <div className="flex items-start gap-2 justify-between flex-col h-full">
-              <p className="text-sm leading-relaxed">{answerB}</p>
+              <Markdown className="text-sm leading-relaxed">{answerB}</Markdown>
               <p className="ml-auto text-xs">
                 <Kbd
                   className={cn(
