@@ -55,9 +55,7 @@ export default function DatabaseLayout({ children }: { children: React.ReactNode
     return (
       <main className="min-h-screen bg-background flex flex-col">
         <Header
-          databaseSelector={
-            <DatabaseSelector selectedId={null} onSelect={handleDbSelect} />
-          }
+          databaseSelector={<DatabaseSelector selectedId={null} onSelect={handleDbSelect} />}
         />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4">
@@ -74,27 +72,27 @@ export default function DatabaseLayout({ children }: { children: React.ReactNode
 
   const headerTabs = (
     <Tabs value={currentTab} onValueChange={handleTabChange}>
-      <TabsList className="h-9">
+      <TabsList className="h-9 bg-transparent">
         <TabsTrigger
           value="train"
-          className="flex items-center gap-1.5 text-sm data-[state=active]:text-primary"
+          className="flex items-center gap-1.5 text-sm data-[state=active]:text-primary data-[state=active]:bg-transparent"
         >
           <Sparkles className="h-3.5 w-3.5" />
           Train
         </TabsTrigger>
         <TabsTrigger
           value="memory"
-          className="flex items-center gap-1.5 text-sm data-[state=active]:text-primary"
+          className="flex items-center gap-1.5 text-sm data-[state=active]:text-primary data-[state=active]:bg-transparent"
         >
           <Database className="h-3.5 w-3.5" />
-          Memory
+          Examples
         </TabsTrigger>
         <TabsTrigger
           value="settings"
-          className="flex items-center gap-1.5 text-sm data-[state=active]:text-primary"
+          className="flex items-center gap-1.5 text-sm data-[state=active]:text-primary data-[state=active]:bg-transparent"
         >
           <Settings className="h-3.5 w-3.5" />
-          Settings
+          Instructions
         </TabsTrigger>
       </TabsList>
     </Tabs>
@@ -104,9 +102,7 @@ export default function DatabaseLayout({ children }: { children: React.ReactNode
     <main className="min-h-screen bg-background flex flex-col">
       <Header
         tabs={headerTabs}
-        databaseSelector={
-          <DatabaseSelector selectedId={database._id} onSelect={handleDbSelect} />
-        }
+        databaseSelector={<DatabaseSelector selectedId={database._id} onSelect={handleDbSelect} />}
       />
 
       {/* Main Content - Narrower */}

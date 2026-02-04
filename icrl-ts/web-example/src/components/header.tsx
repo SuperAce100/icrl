@@ -33,7 +33,7 @@ export function Header({ tabs, databaseSelector }: HeaderProps) {
           </Link>
 
           {/* Center: Tabs */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {tabs && <div className="hidden md:block">{tabs}</div>}
             {databaseSelector && <div className="hidden sm:block">{databaseSelector}</div>}
           </div>

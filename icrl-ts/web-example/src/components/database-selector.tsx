@@ -123,19 +123,17 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
-            variant="outline"
+            variant="ghost"
             role="combobox"
             aria-expanded={isOpen}
-            className="w-[200px] justify-between"
+            className="justify-between"
           >
-            <div className="flex items-center gap-2 truncate">
-              <Database className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="truncate">{selectedDatabase?.name ?? "Select database..."}</span>
-            </div>
+            <Database className="h-4 w-4 shrink-0 text-primary" />
+            <span className="truncate">{selectedDatabase?.name ?? "Select database..."}</span>
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[240px] p-0" align="start">
+        <PopoverContent className="w-[240px] p-0 overflow-hidden" align="end">
           {/* Database List */}
           <div className="max-h-[200px] overflow-y-auto">
             {databases?.length === 0 ? (
@@ -145,7 +143,7 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
                 <div
                   key={db._id}
                   className={cn(
-                    "flex items-center justify-between px-2 py-1.5 cursor-pointer hover:bg-accent group",
+                    "flex items-center justify-between px-2 pr-1 py-1 cursor-pointer hover:bg-accent group",
                     selectedId === db._id && "bg-accent"
                   )}
                 >
@@ -165,7 +163,7 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-7 w-7 hover:bg-foreground/5 rounded-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         openEditDialog(db);
@@ -176,7 +174,7 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         openDeleteDialog(db);
@@ -234,10 +232,10 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+            <Button variant="secondary" size="sm" onClick={() => setIsCreateOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreate} disabled={!newName.trim()}>
+            <Button size="sm" onClick={handleCreate} disabled={!newName.trim()}>
               Create
             </Button>
           </DialogFooter>
@@ -274,10 +272,10 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+            <Button variant="secondary" size="sm" onClick={() => setIsEditOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdate} disabled={!editingDb?.name.trim()}>
+            <Button size="sm" onClick={handleUpdate} disabled={!editingDb?.name.trim()}>
               Save
             </Button>
           </DialogFooter>
@@ -295,10 +293,10 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+            <Button variant="secondary" size="sm" onClick={() => setIsDeleteOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" size="sm" onClick={handleDelete}>
               Delete
             </Button>
           </DialogFooter>

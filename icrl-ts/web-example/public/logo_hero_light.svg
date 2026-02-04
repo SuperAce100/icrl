@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="230px" height="17px" viewBox="0 0 230 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Frame Copy 4</title>
+    <g id="Frame-Copy-4" stroke="none" fill="none">
+        <g id="Group" stroke-width="1" fill-rule="evenodd" transform="translate(2, 5)">
+            <rect id="Rectangle" fill="#F88D39" x="0" y="3.92" width="227" height="2.08"></rect>
+            <rect id="Rectangle-Copy" fill="#FFDE8E" x="0" y="1.96" width="227" height="2.08"></rect>
+            <rect id="Rectangle-Copy-2" fill="#49A1D9" x="0" y="0" width="227" height="2.08"></rect>
+        </g>
+        <text id="in-context-reinforce" font-family="HFGescoFree-Regular, HF Gesco-Free" font-size="15.21" font-weight="normal" letter-spacing="-0.2265284" fill="#292524">
+            <tspan x="0" y="12">in context reinforcement learning</tspan>
+        </text>
+    </g>
+</svg>

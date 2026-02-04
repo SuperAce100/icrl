@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, Loader2, RefreshCw, Zap } from "lucide-react";
 import { generateSuggestions } from "@/lib/actions";
+import Image from "next/image";
 
 interface QuestionInputProps {
   databaseId: string | null;
@@ -89,6 +90,22 @@ export function QuestionInput({
   return (
     <div className="flex flex-col items-center justify-center flex-1">
       <div className="w-full space-y-4">
+        <div className="flex items-center justify-center">
+          <Image
+            src="/logo_hero_dark.svg"
+            alt="ICRL"
+            width={152}
+            height={52}
+            className="hidden dark:block"
+          />
+          <Image
+            src="/logo_hero_light.svg"
+            alt="ICRL"
+            width={602}
+            height={52}
+            className="block dark:hidden"
+          />
+        </div>
         {/* Input Container */}
         <form onSubmit={handleSubmit}>
           <div className="relative">
@@ -100,11 +117,11 @@ export function QuestionInput({
               placeholder="Enter a prompt to train..."
               disabled={isLoading || disabled}
               rows={3}
-              className="w-full resize-none rounded-xl border border-input bg-card px-4 py-3 pr-24 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:border-ring transition-all"
+              className="w-full resize-none rounded-lg border border-input bg-card px-4 py-3 pr-24 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:border-ring transition-all"
             />
 
             {/* Bottom bar with YOLO toggle and submit */}
-            <div className="absolute bottom-3 right-1.5 flex items-center gap-2">
+            <div className="absolute bottom-3.5 right-2 flex items-center gap-2">
               {/* YOLO Toggle */}
               {onYoloModeChange && (
                 <div className="flex items-center gap-2">
@@ -129,6 +146,7 @@ export function QuestionInput({
               <Button
                 type="submit"
                 size="icon-sm"
+                className="rounded-sm"
                 disabled={!question.trim() || isLoading || disabled}
               >
                 {isLoading ? (
