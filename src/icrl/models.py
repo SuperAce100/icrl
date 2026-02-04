@@ -61,10 +61,16 @@ class StepContext(BaseModel):
             return "(No similar examples found in database yet)"
 
         # Hard cap to prevent prompt explosions (esp. when actions contain patches).
+        # Set ICRL_MAX_EXAMPLES_CHARS=-1 for unlimited.
         max_examples = int(os.environ.get("ICRL_MAX_EXAMPLES", "5"))
         max_chars = int(os.environ.get("ICRL_MAX_EXAMPLES_CHARS", "6000"))
-        if max_examples <= 0 or max_chars <= 0:
+        
+        # max_examples <= 0 means no examples
+        if max_examples <= 0:
             return "(No similar examples found in database yet)"
+        
+        # max_chars == -1 means unlimited
+        unlimited_chars = max_chars == -1
 
         parts: list[str] = []
         total = 0
@@ -73,7 +79,7 @@ class StepContext(BaseModel):
         considered = min(len(self.examples), max_examples)
         for ex in self.examples[:considered]:
             s = ex.to_example_string()
-            if total + len(s) > max_chars:
+            if not unlimited_chars and total + len(s) > max_chars:
                 omitted += 1
                 continue
             parts.append(s)

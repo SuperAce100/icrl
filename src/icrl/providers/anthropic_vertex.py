@@ -61,9 +61,9 @@ class AnthropicVertexProvider:
         "claude-opus-4.5": "vertex_ai/claude-opus-4-5@20251101",
         "claude-opus-4-5": "vertex_ai/claude-opus-4-5@20251101",
         "claude-4.5-opus": "vertex_ai/claude-opus-4-5@20251101",
-        "claude-sonnet-4.5": "vertex_ai/claude-sonnet-4-5@20251101",
-        "claude-sonnet-4-5": "vertex_ai/claude-sonnet-4-5@20251101",
-        "claude-4.5-sonnet": "vertex_ai/claude-sonnet-4-5@20251101",
+        "claude-sonnet-4.5": "vertex_ai/claude-sonnet-4-5",
+        "claude-sonnet-4-5": "vertex_ai/claude-sonnet-4-5",
+        "claude-4.5-sonnet": "vertex_ai/claude-sonnet-4-5",
         "claude-haiku-4.5": "vertex_ai/claude-haiku-4-5",
         "claude-haiku-4-5": "vertex_ai/claude-haiku-4-5",
         "claude-4.5-haiku": "vertex_ai/claude-haiku-4-5",
@@ -91,7 +91,7 @@ class AnthropicVertexProvider:
                              Falls back to GOOGLE_APPLICATION_CREDENTIALS env var.
             project_id: GCP project ID. Falls back to VERTEXAI_PROJECT env var
                        or extracted from credentials file.
-            location: GCP region (e.g., "global", "us-east5"). Falls back to 
+            location: GCP region (e.g., "global", "us-east5"). Falls back to
                      VERTEXAI_LOCATION env var or defaults to "global".
             **kwargs: Additional arguments passed to litellm.acompletion.
         """
@@ -357,12 +357,16 @@ class AnthropicVertexProvider:
                 usage, "output_tokens", None
             )
             if isinstance(usage, dict):
-                prompt_used = prompt_used or usage.get("prompt_tokens") or usage.get(
-                    "input_tokens"
+                prompt_used = (
+                    prompt_used
+                    or usage.get("prompt_tokens")
+                    or usage.get("input_tokens")
                 )
-                completion_used = completion_used or usage.get(
-                    "completion_tokens"
-                ) or usage.get("output_tokens")
+                completion_used = (
+                    completion_used
+                    or usage.get("completion_tokens")
+                    or usage.get("output_tokens")
+                )
 
         prompt_final = int(prompt_used) if prompt_used is not None else prompt_tokens
         completion_final = int(completion_used) if completion_used is not None else None
