@@ -110,7 +110,7 @@ export default function DatabaseLayout({ children }: { children: React.ReactNode
       />
 
       {/* Main Content - Narrower */}
-      <div className="max-w-3xl mx-auto px-6 py-8 flex-1 w-full">{children}</div>
+      <div className="max-w-3xl mx-auto py-8 flex-1 w-full flex flex-col">{children}</div>
 
       <Footer />
     </main>

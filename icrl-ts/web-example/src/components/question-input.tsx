@@ -2,12 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, Loader2, RefreshCw, Wand2, AlertCircle } from "lucide-react";
+import { ArrowRight, Loader2, RefreshCw, Zap } from "lucide-react";
 import { generateSuggestions } from "@/lib/actions";
 
 interface QuestionInputProps {
@@ -15,16 +13,24 @@ interface QuestionInputProps {
   onSubmit: (question: string) => void;
   isLoading: boolean;
   disabled?: boolean;
+  yoloMode?: boolean;
+  onYoloModeChange?: (enabled: boolean) => void;
 }
 
-export function QuestionInput({ databaseId, onSubmit, isLoading, disabled }: QuestionInputProps) {
+export function QuestionInput({
+  databaseId,
+  onSubmit,
+  isLoading,
+  disabled,
+  yoloMode = false,
+  onYoloModeChange,
+}: QuestionInputProps) {
   const [question, setQuestion] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-  const [suggestionsFromCache, setSuggestionsFromCache] = useState(false);
-  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Refs to prevent double-triggering in React Strict Mode
+  // Refs to prevent double-triggering
   const isFetchingRef = useRef(false);
   const lastDatabaseIdRef = useRef<string | null>(null);
 
@@ -33,7 +39,6 @@ export function QuestionInput({ databaseId, onSubmit, isLoading, disabled }: Que
     async (forceRefresh: boolean = false) => {
       if (!databaseId) return;
 
-      // Prevent double-triggering (unless force refresh or database changed)
       if (!forceRefresh && isFetchingRef.current && lastDatabaseIdRef.current === databaseId) {
         return;
       }
@@ -42,17 +47,12 @@ export function QuestionInput({ databaseId, onSubmit, isLoading, disabled }: Que
       lastDatabaseIdRef.current = databaseId;
 
       setIsLoadingSuggestions(true);
-      setSuggestionsError(null);
       try {
         const result = await generateSuggestions(databaseId, forceRefresh);
         setSuggestions(result.suggestions);
-        setSuggestionsFromCache(result.fromCache);
       } catch (error) {
         console.error("Error fetching suggestions:", error);
         setSuggestions([]);
-        setSuggestionsError(
-          error instanceof Error ? error.message : "Failed to generate suggestions"
-        );
       } finally {
         setIsLoadingSuggestions(false);
         isFetchingRef.current = false;
@@ -61,7 +61,6 @@ export function QuestionInput({ databaseId, onSubmit, isLoading, disabled }: Que
     [databaseId]
   );
 
-  // Fetch suggestions on mount and when database changes
   useEffect(() => {
     fetchSuggestions();
   }, [fetchSuggestions]);
@@ -73,116 +72,101 @@ export function QuestionInput({ databaseId, onSubmit, isLoading, disabled }: Que
     }
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setQuestion(suggestion);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (question.trim() && !isLoading && !disabled) {
+        onSubmit(question.trim());
+      }
+    }
   };
 
-  const handleRefreshSuggestions = () => {
-    fetchSuggestions(true);
+  const handleSuggestionClick = (suggestion: string) => {
+    setQuestion(suggestion);
+    textareaRef.current?.focus();
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          Enter a Prompt
-        </CardTitle>
-        <CardDescription>
-          Enter a prompt to generate two response options. Your feedback will help train the model.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="question">Your Prompt</Label>
-            <Textarea
-              id="question"
+    <div className="flex flex-col items-center justify-center flex-1">
+      <div className="w-full space-y-4">
+        {/* Input Container */}
+        <form onSubmit={handleSubmit}>
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Type your prompt here..."
-              className="min-h-[100px] resize-none"
+              onKeyDown={handleKeyDown}
+              placeholder="Enter a prompt to train..."
               disabled={isLoading || disabled}
+              rows={3}
+              className="w-full resize-none rounded-xl border border-input bg-card px-4 py-3 pr-24 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:border-ring transition-all"
             />
-          </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={!question.trim() || isLoading || disabled}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating answers...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate Answers
-              </>
-            )}
-          </Button>
-        </form>
+            {/* Bottom bar with YOLO toggle and submit */}
+            <div className="absolute bottom-3 right-1.5 flex items-center gap-2">
+              {/* YOLO Toggle */}
+              {onYoloModeChange && (
+                <div className="flex items-center gap-2">
+                  <Label
+                    htmlFor="yolo-toggle"
+                    className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1"
+                  >
+                    <Zap className="h-3 w-3" />
+                    YOLO
+                  </Label>
+                  <Switch
+                    id="yolo-toggle"
+                    checked={yoloMode}
+                    onCheckedChange={onYoloModeChange}
+                    disabled={isLoading}
+                    className="scale-75"
+                  />
+                </div>
+              )}
 
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Wand2 className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                AI-suggested prompts
-                {suggestionsFromCache && <span className="text-xs ml-1 opacity-70">(cached)</span>}
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefreshSuggestions}
-              disabled={isLoadingSuggestions || isLoading}
-              className="h-7 px-2 text-xs"
-            >
-              <RefreshCw className={`h-3 w-3 mr-1 ${isLoadingSuggestions ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-          </div>
-
-          {isLoadingSuggestions ? (
-            <div className="flex flex-wrap gap-2">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-6 w-32" />
-              ))}
-            </div>
-          ) : suggestionsError ? (
-            <div className="flex items-center gap-2 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4" />
-              <span>{suggestionsError}</span>
+              {/* Submit Button */}
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefreshSuggestions}
-                className="h-6 px-2 text-xs"
+                type="submit"
+                size="icon-sm"
+                disabled={!question.trim() || isLoading || disabled}
+                
               >
-                Retry
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowRight className="h-4 w-4" />
+                )}
               </Button>
             </div>
-          ) : suggestions.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {suggestions.map((suggestion, i) => (
-                <Badge
+          </div>
+        </form>
+
+        {/* Suggestions Grid */}
+        {isLoadingSuggestions ? (
+          <div className="grid grid-cols-2 gap-2 px-2">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-16 rounded-lg" />
+            ))}
+          </div>
+        ) : suggestions.length > 0 ? (
+          <div className="relative">
+            <div className="grid grid-cols-2 gap-2 px-2">
+              {suggestions.slice(0, 6).map((suggestion, i) => (
+                <button
                   key={i}
-                  variant="outline"
-                  className="cursor-pointer hover:bg-muted transition-colors"
                   onClick={() => handleSuggestionClick(suggestion)}
+                  disabled={isLoading}
+                  className="p-3 text-left text-sm rounded-lg border border-border bg-background hover:bg-muted hover:border-primary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {suggestion.length > 40 ? suggestion.slice(0, 40) + "..." : suggestion}
-                </Badge>
+                  <span className="">{suggestion}</span>
+                </button>
               ))}
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No suggestions available</p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }

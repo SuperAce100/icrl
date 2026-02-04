@@ -1,27 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  ChevronDown,
-  ChevronUp,
-  Check,
-  Loader2,
-  ArrowLeft,
-  Info,
-  PenLine,
-} from "lucide-react";
+import { Kbd } from "@/components/ui/kbd";
+import { Loader2, ArrowLeft, CornerDownLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface RetrievedExample {
   question: string;
@@ -33,11 +17,7 @@ interface AnswerChoiceProps {
   answerA: string;
   answerB: string;
   retrievedExamples: RetrievedExample[];
-  onSelect: (
-    chosen: string,
-    rejected: string | undefined,
-    isCustom: boolean
-  ) => void;
+  onSelect: (chosen: string, rejected: string | undefined, isCustom: boolean) => void;
   onBack: () => void;
   isSubmitting: boolean;
 }
@@ -46,111 +26,106 @@ export function AnswerChoice({
   question,
   answerA,
   answerB,
-  retrievedExamples,
   onSelect,
   onBack,
   isSubmitting,
 }: AnswerChoiceProps) {
   const [customAnswer, setCustomAnswer] = useState("");
-  const [showCustom, setShowCustom] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<
-    "A" | "B" | "custom" | null
-  >(null);
+  const [selectedOption, setSelectedOption] = useState<"A" | "B" | "custom" | null>(null);
+  const customInputRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleSelectA = () => {
+  const handleSelectA = useCallback(() => {
+    if (isSubmitting) return;
     setSelectedOption("A");
     onSelect(answerA, answerB, false);
-  };
+  }, [isSubmitting, onSelect, answerA, answerB]);
 
-  const handleSelectB = () => {
+  const handleSelectB = useCallback(() => {
+    if (isSubmitting) return;
     setSelectedOption("B");
     onSelect(answerB, answerA, false);
-  };
+  }, [isSubmitting, onSelect, answerA, answerB]);
 
-  const handleSubmitCustom = () => {
-    if (customAnswer.trim()) {
+  const handleSubmitCustom = useCallback(() => {
+    if (customAnswer.trim() && !isSubmitting) {
       setSelectedOption("custom");
       onSelect(customAnswer.trim(), undefined, true);
     }
-  };
+  }, [customAnswer, isSubmitting, onSelect]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if typing in the custom answer field
+      if (document.activeElement === customInputRef.current) {
+        // Allow Enter to submit custom answer
+        if (e.key === "Enter" && !e.shiftKey && customAnswer.trim()) {
+          e.preventDefault();
+          handleSubmitCustom();
+        }
+        return;
+      }
+
+      if (isSubmitting) return;
+
+      if (e.key.toLowerCase() === "a") {
+        e.preventDefault();
+        handleSelectA();
+      } else if (e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        handleSelectB();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        onBack();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSubmitting, customAnswer, handleSelectA, handleSelectB, handleSubmitCustom, onBack]);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2 mb-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            disabled={isSubmitting}
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-        </div>
-        <CardTitle>Choose the Better Answer</CardTitle>
-        <CardDescription>
-          Select the answer you prefer, or write your own. Your choice will be
-          saved and used to improve future responses.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Question Display */}
-        <div className="bg-muted/50 rounded-lg p-4">
-          <p className="text-sm text-muted-foreground mb-1">Question:</p>
-          <p className="font-medium">{question}</p>
-        </div>
+    <div className="flex flex-col items-center">
+      <div className="w-full max-w-xl space-y-6">
+        {/* Back button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onBack}
+          disabled={isSubmitting}
+          className="text-muted-foreground hover:text-foreground -ml-2"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back
+          <Kbd className="ml-2">Esc</Kbd>
+        </Button>
 
-        {/* Retrieved Examples Info */}
-        {retrievedExamples.length > 0 && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Retrieved {retrievedExamples.length} similar example(s) from your
-              database to help generate these answers.
-              <details className="mt-2">
-                <summary className="text-xs cursor-pointer hover:text-primary">
-                  View retrieved examples
-                </summary>
-                <div className="mt-2 space-y-2">
-                  {retrievedExamples.map((ex, i) => (
-                    <div
-                      key={i}
-                      className="text-xs text-muted-foreground bg-background p-2 rounded"
-                    >
-                      <span className="font-medium">Q:</span>{" "}
-                      {ex.question.slice(0, 80)}
-                      {ex.question.length > 80 ? "..." : ""}
-                    </div>
-                  ))}
-                </div>
-              </details>
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* Question */}
+        <p className="text-lg font-medium">{question}</p>
 
         {/* Answer Options */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Option A */}
           <button
             onClick={handleSelectA}
             disabled={isSubmitting}
-            className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+            className={cn(
+              "w-full text-left p-4 rounded-xl border-2 bg-card shadow-sm transition-all",
               selectedOption === "A"
                 ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/50"
-            } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                : "border-border hover:border-primary/50",
+              isSubmitting && "opacity-50 cursor-not-allowed"
+            )}
           >
             <div className="flex items-start gap-3">
-              <span
-                className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                  selectedOption === "A"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}
+              <Kbd
+                className={cn(
+                  "h-7 w-7 text-sm shrink-0",
+                  selectedOption === "A" && "bg-primary text-primary-foreground"
+                )}
               >
                 A
-              </span>
+              </Kbd>
               <p className="text-sm leading-relaxed">{answerA}</p>
             </div>
           </button>
@@ -159,78 +134,60 @@ export function AnswerChoice({
           <button
             onClick={handleSelectB}
             disabled={isSubmitting}
-            className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+            className={cn(
+              "w-full text-left p-4 rounded-xl border-2 bg-card shadow-sm transition-all",
               selectedOption === "B"
                 ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/50"
-            } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                : "border-border hover:border-primary/50",
+              isSubmitting && "opacity-50 cursor-not-allowed"
+            )}
           >
             <div className="flex items-start gap-3">
-              <span
-                className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                  selectedOption === "B"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}
+              <Kbd
+                className={cn(
+                  "h-7 w-7 text-sm shrink-0",
+                  selectedOption === "B" && "bg-primary text-primary-foreground"
+                )}
               >
                 B
-              </span>
+              </Kbd>
               <p className="text-sm leading-relaxed">{answerB}</p>
             </div>
           </button>
+        </div>
 
-          {/* Custom Answer Toggle */}
-          <div className="pt-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowCustom(!showCustom)}
-              disabled={isSubmitting}
-              className="text-muted-foreground"
-            >
-              {showCustom ? (
-                <ChevronUp className="h-4 w-4 mr-2" />
-              ) : (
-                <ChevronDown className="h-4 w-4 mr-2" />
-              )}
-              <PenLine className="h-4 w-4 mr-2" />
-              Neither is good? Write your own answer
-            </Button>
-
-            {showCustom && (
-              <div className="mt-3 space-y-3 pl-4 border-l-2 border-muted">
-                <div className="grid gap-2">
-                  <Label htmlFor="custom-answer">Your Answer</Label>
-                  <Textarea
-                    id="custom-answer"
-                    value={customAnswer}
-                    onChange={(e) => setCustomAnswer(e.target.value)}
-                    placeholder="Type your preferred answer..."
-                    className="min-h-[100px]"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <Button
-                  onClick={handleSubmitCustom}
-                  disabled={!customAnswer.trim() || isSubmitting}
-                  variant="secondary"
-                >
-                  <Check className="h-4 w-4 mr-2" />
-                  Submit Custom Answer
-                </Button>
-              </div>
-            )}
-          </div>
+        {/* Custom Answer - Always visible */}
+        <div className="relative">
+          <Textarea
+            ref={customInputRef}
+            value={customAnswer}
+            onChange={(e) => setCustomAnswer(e.target.value)}
+            placeholder="Or write your own answer..."
+            disabled={isSubmitting}
+            rows={2}
+            className="pr-12 resize-none"
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            onClick={handleSubmitCustom}
+            disabled={!customAnswer.trim() || isSubmitting}
+            className="absolute bottom-2 right-2 h-7 w-7"
+            title="Submit custom answer (Enter)"
+          >
+            <CornerDownLeft className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Submitting indicator */}
         {isSubmitting && (
           <div className="flex items-center justify-center gap-2 text-primary">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span>Saving your feedback...</span>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">Saving...</span>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

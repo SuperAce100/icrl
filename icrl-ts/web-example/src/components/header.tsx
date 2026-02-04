@@ -30,9 +30,6 @@ export function Header({ tabs, databaseSelector }: HeaderProps) {
               height={32}
               className="hidden dark:block"
             />
-            <span className="text-lg font-semibold tracking-tight">
-              <span className="text-primary">ICRL</span>
-            </span>
           </Link>
 
           {/* Center: Tabs */}

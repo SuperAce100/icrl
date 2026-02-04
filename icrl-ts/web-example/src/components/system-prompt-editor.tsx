@@ -6,13 +6,6 @@ import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Save, RotateCcw, Info } from "lucide-react";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -29,10 +22,7 @@ interface SystemPromptEditorProps {
 }
 
 export function SystemPromptEditor({ databaseId }: SystemPromptEditorProps) {
-  const database = useQuery(
-    api.databases.get,
-    databaseId ? { id: databaseId } : "skip"
-  );
+  const database = useQuery(api.databases.get, databaseId ? { id: databaseId } : "skip");
   const updateDatabase = useMutation(api.databases.update);
 
   const [prompt, setPrompt] = useState("");
@@ -76,35 +66,33 @@ export function SystemPromptEditor({ databaseId }: SystemPromptEditorProps) {
 
   if (!databaseId) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-muted-foreground text-center py-8">
-            Select a database to configure its system prompt.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Select a database to configure its system prompt.</p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>System Prompt</CardTitle>
-        <CardDescription>
-          Configure the AI&apos;s persona and response style. This defines how the
-          assistant behaves when answering questions.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Define the assistant&apos;s personality, expertise, and tone. The training
-            instructions (generating two answers, using examples) are automatically
-            appended during the Ask &amp; Train flow.
-          </AlertDescription>
-        </Alert>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-lg font-semibold">System Prompt</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Configure the AI&apos;s persona and response style.
+        </p>
+      </div>
 
+      {/* Info Alert */}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          Define the assistant&apos;s personality, expertise, and tone. The training instructions
+          are automatically appended during generation.
+        </AlertDescription>
+      </Alert>
+
+      {/* Editor */}
+      <div className="space-y-4">
         <div className="grid gap-2">
           <Label htmlFor="system-prompt">Prompt Template</Label>
           <Textarea
@@ -117,30 +105,19 @@ export function SystemPromptEditor({ databaseId }: SystemPromptEditorProps) {
         </div>
 
         <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            disabled={isSaving}
-          >
+          <Button variant="outline" onClick={handleReset} disabled={isSaving}>
             <RotateCcw className="mr-2 h-4 w-4" />
             Reset to Default
           </Button>
 
-          <Button
-            onClick={handleSave}
-            disabled={!hasChanges || isSaving}
-          >
+          <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
             <Save className="mr-2 h-4 w-4" />
             {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
 
-        {hasChanges && (
-          <p className="text-sm text-muted-foreground">
-            You have unsaved changes.
-          </p>
-        )}
-      </CardContent>
-    </Card>
+        {hasChanges && <p className="text-sm text-muted-foreground">You have unsaved changes.</p>}
+      </div>
+    </div>
   );
 }

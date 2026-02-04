@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter, notFound } from "next/navigation";
+import { useParams, notFound } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { YoloModeBanner } from "@/components/yolo-mode-banner";
 import { QuestionInput } from "@/components/question-input";
 import { AnswerChoice } from "@/components/answer-choice";
 import { ExamplesList } from "@/components/examples-list";
 import { SystemPromptEditor } from "@/components/system-prompt-editor";
 import { YoloMode } from "@/components/yolo-mode";
 import { generateAnswers, searchSimilarExamples } from "@/lib/actions";
-import { isValidTabSlug, type TabSlug } from "@/lib/slug";
+import { isValidTabSlug } from "@/lib/slug";
 import { Loader2 } from "lucide-react";
 
 type AppState = "input" | "choosing" | "yolo";
@@ -25,7 +24,6 @@ interface GeneratedData {
 
 export default function TabPage() {
   const params = useParams();
-  const router = useRouter();
   const dbSlug = params.dbSlug as string;
   const tab = params.tab as string;
 
@@ -51,7 +49,7 @@ export default function TabPage() {
     );
   }
 
-  // Not found (handled by layout, but just in case)
+  // Not found
   if (database === null) {
     return null;
   }
@@ -121,9 +119,13 @@ export default function TabPage() {
     });
   };
 
-  const enterYoloMode = () => {
-    setState("yolo");
-    setGeneratedData(null);
+  const handleYoloModeChange = (enabled: boolean) => {
+    if (enabled) {
+      setState("yolo");
+      setGeneratedData(null);
+    } else {
+      setState("input");
+    }
   };
 
   const exitYoloMode = () => {
@@ -133,17 +135,16 @@ export default function TabPage() {
   // Render content based on tab
   if (tab === "train") {
     return (
-      <div className="w-full space-y-6">
+      <>
         {state === "input" && (
-          <>
-            <QuestionInput
-              databaseId={databaseId}
-              onSubmit={handleQuestionSubmit}
-              isLoading={isLoading}
-              disabled={false}
-            />
-            <YoloModeBanner onStart={enterYoloMode} />
-          </>
+          <QuestionInput
+            databaseId={databaseId}
+            onSubmit={handleQuestionSubmit}
+            isLoading={isLoading}
+            disabled={false}
+            yoloMode={false}
+            onYoloModeChange={handleYoloModeChange}
+          />
         )}
 
         {state === "choosing" && generatedData && (
@@ -166,7 +167,7 @@ export default function TabPage() {
             onExit={exitYoloMode}
           />
         )}
-      </div>
+      </>
     );
   }
 
