@@ -38,11 +38,10 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newDescription, setNewDescription] = useState("");
+  const [newSystemPrompt, setNewSystemPrompt] = useState("");
   const [editingDb, setEditingDb] = useState<{
     id: Id<"databases">;
     name: string;
-    description: string;
   } | null>(null);
 
   const selectedDatabase = databases?.find((db: DatabaseDoc) => db._id === selectedId);
@@ -53,14 +52,23 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
     try {
       const id = await createDatabase({
         name: newName.trim(),
-        description: newDescription.trim() || undefined,
+        systemPrompt: newSystemPrompt.trim() || undefined,
       });
       onSelect(id);
       setNewName("");
-      setNewDescription("");
+      setNewSystemPrompt("");
       setIsCreateOpen(false);
     } catch (error) {
       console.error("Failed to create database:", error);
+    }
+  };
+
+  const handleCreateDialogClose = (open: boolean) => {
+    setIsCreateOpen(open);
+    if (!open) {
+      // Reset state when dialog closes
+      setNewName("");
+      setNewSystemPrompt("");
     }
   };
 
@@ -71,7 +79,6 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
       await updateDatabase({
         id: editingDb.id,
         name: editingDb.name.trim(),
-        description: editingDb.description.trim() || undefined,
       });
       setIsEditOpen(false);
       setEditingDb(null);
@@ -102,7 +109,6 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
     setEditingDb({
       id: db._id,
       name: db.name,
-      description: db.description ?? "",
     });
     setIsEditOpen(true);
   };
@@ -133,7 +139,7 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[240px] p-0 overflow-hidden" align="end">
+        <PopoverContent className="w-[240px] p-0 overflow-hidden shadow-foreground/5 rounded-lg" align="end">
           {/* Database List */}
           <div className="max-h-[200px] overflow-y-auto">
             {databases?.length === 0 ? (
@@ -203,7 +209,7 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
       </Popover>
 
       {/* Create Database Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog open={isCreateOpen} onOpenChange={handleCreateDialogClose}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Database</DialogTitle>
@@ -222,17 +228,21 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="description">Description (optional)</Label>
+              <Label htmlFor="system-prompt">System Prompt (optional)</Label>
               <Textarea
-                id="description"
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="A database for..."
+                id="system-prompt"
+                value={newSystemPrompt}
+                onChange={(e) => setNewSystemPrompt(e.target.value)}
+                placeholder="You are a helpful assistant that..."
+                rows={4}
               />
+              <p className="text-xs text-muted-foreground">
+                Instructions to guide how the AI responds. You can change this later.
+              </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="secondary" size="sm" onClick={() => setIsCreateOpen(false)}>
+            <Button variant="secondary" size="sm" onClick={() => handleCreateDialogClose(false)}>
               Cancel
             </Button>
             <Button size="sm" onClick={handleCreate} disabled={!newName.trim()}>
@@ -246,8 +256,8 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Database</DialogTitle>
-            <DialogDescription>Update the database name and description.</DialogDescription>
+            <DialogTitle>Rename Database</DialogTitle>
+            <DialogDescription>Update the database name.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -257,16 +267,6 @@ export function DatabaseSelector({ selectedId, onSelect }: DatabaseSelectorProps
                 value={editingDb?.name ?? ""}
                 onChange={(e) =>
                   setEditingDb((prev) => (prev ? { ...prev, name: e.target.value } : null))
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-description">Description (optional)</Label>
-              <Textarea
-                id="edit-description"
-                value={editingDb?.description ?? ""}
-                onChange={(e) =>
-                  setEditingDb((prev) => (prev ? { ...prev, description: e.target.value } : null))
                 }
               />
             </div>

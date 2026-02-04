@@ -225,117 +225,131 @@ export async function checkApiStatus(): Promise<{
 }
 
 // Curriculum learning prompt for generating suggestions
-const SUGGESTION_GENERATION_PROMPT = `You are a curriculum designer for an AI training system. Your goal is to suggest prompts that DRAMATICALLY EXPAND the training coverage into completely new territory.
+const SUGGESTION_GENERATION_PROMPT = `You are a curriculum designer for an AI training system. Your goal is to suggest prompts that expand training coverage into new territory while maintaining stylistic consistency.
 
-CRITICAL RULES:
+STYLE MATCHING (CRITICAL):
+- Study the TONE of existing examples (formal/casual, technical/conversational, etc.) and MATCH IT
+- Study the LENGTH of existing examples and generate prompts of SIMILAR LENGTH
+- Study the STRUCTURE of existing examples (questions, requests, scenarios) and FOLLOW IT
+- The new prompts should feel like they belong in the same dataset
+
+CONTENT RULES:
 - NEVER suggest duplicates or rephrasings of existing examples
-- NEVER suggest prompts that are semantically similar to what's already covered
-- Each suggestion must explore a COMPLETELY DIFFERENT domain/topic
-- Think EXPANSIVELY - push into entirely new subject areas, industries, contexts
-- The goal is maximum diversity, not incremental improvement
+- Each suggestion must explore DIFFERENT subject matter/material
+- The TOPICS should be new, but the STYLE should be familiar
+- Think of it as: same voice, different subjects
 
-Given the existing training examples below, generate 5 COMPLETELY NOVEL prompts that:
-1. Explore ENTIRELY NEW topics - not variations of existing ones
-2. Cover DIFFERENT DOMAINS (tech, arts, science, business, personal, social, creative, analytical, etc.)
-3. Vary in TYPE (factual, opinion, how-to, comparison, creative, hypothetical, troubleshooting, planning)
-4. Vary in COMPLEXITY (some simple, some requiring deep thought)
-5. Would MASSIVELY expand the sphere of covered topics - think of the example space as a map, and you're exploring uncharted regions
+Given the existing training examples below, generate 5 prompts that:
+1. MATCH the tone, style, and approximate length of existing examples
+2. Explore DIFFERENT topics/material - not variations of existing ones
+3. Cover different domains (tech, arts, science, business, personal, creative, etc.)
+4. Vary in type (factual, opinion, how-to, comparison, creative, hypothetical)
+5. Would expand topic coverage while feeling stylistically consistent
 
-EXISTING EXAMPLES (DO NOT repeat or rephrase ANY of these):
+EXISTING EXAMPLES (match their style, avoid their topics):
 {examples_summary}
 
-BE BOLD! Suggest prompts about topics that seem completely unrelated to what exists. The more diverse, the better. Cover gaps like: different industries, different life situations, different types of tasks, different levels of abstraction.
+Generate prompts that a user would believe came from the same person who wrote the existing examples, just asking about different subjects.
 
 Respond in this exact JSON format:
 {
   "suggestions": ["prompt1", "prompt2", "prompt3", "prompt4", "prompt5"],
-  "reasoning": "Brief explanation of what new territories these prompts explore"
+  "reasoning": "Brief explanation of style matched and new topics explored"
 }`;
 
 // YOLO mode prompt for generating a novel prompt (answers generated separately with retrieved examples)
 const YOLO_PROMPT_GENERATION = `You are a curriculum designer for an AI training system.
 
-Your task: Generate a SINGLE prompt that explores COMPLETELY NEW TERRITORY not covered by existing examples.
+Your task: Generate a SINGLE prompt that explores NEW subject matter while matching the style of existing examples.
 
-CRITICAL RULES:
+STYLE MATCHING (CRITICAL):
+- Study the TONE of existing examples (formal/casual, technical/conversational) and MATCH IT EXACTLY
+- Study the LENGTH of existing examples and generate a prompt of SIMILAR LENGTH
+- Study the STRUCTURE (questions, requests, scenarios) and FOLLOW THE SAME PATTERN
+- The prompt should feel like it belongs in the same dataset - same voice, different subject
+
+CONTENT RULES:
 - NEVER generate a duplicate or rephrasing of any existing example
-- NEVER generate something semantically similar to what's already covered
-- The prompt MUST explore a COMPLETELY DIFFERENT domain or topic
-- Think EXPANSIVELY - venture into entirely new subject areas
-- Be BOLD and creative - the more different from existing examples, the better
+- The TOPIC must be different, but the STYLE must be the same
+- Explore new subject matter while maintaining stylistic consistency
 
 Based on the existing examples below, create a prompt that:
-- Explores an ENTIRELY NEW topic or domain (not a variation of existing ones)
-- Is in a DIFFERENT category (if examples are about productivity, try science, art, relationships, etc.)
-- Would SIGNIFICANTLY expand the training coverage into uncharted territory
+- MATCHES the tone, style, and length of the existing examples
+- Explores a DIFFERENT topic or subject matter (not covered by existing examples)
+- Would expand topic coverage while feeling stylistically consistent
 - Is clear and specific enough to generate meaningful responses
 
-EXISTING EXAMPLES (DO NOT duplicate, rephrase, or create variations of ANY of these):
+EXISTING EXAMPLES (match their style, avoid their topics):
 {examples_summary}
 
-Think of the example space as a map. Your job is to explore regions that are FAR from existing examples. Consider: different industries, life contexts, problem types, domains of knowledge, types of tasks.
+Generate a prompt that sounds like it came from the same person who wrote the existing examples, just asking about a different subject.
 
 Respond in this exact JSON format:
 {
-  "prompt": "Your completely novel prompt here",
-  "reasoning": "What new territory this explores that's different from all existing examples"
+  "prompt": "Your style-matched prompt about a new topic here",
+  "reasoning": "How this matches the style while exploring new material"
 }`;
 
 // YOLO mode prompt for generating MULTIPLE novel prompts at once (more efficient)
 const YOLO_BATCH_PROMPT_GENERATION = `You are a curriculum designer for an AI training system.
 
-Your task: Generate {count} COMPLETELY NOVEL prompts that explore NEW TERRITORY not covered by existing examples.
+Your task: Generate {count} prompts that explore NEW subject matter while matching the style of existing examples.
 
-CRITICAL RULES:
+STYLE MATCHING (CRITICAL):
+- Study the TONE of existing examples (formal/casual, technical/conversational) and MATCH IT EXACTLY
+- Study the LENGTH of existing examples and generate prompts of SIMILAR LENGTH
+- Study the STRUCTURE (questions, requests, scenarios) and FOLLOW THE SAME PATTERN
+- All {count} prompts should feel like they belong in the same dataset - same voice, different subjects
+
+CONTENT RULES:
 - NEVER generate duplicates or rephrasings of any existing example
-- NEVER generate something semantically similar to what's already covered
-- Each prompt MUST explore a COMPLETELY DIFFERENT domain or topic
-- The {count} prompts should ALL be different from EACH OTHER too
-- Think EXPANSIVELY - venture into entirely new subject areas
-- Be BOLD and creative - maximum diversity is the goal
+- The TOPICS must be different, but the STYLE must be consistent
+- The {count} prompts should cover different subjects from EACH OTHER too
+- Explore diverse subject matter while maintaining stylistic consistency
 
-EXISTING EXAMPLES (DO NOT duplicate, rephrase, or create variations of ANY of these):
+EXISTING EXAMPLES (match their style, avoid their topics):
 {examples_summary}
 
 Generate {count} prompts that:
-- Each explores an ENTIRELY NEW topic or domain
-- Cover DIFFERENT categories from each other (mix of tech, science, arts, business, personal, health, creativity, etc.)
-- Would MASSIVELY expand the training coverage into uncharted territory
+- ALL MATCH the tone, style, and length of existing examples
+- Each explores a DIFFERENT topic or subject matter
+- Cover different domains (tech, science, arts, business, personal, creative, etc.)
+- Would expand topic coverage while feeling stylistically consistent
 - Are clear and specific enough to generate meaningful responses
 
-Think of the example space as a map. Generate prompts that explore {count} DIFFERENT regions, all FAR from existing examples AND far from each other.
+Generate prompts that sound like they all came from the same person who wrote the existing examples, just asking about {count} different subjects.
 
 Respond in this exact JSON format:
 {
   "prompts": ["prompt1", "prompt2", "prompt3", ...],
-  "reasoning": "Brief explanation of the diverse territories covered"
+  "reasoning": "Brief explanation of style matched and diverse topics covered"
 }`;
 
 /**
  * Create a summary of existing examples for curriculum learning.
- * Includes all examples to help the AI avoid duplicates and identify gaps.
+ * Includes all examples to help the AI match style and avoid duplicate topics.
  */
 function summarizeExamplesForCurriculum(examples: Example[]): string {
   if (examples.length === 0) {
-    return "No existing examples yet. This is the first training session - generate diverse foundational prompts across many different domains (tech, personal development, science, arts, business, relationships, health, creativity, etc.)";
+    return "No existing examples yet. This is the first training session - generate diverse foundational prompts. Use a clear, conversational tone and moderate length (1-2 sentences).";
   }
 
-  // Include more examples to help avoid duplicates
+  // Include more examples to help match style and avoid duplicate topics
   const maxExamples = Math.min(examples.length, 30);
   const summary = examples
     .slice(0, maxExamples)
     .map(
-      (ex, i) => `${i + 1}. "${ex.question.slice(0, 120)}${ex.question.length > 120 ? "..." : ""}"`
+      (ex, i) => `${i + 1}. "${ex.question.slice(0, 150)}${ex.question.length > 150 ? "..." : ""}"`
     )
     .join("\n");
 
-  // Add explicit instruction about what's covered
+  // Add explicit instruction about style matching
   const coverageNote =
     examples.length > maxExamples
-      ? `\n\n(Showing ${maxExamples} of ${examples.length} total examples. There are more examples not shown - be extra careful to explore NEW territory.)`
+      ? `\n\n(Showing ${maxExamples} of ${examples.length} total examples.)`
       : "";
 
-  return `ALREADY COVERED (${examples.length} examples - DO NOT duplicate or rephrase any of these):\n${summary}${coverageNote}\n\nYou MUST suggest prompts about topics NOT listed above.`;
+  return `EXISTING EXAMPLES - Study these carefully to match their TONE, LENGTH, and STYLE:\n${summary}${coverageNote}\n\nGenerate prompts that MATCH this style but cover DIFFERENT topics.`;
 }
 
 /**
