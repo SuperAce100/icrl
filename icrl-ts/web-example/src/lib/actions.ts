@@ -181,6 +181,49 @@ export async function generateAnswers(
   throw new Error("Failed to parse JSON response from model");
 }
 
+// Instructions for single-answer generation (Ask mode)
+const ASK_MODE_INSTRUCTIONS = `
+---
+You will be given a question. Provide a single, high-quality answer based on the examples below.
+
+Learn from these examples to understand the preferred style and approach:
+{examples}
+
+Respond directly with your answer. Do not include any JSON formatting or explanation - just the answer itself.`;
+
+/**
+ * Generate a single answer for Ask mode (no evaluation needed).
+ * Uses retrieved examples to inform the response style.
+ */
+export async function generateSingleAnswer(
+  question: string,
+  examples: Example[],
+  personaPrompt?: string
+): Promise<string> {
+  // Use icrl's formatting for examples
+  const examplesText = formatExamplesForPrompt(examples);
+
+  // Combine persona prompt with ask instructions
+  const persona = personaPrompt || DEFAULT_PERSONA_PROMPT;
+  const askInstructions = ASK_MODE_INSTRUCTIONS.replace("{examples}", examplesText);
+  const prompt = `${persona}\n${askInstructions}`;
+
+  // Check if API is configured
+  if (!isAnthropicVertexConfigured()) {
+    throw new Error("Anthropic Vertex not configured. Please set GOOGLE_CREDENTIALS_JSON.");
+  }
+
+  const response = await generateCompletion({
+    messages: [{ role: "user", content: question }],
+    systemPrompt: prompt,
+    model: "claude-opus-4-5",
+    temperature: 0.7,
+    maxTokens: 2000,
+  });
+
+  return response.trim();
+}
+
 /**
  * Store a training example as a trajectory in the icrl format.
  *

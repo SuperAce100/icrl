@@ -7,7 +7,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { DatabaseSelector } from "@/components/database-selector";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Database, Loader2, BicepsFlexed, Milestone } from "lucide-react";
+import { Database, Loader2, BicepsFlexed, Milestone, MessageCircle } from "lucide-react";
 import { toSlug, type TabSlug } from "@/lib/slug";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { GrainGradient } from "@paper-design/shaders-react";
@@ -100,6 +100,13 @@ export default function DatabaseLayout({ children }: { children: React.ReactNode
   const headerTabs = (
     <Tabs value={currentTab} onValueChange={handleTabChange}>
       <TabsList className="h-9 bg-transparent">
+        <TabsTrigger
+          value="ask"
+          className="flex items-center gap-1.5 text-sm data-[state=active]:text-primary data-[state=active]:bg-transparent"
+        >
+          <MessageCircle className="h-3.5 w-3.5" />
+          Ask
+        </TabsTrigger>
         <TabsTrigger
           value="train"
           className="flex items-center gap-1.5 text-sm data-[state=active]:text-primary data-[state=active]:bg-transparent"

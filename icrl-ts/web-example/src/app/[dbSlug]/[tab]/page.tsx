@@ -9,6 +9,7 @@ import { AnswerChoice } from "@/components/answer-choice";
 import { ExamplesList } from "@/components/examples-list";
 import { SystemPromptEditor } from "@/components/system-prompt-editor";
 import { YoloMode } from "@/components/yolo-mode";
+import { AskMode } from "@/components/ask-mode";
 import { generateAnswers, searchSimilarExamples } from "@/lib/actions";
 import { isValidTabSlug } from "@/lib/slug";
 import { Loader2 } from "lucide-react";
@@ -129,6 +130,10 @@ export default function TabPage() {
   };
 
   // Render content based on tab
+  if (tab === "ask") {
+    return <AskMode databaseId={databaseId} systemPrompt={database.systemPrompt ?? undefined} />;
+  }
+
   if (tab === "train") {
     return (
       <>

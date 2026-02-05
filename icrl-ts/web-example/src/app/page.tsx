@@ -49,7 +49,7 @@ export default function Home() {
   useEffect(() => {
     if (databases && databases.length > 0) {
       const firstDb = databases[0];
-      router.replace(`/${toSlug(firstDb.name)}/train`);
+      router.replace(`/${toSlug(firstDb.name)}/ask`);
     }
   }, [databases, router]);
 
@@ -57,7 +57,7 @@ export default function Home() {
     if (!id) return;
     const db = databases?.find((d) => d._id === id);
     if (db) {
-      router.push(`/${toSlug(db.name)}/train`);
+      router.push(`/${toSlug(db.name)}/ask`);
     }
   };
 

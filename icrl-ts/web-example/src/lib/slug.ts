@@ -11,9 +11,9 @@ export function toSlug(name: string): string {
 /**
  * Tab values that map to URL paths
  */
-export type TabSlug = "train" | "memory" | "settings";
+export type TabSlug = "ask" | "train" | "memory" | "settings";
 
-export const TAB_SLUGS: TabSlug[] = ["train", "memory", "settings"];
+export const TAB_SLUGS: TabSlug[] = ["ask", "train", "memory", "settings"];
 
 export function isValidTabSlug(slug: string): slug is TabSlug {
   return TAB_SLUGS.includes(slug as TabSlug);
