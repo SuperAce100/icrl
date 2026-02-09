@@ -4,14 +4,36 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ICRL Brand Colors:
+ * Primary Orange: #F88D39
+ * Dark Stone: #292524
+ * Light Stone: #E7E5E4
+ * Blue Accent: #49A1D9
+ * Yellow Accent: #FFDE8E
+ */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -20,6 +42,8 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --radius-sm: calc(var(--radius) - 4px);
@@ -27,7 +51,10 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
 
+  /* ICRL Brand Colors as CSS variables */
   --color-icrl-orange: #f88d39;
   --color-icrl-blue: #49a1d9;
   --color-icrl-yellow: #ffde8e;
@@ -37,32 +64,90 @@
 
 :root {
   --radius: 0.625rem;
+  /* Light mode - Stone light background */
   --background: #fafaf9;
   --foreground: #292524;
   --card: #ffffff;
   --card-foreground: #292524;
+  --popover: #ffffff;
+  --popover-foreground: #292524;
+  /* Primary is ICRL Orange */
   --primary: #f88d39;
   --primary-foreground: #ffffff;
+  /* Secondary is stone */
   --secondary: #e7e5e4;
   --secondary-foreground: #292524;
   --muted: #f5f5f4;
   --muted-foreground: #78716c;
+  /* Accent is light gray */
   --accent: #f5f5f4;
   --accent-foreground: #292524;
+  --destructive: #ef4444;
   --border: #d6d3d1;
   --input: #d6d3d1;
   --ring: #f88d39;
+  /* Charts using brand colors */
+  --chart-1: #f88d39;
+  --chart-2: #49a1d9;
+  --chart-3: #ffde8e;
+  --chart-4: #a78bfa;
+  --chart-5: #22c55e;
+  --sidebar: #fafaf9;
+  --sidebar-foreground: #292524;
+  --sidebar-primary: #f88d39;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f5f4;
+  --sidebar-accent-foreground: #292524;
+  --sidebar-border: #d6d3d1;
+  --sidebar-ring: #f88d39;
+}
+
+.dark {
+  /* Dark mode - Stone dark background */
+  --background: #1c1917;
+  --foreground: #e7e5e4;
+  --card: #292524;
+  --card-foreground: #e7e5e4;
+  --popover: #292524;
+  --popover-foreground: #e7e5e4;
+  /* Primary remains ICRL Orange */
+  --primary: #f88d39;
+  --primary-foreground: #ffffff;
+  /* Secondary is dark stone */
+  --secondary: #3d3a38;
+  --secondary-foreground: #e7e5e4;
+  --muted: #292524;
+  --muted-foreground: #a8a29e;
+  /* Accent is dark gray */
+  --accent: #3d3a38;
+  --accent-foreground: #e7e5e4;
+  --destructive: #ef4444;
+  --border: #44403c;
+  --input: #44403c;
+  --ring: #f88d39;
+  /* Charts using brand colors */
+  --chart-1: #f88d39;
+  --chart-2: #49a1d9;
+  --chart-3: #ffde8e;
+  --chart-4: #a78bfa;
+  --chart-5: #22c55e;
+  --sidebar: #1c1917;
+  --sidebar-foreground: #e7e5e4;
+  --sidebar-primary: #f88d39;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #292524;
+  --sidebar-accent-foreground: #e7e5e4;
+  --sidebar-border: #44403c;
+  --sidebar-ring: #f88d39;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-
   html {
     scroll-behavior: smooth;
   }
-
   body {
     @apply bg-background text-foreground;
   }
@@ -70,8 +155,16 @@
 
 @layer utilities {
   .page-grid {
-    background-image: linear-gradient(to right, color-mix(in srgb, var(--color-border) 35%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in srgb, var(--color-border) 35%, transparent) 1px, transparent 1px);
+    background-image: linear-gradient(
+        to right,
+        color-mix(in srgb, var(--color-border) 35%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--color-border) 35%, transparent) 1px,
+        transparent 1px
+      );
     background-size: 48px 48px;
     mask-image: radial-gradient(circle at top, black 45%, transparent 95%);
   }
@@ -88,5 +181,47 @@
     opacity: 0.06;
     background-image: radial-gradient(circle at 1px 1px, rgb(0 0 0 / 0.2) 1px, transparent 0);
     background-size: 10px 10px;
+  }
+
+  .stagger {
+    animation: rise-in 700ms cubic-bezier(0.2, 0.85, 0.25, 1) both;
+  }
+
+  .stagger[data-delay="1"] {
+    animation-delay: 90ms;
+  }
+
+  .stagger[data-delay="2"] {
+    animation-delay: 180ms;
+  }
+
+  .stagger[data-delay="3"] {
+    animation-delay: 270ms;
+  }
+
+  .glow-line {
+    position: relative;
+  }
+
+  .glow-line::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, rgb(248 141 57 / 0.95), rgb(248 141 57 / 0.08));
+    border-radius: 999px;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
