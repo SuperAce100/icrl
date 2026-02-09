@@ -84,10 +84,14 @@ jobs:
 
       - name: Run Python test suite
         run: |
+          export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
           if [ -f tests/test_harbor_coding.py ]; then
-            uv run --with pytest pytest tests/test_harbor_coding.py -v
+            uv run --with pytest python -m pytest tests/test_harbor_coding.py -v
+          elif [ -f examples/test_harbor_coding.py ]; then
+            uv run --with pytest python -m pytest examples/test_harbor_coding.py -v
           else
-            uv run --with pytest pytest examples/test_harbor_coding.py -v
+            echo "No harbor coding test file found" >&2
+            exit 1
           fi
 
   typescript-tests:
