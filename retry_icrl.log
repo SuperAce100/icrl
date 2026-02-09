@@ -1,0 +1,309 @@
+Waiting for current run to finish...
+Current errors: 6
+Retry attempt 1 of 10...
+  6/6 Mean: 0.000 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1:12:15 0:00:00
+Results written to jobs/icrl-50steps/result.json
+       icrl-train on terminal-bench        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Metric                 ┃ Value          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Agent                  │ icrl-train     │
+│ Dataset                │ terminal-bench │
+│ Trials                 │ 83             │
+│ Errors                 │ 6              │
+│                        │                │
+│ Mean                   │ 0.348          │
+│                        │                │
+│ Reward Distribution    │                │
+│   reward = 0.0         │ 52             │
+│   reward = 1.0         │ 31             │
+│                        │                │
+│ Exception Distribution │                │
+│   AuthenticationError  │ 4              │
+│   RuntimeError         │ 2              │
+└────────────────────────┴────────────────┘
+
+Waiting for current run to finish...
+Current errors: 6
+Retry attempt 2 of 10...
+Removing trial directory with AuthenticationError: filter-js-from-html__KFa6bmv
+Removing trial directory with AuthenticationError: write-compressor__nt5RrqV
+Removing trial directory with RuntimeError: mteb-leaderboard__U9oTYbc
+Removing trial directory with RuntimeError: mteb-retrieve__mTdmX7m
+Removing trial directory with AuthenticationError: polyglot-rust-c__j9pb6uF
+Removing trial directory with AuthenticationError: 
+model-extraction-relu-logits__ME6KrGr
+Removing trial directory with AuthenticationError: write-compressor__PkhxrRC
+Removing trial directory with AuthenticationError: polyglot-rust-c__yiyoW7z
+  4/4 Mean: 0.000 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 0:43:44 0:00:00
+Results written to jobs/icrl-50steps/result.json
+       icrl-train on terminal-bench        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Metric                 ┃ Value          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Agent                  │ icrl-train     │
+│ Dataset                │ terminal-bench │
+│ Trials                 │ 83             │
+│ Errors                 │ 6              │
+│                        │                │
+│ Mean                   │ 0.348          │
+│                        │                │
+│ Reward Distribution    │                │
+│   reward = 0.0         │ 52             │
+│   reward = 1.0         │ 31             │
+│                        │                │
+│ Exception Distribution │                │
+│   CancelledError       │ 2              │
+│   AuthenticationError  │ 3              │
+│   RuntimeError         │ 1              │
+└────────────────────────┴────────────────┘
+
+Waiting for current run to finish...
+Current errors: 6
+Retry attempt 3 of 10...
+Removing trial directory with RuntimeError: mteb-retrieve__nrCZpUh
+Removing trial directory with AuthenticationError: 
+model-extraction-relu-logits__c6xUgP8
+Removing trial directory with AuthenticationError: polyglot-rust-c__W859jz3
+Removing trial directory with AuthenticationError: write-compressor__t9awFqg
+  4/4 Mean: 0.000 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 0:47:18 0:00:00
+Results written to jobs/icrl-50steps/result.json
+       icrl-train on terminal-bench        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Metric                 ┃ Value          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Agent                  │ icrl-train     │
+│ Dataset                │ terminal-bench │
+│ Trials                 │ 83             │
+│ Errors                 │ 6              │
+│                        │                │
+│ Mean                   │ 0.348          │
+│                        │                │
+│ Reward Distribution    │                │
+│   reward = 0.0         │ 52             │
+│   reward = 1.0         │ 31             │
+│                        │                │
+│ Exception Distribution │                │
+│   CancelledError       │ 2              │
+│   AuthenticationError  │ 3              │
+│   RuntimeError         │ 1              │
+└────────────────────────┴────────────────┘
+
+Waiting for current run to finish...
+Current errors: 6
+Retry attempt 4 of 10...
+Removing trial directory with AuthenticationError: write-compressor__YHk6AZr
+Removing trial directory with RuntimeError: mteb-retrieve__Uxg3sMJ
+Removing trial directory with AuthenticationError: polyglot-rust-c__XRMp9Q7
+Removing trial directory with AuthenticationError: 
+model-extraction-relu-logits__jMuF5bR
+  4/4 Mean: 0.000 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 0:55:26 0:00:00
+Results written to jobs/icrl-50steps/result.json
+       icrl-train on terminal-bench        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Metric                 ┃ Value          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Agent                  │ icrl-train     │
+│ Dataset                │ terminal-bench │
+│ Trials                 │ 83             │
+│ Errors                 │ 6              │
+│                        │                │
+│ Mean                   │ 0.348          │
+│                        │                │
+│ Reward Distribution    │                │
+│   reward = 0.0         │ 52             │
+│   reward = 1.0         │ 31             │
+│                        │                │
+│ Exception Distribution │                │
+│   CancelledError       │ 2              │
+│   AuthenticationError  │ 3              │
+│   RuntimeError         │ 1              │
+└────────────────────────┴────────────────┘
+
+Waiting for current run to finish...
+Current errors: 6
+Retry attempt 5 of 10...
+Removing trial directory with AuthenticationError: 
+model-extraction-relu-logits__59QJWzX
+Removing trial directory with RuntimeError: mteb-retrieve__QBbLrLH
+Removing trial directory with AuthenticationError: polyglot-rust-c__9pCw37S
+Removing trial directory with AuthenticationError: write-compressor__oUyiyxx
+  4/4 Mean: 0.000 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2:13:37 0:00:00
+Results written to jobs/icrl-50steps/result.json
+       icrl-train on terminal-bench        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Metric                 ┃ Value          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Agent                  │ icrl-train     │
+│ Dataset                │ terminal-bench │
+│ Trials                 │ 83             │
+│ Errors                 │ 6              │
+│                        │                │
+│ Mean                   │ 0.348          │
+│                        │                │
+│ Reward Distribution    │                │
+│   reward = 0.0         │ 52             │
+│   reward = 1.0         │ 31             │
+│                        │                │
+│ Exception Distribution │                │
+│   CancelledError       │ 2              │
+│   AuthenticationError  │ 3              │
+│   RuntimeError         │ 1              │
+└────────────────────────┴────────────────┘
+
+Waiting for current run to finish...
+Current errors: 6
+Retry attempt 6 of 10...
+Removing trial directory with AuthenticationError: polyglot-rust-c__zU5jAGu
+Removing trial directory with AuthenticationError: write-compressor__jJ8eYh9
+Removing trial directory with AuthenticationError: 
+model-extraction-relu-logits__BdtqvmX
+Removing trial directory with RuntimeError: mteb-retrieve__jgB2ERb
+  4/4 Mean: 0.000 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1:09:07 0:00:00
+Results written to jobs/icrl-50steps/result.json
+       icrl-train on terminal-bench        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Metric                 ┃ Value          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Agent                  │ icrl-train     │
+│ Dataset                │ terminal-bench │
+│ Trials                 │ 83             │
+│ Errors                 │ 6              │
+│                        │                │
+│ Mean                   │ 0.348          │
+│                        │                │
+│ Reward Distribution    │                │
+│   reward = 0.0         │ 52             │
+│   reward = 1.0         │ 31             │
+│                        │                │
+│ Exception Distribution │                │
+│   CancelledError       │ 2              │
+│   AuthenticationError  │ 3              │
+│   RuntimeError         │ 1              │
+└────────────────────────┴────────────────┘
+
+Waiting for current run to finish...
+Current errors: 6
+Retry attempt 7 of 10...
+Removing trial directory with AuthenticationError: write-compressor__J5u4nvL
+Removing trial directory with AuthenticationError: polyglot-rust-c__PbLrYeX
+Removing trial directory with RuntimeError: mteb-retrieve__vFmkxex
+Removing trial directory with AuthenticationError: 
+model-extraction-relu-logits__LJPc67H
+  4/4 Mean: 0.000 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 0:46:39 0:00:00
+Results written to jobs/icrl-50steps/result.json
+       icrl-train on terminal-bench        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Metric                 ┃ Value          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Agent                  │ icrl-train     │
+│ Dataset                │ terminal-bench │
+│ Trials                 │ 83             │
+│ Errors                 │ 6              │
+│                        │                │
+│ Mean                   │ 0.348          │
+│                        │                │
+│ Reward Distribution    │                │
+│   reward = 0.0         │ 52             │
+│   reward = 1.0         │ 31             │
+│                        │                │
+│ Exception Distribution │                │
+│   CancelledError       │ 2              │
+│   AuthenticationError  │ 3              │
+│   RuntimeError         │ 1              │
+└────────────────────────┴────────────────┘
+
+Waiting for current run to finish...
+Current errors: 6
+Retry attempt 8 of 10...
+Removing trial directory with AuthenticationError: 
+model-extraction-relu-logits__qZbHNs5
+Removing trial directory with RuntimeError: mteb-retrieve__pChK8hc
+Removing trial directory with AuthenticationError: polyglot-rust-c__EdRpe8D
+Removing trial directory with AuthenticationError: write-compressor__F4uUpa2
+  4/4 Mean: 0.000 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 0:45:40 0:00:00
+Results written to jobs/icrl-50steps/result.json
+       icrl-train on terminal-bench        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Metric                 ┃ Value          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Agent                  │ icrl-train     │
+│ Dataset                │ terminal-bench │
+│ Trials                 │ 83             │
+│ Errors                 │ 6              │
+│                        │                │
+│ Mean                   │ 0.348          │
+│                        │                │
+│ Reward Distribution    │                │
+│   reward = 0.0         │ 52             │
+│   reward = 1.0         │ 31             │
+│                        │                │
+│ Exception Distribution │                │
+│   CancelledError       │ 2              │
+│   AuthenticationError  │ 3              │
+│   RuntimeError         │ 1              │
+└────────────────────────┴────────────────┘
+
+Waiting for current run to finish...
+Current errors: 6
+Retry attempt 9 of 10...
+Removing trial directory with AuthenticationError: write-compressor__HoMdipG
+Removing trial directory with AuthenticationError: polyglot-rust-c__BxAGHLS
+Removing trial directory with RuntimeError: mteb-retrieve__JD299TF
+Removing trial directory with AuthenticationError: 
+model-extraction-relu-logits__t9VccTf
+  4/4 Mean: 0.000 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 0:55:55 0:00:00
+Results written to jobs/icrl-50steps/result.json
+       icrl-train on terminal-bench        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Metric                 ┃ Value          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Agent                  │ icrl-train     │
+│ Dataset                │ terminal-bench │
+│ Trials                 │ 83             │
+│ Errors                 │ 6              │
+│                        │                │
+│ Mean                   │ 0.348          │
+│                        │                │
+│ Reward Distribution    │                │
+│   reward = 0.0         │ 52             │
+│   reward = 1.0         │ 31             │
+│                        │                │
+│ Exception Distribution │                │
+│   CancelledError       │ 2              │
+│   AuthenticationError  │ 3              │
+│   RuntimeError         │ 1              │
+└────────────────────────┴────────────────┘
+
+Waiting for current run to finish...
+Current errors: 6
+Retry attempt 10 of 10...
+Removing trial directory with AuthenticationError: write-compressor__rrLMN4z
+Removing trial directory with AuthenticationError: polyglot-rust-c__FkXGtmc
+Removing trial directory with RuntimeError: mteb-retrieve__gEZM8Ye
+Removing trial directory with AuthenticationError: 
+model-extraction-relu-logits__pboG2cb
+  4/4 Mean: 0.000 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1:13:44 0:00:00
+Results written to jobs/icrl-50steps/result.json
+       icrl-train on terminal-bench        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Metric                 ┃ Value          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Agent                  │ icrl-train     │
+│ Dataset                │ terminal-bench │
+│ Trials                 │ 83             │
+│ Errors                 │ 6              │
+│                        │                │
+│ Mean                   │ 0.348          │
+│                        │                │
+│ Reward Distribution    │                │
+│   reward = 0.0         │ 52             │
+│   reward = 1.0         │ 31             │
+│                        │                │
+│ Exception Distribution │                │
+│   CancelledError       │ 2              │
+│   AuthenticationError  │ 3              │
+│   RuntimeError         │ 1              │
+└────────────────────────┴────────────────┘
+
+Max retries reached. Some errors may remain.

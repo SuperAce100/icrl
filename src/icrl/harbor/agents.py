@@ -143,11 +143,11 @@ def _get_model() -> str:
 
 def _get_k() -> int:
     """Get the number of examples to retrieve from environment or default."""
-    # Default to 5 for richer context and never allow K=1 (too brittle).
+    # Default to 3 (paper-style) and never allow K=1 (too brittle).
     try:
-        k = int(os.environ.get("ICRL_K", "5"))
+        k = int(os.environ.get("ICRL_K", "3"))
     except ValueError:
-        k = 5
+        k = 3
     return max(2, k)
 
 
@@ -195,24 +195,11 @@ def _create_step_callback(
 
     def callback(step: Step, step_context: StepContext) -> None:
         """Record step information to the trajectory log."""
-        # Extract detailed info about retrieved examples
-        retrieved_examples = []
-        for ex in step_context.examples:
-            retrieved_examples.append(
-                {
-                    "trajectory_id": ex.trajectory_id,
-                    "step_index": ex.step_index,
-                    "goal": ex.goal[:150] if ex.goal else "",
-                    "action": ex.action[:200] if ex.action else "",
-                }
-            )
-
         step_data = {
             "observation": step.observation[:500] if step.observation else "",
             "reasoning": step.reasoning or "",
             "action": step.action or "",
             "examples_used": len(step_context.examples),
-            "retrieved_examples": retrieved_examples,
         }
         trajectory_log.append(step_data)
 
@@ -334,7 +321,7 @@ class ICRLTrainAgent(BaseAgent):
         adapter = HarborEnvironmentAdapter(
             environment=environment,
             max_actions=max_steps + 10,
-            timeout_sec=300,  # 5 min timeout for complex tasks
+            timeout_sec=180,
         )
 
         # Run in training mode - only stores when agent signals completion (submit)
@@ -460,7 +447,7 @@ class ICRLZeroShotAgent(BaseAgent):
             adapter = HarborEnvironmentAdapter(
                 environment=environment,
                 max_actions=max_steps + 10,
-                timeout_sec=300,  # 5 min timeout for complex tasks
+                timeout_sec=180,
             )
 
             trajectory = await agent.run(adapter, instruction)
@@ -584,7 +571,7 @@ class ICRLTestAgent(BaseAgent):
         adapter = HarborEnvironmentAdapter(
             environment=environment,
             max_actions=max_steps + 10,
-            timeout_sec=300,  # 5 min timeout for complex tasks
+            timeout_sec=180,
         )
 
         # Record retrieved examples for analysis

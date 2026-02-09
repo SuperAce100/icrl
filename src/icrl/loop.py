@@ -65,8 +65,6 @@ class ReActLoop:
         Returns:
             The resulting trajectory.
         """
-        import re
-
         self._retriever.clear_retrieved()
 
         observation = env.reset(goal)
@@ -75,65 +73,14 @@ class ReActLoop:
         reason_uses_examples = "{examples}" in self._reason_prompt
         act_uses_examples = "{examples}" in self._act_prompt
 
-        # Check if using unified XML format (system prompt contains XML markers)
-        unified_xml_mode = (
-            "<keystrokes" in self._plan_prompt or "<response>" in self._plan_prompt
-        )
-
         examples = self._retriever.retrieve_for_plan(goal) if plan_uses_examples else []
+        plan = await self._generate_plan(goal, examples)
 
         steps: list[Step] = []
         done = False
         success = False
-        plan = ""
 
-        if unified_xml_mode:
-            # In XML mode, generate initial response with plan + commands
-            # Use the plan prompt for the first turn
-            context = StepContext(
-                goal=goal,
-                plan="",
-                observation=observation,
-                history=[],
-                examples=examples,
-            )
-            initial_response = await self._generate_plan(goal, examples, observation)
-
-            # Extract plan text for trajectory
-            plan_match = re.search(r"<plan>(.*?)</plan>", initial_response, re.DOTALL)
-            plan = plan_match.group(1).strip() if plan_match else ""
-
-            # Extract analysis as reasoning
-            analysis_match = re.search(
-                r"<analysis>(.*?)</analysis>", initial_response, re.DOTALL
-            )
-            reasoning = analysis_match.group(1).strip() if analysis_match else ""
-
-            # The full XML response is the action (adapter will extract commands)
-            action = initial_response
-
-            step = Step(
-                observation=observation,
-                reasoning=reasoning,
-                action=action,
-            )
-            steps.append(step)
-
-            if self._on_step:
-                self._on_step(step, context)
-
-            # Execute initial commands
-            step_result = env.step(action)
-            observation, done, success = await _maybe_await(step_result)
-        else:
-            # Traditional mode: generate plan separately
-            plan = await self._generate_plan(goal, examples)
-
-        # Continue with step loop
         for _ in range(self._max_steps):
-            if done:
-                break
-
             context = StepContext(
                 goal=goal,
                 plan=plan,
@@ -146,25 +93,10 @@ class ReActLoop:
                 examples = self._retriever.retrieve_for_step(goal, plan, observation)
                 context.examples = examples
 
-            # In unified XML mode, generate one response with analysis+commands
-            if unified_xml_mode:
-                # Use act_prompt as unified prompt, reasoning comes from analysis
-                action = await self._generate_action(context)
+            reasoning = await self._generate_reasoning(context)
+            context.reasoning = reasoning
 
-                # Extract analysis/reasoning from XML response
-                analysis_match = re.search(
-                    r"<analysis>(.*?)</analysis>", action, re.DOTALL
-                )
-                reasoning = analysis_match.group(1).strip() if analysis_match else ""
-
-                # Update plan if provided in response
-                plan_match = re.search(r"<plan>(.*?)</plan>", action, re.DOTALL)
-                if plan_match:
-                    plan = plan_match.group(1).strip()
-            else:
-                reasoning = await self._generate_reasoning(context)
-                context.reasoning = reasoning
-                action = await self._generate_action(context)
+            action = await self._generate_action(context)
 
             step = Step(
                 observation=observation,
@@ -179,6 +111,9 @@ class ReActLoop:
             step_result = env.step(action)
             observation, done, success = await _maybe_await(step_result)
 
+            if done:
+                break
+
         self._retriever.record_episode_result(success)
 
         return Trajectory(
@@ -188,22 +123,17 @@ class ReActLoop:
             success=success,
         )
 
-    async def _generate_plan(
-        self, goal: str, examples: list[StepExample], observation: str = ""
-    ) -> str:
+    async def _generate_plan(self, goal: str, examples: list[StepExample]) -> str:
         """Generate the initial plan.
 
         Args:
             goal: The goal description.
             examples: Retrieved step examples.
-            observation: Initial observation (for XML mode).
 
         Returns:
             The generated plan.
         """
-        context = StepContext(
-            goal=goal, plan="", observation=observation, examples=examples
-        )
+        context = StepContext(goal=goal, plan="", observation="", examples=examples)
         prompt = self._format_prompt(self._plan_prompt, context)
         messages = [Message(role="user", content=prompt)]
         return await self._llm.complete(messages)

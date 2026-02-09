@@ -1,0 +1,69 @@
+Waiting for baseline experiment to finish...
+Baseline experiment finished!
+Re-running ICRL errors...
+Removing trial directory with AgentTimeoutError: 
+model-extraction-relu-logits__zLNvbUC
+Removing trial directory with RuntimeError: mteb-retrieve__jBeehXr
+Removing trial directory with RuntimeError: mteb-leaderboard__cRjVtNQ
+Removing trial directory with AgentTimeoutError: filter-js-from-html__SgNmR4L
+Removing trial directory with AddTestsDirError: write-compressor__Ujbtekh
+Removing trial directory with AgentTimeoutError: polyglot-rust-c__FromBnq
+  6/6 Mean: 0.000 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1:01:15 0:00:00
+Results written to jobs/icrl-50steps/result.json
+       icrl-train on terminal-bench        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Metric                 ┃ Value          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Agent                  │ icrl-train     │
+│ Dataset                │ terminal-bench │
+│ Trials                 │ 83             │
+│ Errors                 │ 6              │
+│                        │                │
+│ Mean                   │ 0.348          │
+│                        │                │
+│ Reward Distribution    │                │
+│   reward = 0.0         │ 52             │
+│   reward = 1.0         │ 31             │
+│                        │                │
+│ Exception Distribution │                │
+│   AuthenticationError  │ 4              │
+│   RuntimeError         │ 2              │
+└────────────────────────┴────────────────┘
+
+Re-running baseline errors...
+Removing trial directory with AgentTimeoutError: polyglot-rust-c__XJY7urF
+Removing trial directory with AgentTimeoutError: filter-js-from-html__UzicFVF
+Removing trial directory with AgentTimeoutError: 
+torch-tensor-parallelism__gpLLsXF
+Removing trial directory with RuntimeError: mteb-retrieve__oYZ3oG7
+Removing trial directory with AddTestsDirError: write-compressor__P8pyUi6
+Removing trial directory with RuntimeError: mteb-leaderboard__JP6wFcj
+Removing trial directory with RuntimeError: pytorch-model-recovery__28tuetj
+Removing trial directory with ContentPolicyViolationError: 
+overfull-hbox__bhjCf7m
+Removing trial directory with AddTestsDirError: 
+llm-inference-batching-scheduler__EZ5Z6oN
+Removing trial directory with RuntimeError: query-optimize__yiaz2US
+  10/10 Mean: 0.000 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1:41:20 0:00:00
+Results written to jobs/baseline-zeroshot/result.json
+      icrl-zeroshot on terminal-bench      
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Metric                 ┃ Value          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Agent                  │ icrl-zeroshot  │
+│ Dataset                │ terminal-bench │
+│ Trials                 │ 79             │
+│ Errors                 │ 10             │
+│                        │                │
+│ Mean                   │ 0.315          │
+│                        │                │
+│ Reward Distribution    │                │
+│   reward = 1.0         │ 28             │
+│   reward = 0.0         │ 51             │
+│                        │                │
+│ Exception Distribution │                │
+│   AuthenticationError  │ 7              │
+│   RuntimeError         │ 3              │
+└────────────────────────┴────────────────┘
+
+All error retries complete!
