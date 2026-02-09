@@ -1,12 +1,11 @@
-name: CI Tests
+name: ICRL Validation Suite
 
 on:
-  push:
   pull_request:
 
 jobs:
   python-lint:
-    name: Python Lint
+    name: ICRL | Python Lint
     runs-on: ubuntu-latest
 
     steps:
@@ -28,7 +27,7 @@ jobs:
         run: uv run ruff check src
 
   python-typecheck:
-    name: Python Type Check
+    name: ICRL | Python Type Check
     runs-on: ubuntu-latest
 
     steps:
@@ -53,7 +52,7 @@ jobs:
         run: uv run ty check src
 
   python-tests:
-    name: Python Tests
+    name: ICRL | Python Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -75,7 +74,7 @@ jobs:
         run: uv run --with pytest pytest examples/test_harbor_coding.py -v
 
   typescript-tests:
-    name: TypeScript Tests
+    name: ICRL | TypeScript Tests
     runs-on: ubuntu-latest
 
     defaults:
@@ -98,7 +97,7 @@ jobs:
         run: bun run tests:run
 
   typescript-lint:
-    name: TypeScript Lint
+    name: ICRL | TypeScript Lint
     runs-on: ubuntu-latest
 
     defaults:
@@ -121,7 +120,7 @@ jobs:
         run: bun run lint
 
   typescript-typecheck:
-    name: TypeScript Type Check
+    name: ICRL | TypeScript Type Check
     runs-on: ubuntu-latest
 
     defaults:
