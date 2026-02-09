@@ -1,6 +1,6 @@
 # ICRL Web Demo
 
-An interactive web demo showing **In-Context Reinforcement Learning (ICRL)** with Human Feedback using Anthropic Claude on Vertex AI.
+An interactive web demo showing **In-Context Reinforcement Learning (ICRL)** with Human Feedback using configurable LLM providers.
 
 ## Features
 
@@ -14,7 +14,7 @@ An interactive web demo showing **In-Context Reinforcement Learning (ICRL)** wit
 
 1. **Ask a Question**: Type any question you want answered
 2. **Retrieval**: The system searches for similar examples in the database
-3. **Generation**: Two different answer options are generated using Claude (influenced by retrieved examples)
+3. **Generation**: Two different answer options are generated using the configured LLM (influenced by retrieved examples)
 4. **Human Feedback**: You choose the better answer, or write your own
 5. **Learning**: Your preference is stored in the database
 6. **Improvement**: Future answers are influenced by accumulated preferences
@@ -48,14 +48,26 @@ Create a `.env.local` file with:
 # Convex URL (from step 2)
 NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
 
-# Google Cloud credentials (paste entire JSON contents)
+# Anthropic API key (default provider)
+ANTHROPIC_API_KEY=sk-ant-api03-...
+
+# Optional: force provider ("anthropic" | "gemini-vertex")
+LLM_PROVIDER=anthropic
+
+# Optional Gemini Vertex credentials (required only when using gemini-vertex)
 GOOGLE_CREDENTIALS_JSON={"type":"service_account","project_id":"...","private_key":"...","client_email":"..."}
 
-# Optional: Override Vertex AI region (default: us-east5)
-ANTHROPIC_VERTEX_REGION=us-east5
+# Optional: Override Vertex AI region for Gemini (default: global)
+GOOGLE_VERTEX_LOCATION=global
 ```
 
-#### Getting Google Cloud Credentials
+#### Getting Anthropic API Key
+
+1. Go to [Anthropic Console](https://console.anthropic.com)
+2. Create an API key
+3. Set `ANTHROPIC_API_KEY` in `.env.local`
+
+#### Getting Google Cloud Credentials (Gemini Vertex)
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Create or select a project
@@ -82,8 +94,10 @@ Set these in your Vercel project settings:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `NEXT_PUBLIC_CONVEX_URL` | Yes | Your Convex deployment URL |
-| `GOOGLE_CREDENTIALS_JSON` | Yes | Full GCP service account JSON |
-| `ANTHROPIC_VERTEX_REGION` | No | Vertex AI region (default: us-east5) |
+| `ANTHROPIC_API_KEY` | Yes (default) | Anthropic API key for Claude |
+| `LLM_PROVIDER` | No | Force provider: `anthropic` or `gemini-vertex` |
+| `GOOGLE_CREDENTIALS_JSON` | Yes (Gemini only) | Full GCP service account JSON |
+| `GOOGLE_VERTEX_LOCATION` | No | Vertex AI region (default: `global`) |
 
 ### Deploy
 
@@ -108,7 +122,7 @@ Or connect your GitHub repo for automatic deployments.
 ┌─────────────────────────────────────────────────────────────┐
 │                    Server Actions                            │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │  Anthropic Vertex AI (Claude) for answer generation │    │
+│  │  Anthropic API (Claude) or Gemini Vertex AI         │    │
 │  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
                               │
@@ -130,7 +144,7 @@ Or connect your GitHub repo for automatic deployments.
 - **Framework**: Next.js 16 (App Router)
 - **UI**: shadcn/ui + Tailwind CSS v4
 - **Database**: Convex (real-time, serverless)
-- **LLM**: Anthropic Claude via Vertex AI
+- **LLM**: Anthropic Claude (standard API) or Gemini on Vertex AI
 - **Deployment**: Vercel
 
 ## Project Structure
@@ -156,17 +170,16 @@ web-example/
 │   │   └── success-message.tsx
 │   └── lib/
 │       ├── actions.ts   # Server actions
-│       ├── anthropic-vertex.ts # LLM provider
+│       ├── anthropic.ts # Anthropic standard API provider
+│       ├── google-vertex-gemini.ts # Gemini Vertex provider
+│       ├── llm-provider.ts # Provider selection wrapper
 │       └── utils.ts     # Utilities
 └── package.json
 ```
 
-## Development Without API Keys
+## Development Notes
 
-The app will work without Anthropic Vertex credentials using mock responses. This is useful for:
-- UI development
-- Testing the Convex integration
-- Demos without API costs
+The app needs at least one configured LLM provider (`ANTHROPIC_API_KEY` or Gemini Vertex credentials). Without one, model-generation server actions will return a configuration error.
 
 ## License
 
