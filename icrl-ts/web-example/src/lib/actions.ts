@@ -3,17 +3,13 @@
 /**
  * Server actions for the ICRL demo.
  *
- * This uses the icrl library with Convex storage and Anthropic Vertex.
+ * This uses the icrl library with Convex storage and configurable LLM providers.
  */
 
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import {
-  isAnthropicVertexConfigured,
-  getConfigStatus,
-  generateCompletion,
-} from "./anthropic-vertex";
+import { isLlmConfigured, getConfigStatus, generateCompletion } from "./llm-provider";
 import { formatExamples as icrlFormatExamples, type StepExample } from "../../../src/models";
 
 // Convex client for server-side use
@@ -137,7 +133,7 @@ export async function searchSimilarExamples(
 }
 
 /**
- * Generate two answer options using Anthropic Vertex and icrl formatting.
+ * Generate two answer options using the configured LLM provider and icrl formatting.
  */
 export async function generateAnswers(
   question: string,
@@ -153,14 +149,13 @@ export async function generateAnswers(
   const prompt = `${persona}\n${trainingInstructions}`;
 
   // Check if API is configured
-  if (!isAnthropicVertexConfigured()) {
-    throw new Error("Anthropic Vertex not configured. Please set GOOGLE_CREDENTIALS_JSON.");
+  if (!isLlmConfigured()) {
+    throw new Error("No LLM provider configured. Set ANTHROPIC_API_KEY or GOOGLE_CREDENTIALS_JSON.");
   }
 
   const response = await generateCompletion({
     messages: [{ role: "user", content: `Question: ${question}` }],
     systemPrompt: prompt,
-    model: "claude-opus-4-5",
     temperature: 0.8,
     maxTokens: 2000,
   });
@@ -209,14 +204,13 @@ export async function generateSingleAnswer(
   const prompt = `${persona}\n${askInstructions}`;
 
   // Check if API is configured
-  if (!isAnthropicVertexConfigured()) {
-    throw new Error("Anthropic Vertex not configured. Please set GOOGLE_CREDENTIALS_JSON.");
+  if (!isLlmConfigured()) {
+    throw new Error("No LLM provider configured. Set ANTHROPIC_API_KEY or GOOGLE_CREDENTIALS_JSON.");
   }
 
   const response = await generateCompletion({
     messages: [{ role: "user", content: question }],
     systemPrompt: prompt,
-    model: "claude-opus-4-5",
     temperature: 0.7,
     maxTokens: 2000,
   });
@@ -464,8 +458,8 @@ export async function generateSuggestions(
  */
 async function generateSuggestionsWithHaiku(examples: Example[]): Promise<string[]> {
   // Check if API is configured
-  if (!isAnthropicVertexConfigured()) {
-    throw new Error("Anthropic Vertex not configured. Please set GOOGLE_CREDENTIALS_JSON.");
+  if (!isLlmConfigured()) {
+    throw new Error("No LLM provider configured. Set ANTHROPIC_API_KEY or GOOGLE_CREDENTIALS_JSON.");
   }
 
   const examplesSummary = summarizeExamplesForCurriculum(examples);
@@ -474,7 +468,6 @@ async function generateSuggestionsWithHaiku(examples: Example[]): Promise<string
   const response = await generateCompletion({
     messages: [{ role: "user", content: "Generate 5 diverse prompt suggestions for training." }],
     systemPrompt: prompt,
-    model: "claude-haiku-4-5",
     temperature: 0.9, // Higher temperature for more diverse suggestions
     maxTokens: 1000,
   });
@@ -546,8 +539,8 @@ export async function generateYoloRound(
  */
 async function generateYoloPromptWithHaiku(examples: Example[]): Promise<string> {
   // Check if API is configured
-  if (!isAnthropicVertexConfigured()) {
-    throw new Error("Anthropic Vertex not configured. Please set GOOGLE_CREDENTIALS_JSON.");
+  if (!isLlmConfigured()) {
+    throw new Error("No LLM provider configured. Set ANTHROPIC_API_KEY or GOOGLE_CREDENTIALS_JSON.");
   }
 
   const examplesSummary = summarizeExamplesForCurriculum(examples);
@@ -556,7 +549,6 @@ async function generateYoloPromptWithHaiku(examples: Example[]): Promise<string>
   const response = await generateCompletion({
     messages: [{ role: "user", content: "Generate a novel prompt for training." }],
     systemPrompt: prompt,
-    model: "claude-haiku-4-5",
     temperature: 0.9, // Higher temperature for diverse generation
     maxTokens: 500,
   });
@@ -582,8 +574,8 @@ async function generateMultipleYoloPromptsWithHaiku(
   count: number
 ): Promise<string[]> {
   // Check if API is configured
-  if (!isAnthropicVertexConfigured()) {
-    throw new Error("Anthropic Vertex not configured. Please set GOOGLE_CREDENTIALS_JSON.");
+  if (!isLlmConfigured()) {
+    throw new Error("No LLM provider configured. Set ANTHROPIC_API_KEY or GOOGLE_CREDENTIALS_JSON.");
   }
 
   const examplesSummary = summarizeExamplesForCurriculum(examples);
@@ -595,7 +587,6 @@ async function generateMultipleYoloPromptsWithHaiku(
   const response = await generateCompletion({
     messages: [{ role: "user", content: `Generate ${count} novel prompts for training.` }],
     systemPrompt: prompt,
-    model: "claude-haiku-4-5",
     temperature: 0.9,
     maxTokens: 1500,
   });
