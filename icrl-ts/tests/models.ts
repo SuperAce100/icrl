@@ -2,7 +2,7 @@
  * Demonstrates model schemas and formatter utilities.
  *
  * Run with:
- *   bun run example:models
+ *   bun run test:models
  */
 
 import * as assert from "node:assert/strict";
@@ -86,7 +86,7 @@ async function main(): Promise<void> {
   const updated = updateCurationUtility(metadata);
   assert.equal(updated.utilityScore > 0, true);
 
-  console.log("example:models passed");
+  console.log("test:models passed");
 }
 
 main().catch((error) => {

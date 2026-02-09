@@ -2,7 +2,7 @@
  * Demonstrates direct ReActLoop usage.
  *
  * Run with:
- *   bun run example:loop
+ *   bun run test:loop
  */
 
 import * as assert from "node:assert/strict";
@@ -58,7 +58,7 @@ async function main(): Promise<void> {
     assert.equal(trajectory.steps.length, 1);
     assert.equal(trajectory.steps[0]?.action, "answer:10");
 
-    console.log("example:loop passed");
+    console.log("test:loop passed");
   } finally {
     cleanupTempDir(dbPath);
   }

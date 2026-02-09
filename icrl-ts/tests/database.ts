@@ -2,7 +2,7 @@
  * Demonstrates TrajectoryDatabase + FileSystemAdapter operations.
  *
  * Run with:
- *   bun run example:database
+ *   bun run test:database
  */
 
 import * as assert from "node:assert/strict";
@@ -63,7 +63,7 @@ async function main(): Promise<void> {
     assert.equal(reloaded.size, 1);
     assert.equal(reloaded.get("traj-add")?.goal, "add 3 and 4");
 
-    console.log("example:database passed");
+    console.log("test:database passed");
   } finally {
     cleanupTempDir(dbPath);
   }

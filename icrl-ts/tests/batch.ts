@@ -2,7 +2,7 @@
  * Demonstrates Agent seed trajectories + batch training/inference.
  *
  * Run with:
- *   bun run example:batch
+ *   bun run test:batch
  */
 
 import * as assert from "node:assert/strict";
@@ -60,7 +60,7 @@ async function main(): Promise<void> {
     assert.equal(inferred.every((trajectory) => trajectory.success), true);
     assert.equal(agent.getDatabase().size, beforeInference);
 
-    console.log("example:batch passed");
+    console.log("test:batch passed");
   } finally {
     cleanupTempDir(dbPath);
   }

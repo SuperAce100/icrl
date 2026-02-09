@@ -2,7 +2,7 @@
  * Demonstrates TrajectoryRetriever behavior and retrieval tracking.
  *
  * Run with:
- *   bun run example:retriever
+ *   bun run test:retriever
  */
 
 import * as assert from "node:assert/strict";
@@ -80,7 +80,7 @@ async function main(): Promise<void> {
     assert.equal(db.getCurationMetadata("r-mul")?.timesRetrieved, 1);
     assert.equal(retriever.getRetrievedIds().length, 0);
 
-    console.log("example:retriever passed");
+    console.log("test:retriever passed");
   } finally {
     cleanupTempDir(dbPath);
   }

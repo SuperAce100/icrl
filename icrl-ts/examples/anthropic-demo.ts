@@ -2,7 +2,7 @@
  * Live Anthropic example (network/API required).
  *
  * Run with:
- *   bun run example:live:anthropic
+ *   bun run example:anthropic
  */
 
 import * as assert from "node:assert/strict";
@@ -12,9 +12,9 @@ import {
   cleanupTempDir,
   createTempDir,
   DEFAULT_PROMPTS,
-  DeterministicEmbedder,
+  LocalHashEmbedder,
   MathEnvironment,
-} from "./_shared";
+} from "./_demo_shared";
 import { loadWorkspaceEnv } from "./_live_env";
 
 async function main(): Promise<void> {
@@ -24,7 +24,7 @@ async function main(): Promise<void> {
     throw new Error("ANTHROPIC_API_KEY is not set");
   }
 
-  const dbPath = createTempDir("anthropic-live");
+  const dbPath = createTempDir("anthropic-demo");
 
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -34,7 +34,7 @@ async function main(): Promise<void> {
         model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-20250514",
         temperature: 0,
       }),
-      embedder: new DeterministicEmbedder(),
+      embedder: new LocalHashEmbedder(),
       storage: new FileSystemAdapter(dbPath),
       planPrompt: DEFAULT_PROMPTS.plan,
       reasonPrompt: DEFAULT_PROMPTS.reason,
@@ -49,7 +49,7 @@ async function main(): Promise<void> {
     assert.equal(trajectory.success, true);
     assert.equal(agent.getStats().totalTrajectories, 1);
 
-    console.log("example:live:anthropic passed");
+    console.log("example:anthropic passed");
   } finally {
     cleanupTempDir(dbPath);
   }

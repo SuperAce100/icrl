@@ -77,22 +77,24 @@ const trajectory = await agent.train(env, "Complete the task");
 const result = await agent.run(env, "Another task");
 ```
 
-## Verified examples
+## Demos and tests
 
-This package includes a deterministic offline example suite under `examples/`.
+Demo-ready (real API) examples:
 
 ```bash
 bun install
 bun run examples:run
 ```
 
-Optional live API validation:
+Mock/local deterministic verification scripts:
 
 ```bash
-bun run examples:run:live
+bun run tests:run
 ```
 
-For per-feature commands and coverage mapping, see `examples/README.md`.
+Details:
+- `examples/README.md` for demos
+- `tests/README.md` for tests
 
 ## Core Concepts
 

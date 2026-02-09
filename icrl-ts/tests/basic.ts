@@ -2,7 +2,7 @@
  * Basic offline example using deterministic mocks.
  *
  * Run with:
- *   bun run example:basic
+ *   bun run test:basic
  */
 
 import * as assert from "node:assert/strict";
@@ -53,7 +53,7 @@ async function main(): Promise<void> {
     assert.equal(stats.successfulTrajectories, 1);
     assert.equal(stepsSeen.length > 0, true);
 
-    console.log("example:basic passed");
+    console.log("test:basic passed");
   } finally {
     cleanupTempDir(dbPath);
   }

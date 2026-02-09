@@ -2,7 +2,7 @@
  * Demonstrates all built-in providers with mocked SDK clients.
  *
  * Run with:
- *   bun run example:providers
+ *   bun run test:providers
  */
 
 import * as assert from "node:assert/strict";
@@ -99,7 +99,7 @@ async function main(): Promise<void> {
 
   assert.equal(ANTHROPIC_VERTEX_MODEL_ALIASES["claude-opus-4-5"], "claude-opus-4-5@20251101");
 
-  console.log("example:providers passed");
+  console.log("test:providers passed");
 }
 
 main().catch((error) => {

@@ -2,7 +2,7 @@
  * Live OpenAI example (network/API required).
  *
  * Run with:
- *   bun run example:live:openai
+ *   bun run example:openai
  */
 
 import * as assert from "node:assert/strict";
@@ -13,7 +13,7 @@ import {
   createTempDir,
   DEFAULT_PROMPTS,
   MathEnvironment,
-} from "./_shared";
+} from "./_demo_shared";
 import { loadWorkspaceEnv } from "./_live_env";
 
 async function main(): Promise<void> {
@@ -23,7 +23,7 @@ async function main(): Promise<void> {
     throw new Error("OPENAI_API_KEY is not set");
   }
 
-  const dbPath = createTempDir("openai-live");
+  const dbPath = createTempDir("openai-demo");
 
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -45,7 +45,7 @@ async function main(): Promise<void> {
     assert.equal(trajectory.success, true);
     assert.equal(agent.getStats().totalTrajectories, 1);
 
-    console.log("example:live:openai passed");
+    console.log("example:openai passed");
   } finally {
     cleanupTempDir(dbPath);
   }

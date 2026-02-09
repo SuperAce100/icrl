@@ -2,7 +2,7 @@
  * Demonstrates curation scoring and pruning.
  *
  * Run with:
- *   bun run example:curation
+ *   bun run test:curation
  */
 
 import * as assert from "node:assert/strict";
@@ -65,7 +65,7 @@ async function main(): Promise<void> {
     assert.equal(scores.has("c-good"), true);
     assert.equal(scores.has("c-bad"), false);
 
-    console.log("example:curation passed");
+    console.log("test:curation passed");
   } finally {
     cleanupTempDir(dbPath);
   }
