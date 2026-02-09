@@ -1,4 +1,5 @@
-import { BookOpen, Github } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, Github, Home } from "lucide-react";
 
 export function SiteFooter() {
   return (
@@ -8,15 +9,20 @@ export function SiteFooter() {
           In-Context Reinforcement Learning. Built with ICRL in 2026.
         </p>
         <nav className="flex items-center gap-4">
-          <a
-            href="https://icrl.mintlify.app"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Home className="size-3" />
+            Landing
+          </Link>
+          <Link
+            href="/docs"
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <BookOpen className="size-3" />
             Docs
-          </a>
+          </Link>
           <a
             href="https://github.com/SuperAce100/icrl"
             target="_blank"

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 
 export function SiteHeader() {
@@ -17,21 +18,30 @@ export function SiteHeader() {
             className="hidden dark:block"
           />
         </Link>
-        <div className="hidden items-center gap-2 md:flex">
-          <Button variant="ghost" size="sm" asChild>
-            <a href="#why">Why ICRL</a>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <a href="#use-cases">Use Cases</a>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <a href="#vs-rl">ICRL vs RL</a>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <a href="https://arxiv.org/abs/2505.00234" target="_blank" rel="noreferrer noopener">
-              Paper
-            </a>
-          </Button>
+        <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 md:flex">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/">Landing</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/docs">Docs</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <a href="#why">Why ICRL</a>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <a href="#use-cases">Use Cases</a>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <a href="#vs-rl">ICRL vs RL</a>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <a href="https://arxiv.org/abs/2505.00234" target="_blank" rel="noreferrer noopener">
+                Paper
+              </a>
+            </Button>
+          </div>
+          <ModeToggle />
         </div>
       </div>
     </header>
