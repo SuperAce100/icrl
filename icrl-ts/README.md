@@ -86,6 +86,12 @@ bun install
 bun run examples:run
 ```
 
+Optional live API validation:
+
+```bash
+bun run examples:run:live
+```
+
 For per-feature commands and coverage mapping, see `examples/README.md`.
 
 ## Core Concepts

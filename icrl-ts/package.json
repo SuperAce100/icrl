@@ -31,7 +31,10 @@
     "example:curation": "tsx examples/curation.ts",
     "example:models": "tsx examples/models.ts",
     "example:providers": "tsx examples/providers.ts",
+    "example:live:openai": "tsx examples/openai-live.ts",
+    "example:live:anthropic": "tsx examples/anthropic-live.ts",
     "examples:run": "bun run example:basic && bun run example:batch && bun run example:database && bun run example:retriever && bun run example:loop && bun run example:curation && bun run example:models && bun run example:providers",
+    "examples:run:live": "bun run example:live:openai && bun run example:live:anthropic",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
