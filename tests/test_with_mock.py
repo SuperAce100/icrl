@@ -6,20 +6,27 @@ This script runs without requiring any API keys, demonstrating:
 - Step callbacks for observing agent behavior
 - Database persistence across sessions
 
-Run with: uv run examples/test_with_mock.py
+Run with: uv run python tests/test_with_mock.py
 """
 
 from __future__ import annotations
 
 import asyncio
+import sys
 import tempfile
 from pathlib import Path
 
 from rich.console import Console
 
-from examples.file_api_env import FileSystemEnvironment, Task
-from examples.mock_llm import MockLLMProvider
-from examples.tasks import EVAL_TASKS, TRAINING_TASKS
+try:
+    from examples.file_api_env import FileSystemEnvironment, Task
+    from examples.mock_llm import MockLLMProvider
+    from examples.tasks import EVAL_TASKS, TRAINING_TASKS
+except ModuleNotFoundError:  # pragma: no cover - direct script execution fallback
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from examples.file_api_env import FileSystemEnvironment, Task
+    from examples.mock_llm import MockLLMProvider
+    from examples.tasks import EVAL_TASKS, TRAINING_TASKS
 from icrl import Agent, Step, StepContext
 
 console = Console()

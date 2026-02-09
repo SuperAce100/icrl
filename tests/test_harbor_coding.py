@@ -1,25 +1,23 @@
 """Tests for the Harbor coding agent example.
 
-Run with: PYTHONPATH=. python -m pytest examples/test_harbor_coding.py -v
+Run with: uv run --with pytest python -m pytest tests/test_harbor_coding.py -v
 """
 
 from __future__ import annotations
 
 import asyncio
-import tempfile
-from pathlib import Path
 
 import pytest
 
 from examples.harbor_coding_agent import (
+    ACT_PROMPT,
     CODING_TASKS,
+    PLAN_PROMPT,
+    REASON_PROMPT,
     CodingEnvironment,
     CodingTask,
     CodingWorkspaceState,
     create_coding_workspace,
-    PLAN_PROMPT,
-    REASON_PROMPT,
-    ACT_PROMPT,
 )
 
 

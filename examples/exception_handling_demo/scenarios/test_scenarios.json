@@ -1,0 +1,112 @@
+[
+  {
+    "id": "TEST-001",
+    "title": "Late refund from loyal customer",
+    "situation": "A customer who has been paying $150/month for 2.5 years is requesting a refund for a charge from 60 days ago. They say they meant to cancel before a 3-month sabbatical but forgot. They've been a great customer with no previous issues. What should we do?",
+    "expected_action": "approve",
+    "expected_keywords": ["approve", "goodwill", "loyalty", "lifetime value", "one-time", "exception"],
+    "expected_reasoning": "Long-term customer value exceeds refund cost",
+    "similar_to_seed": "CASE-001",
+    "category": "refund",
+    "vanilla_likely_response": "Deny - policy says 30 days, no exceptions"
+  },
+  {
+    "id": "TEST-002", 
+    "title": "Enterprise deal needs custom security terms",
+    "situation": "We're in final negotiations with a large bank for a $800k/year deal. Their security team is requiring modifications to our standard security addendum - specifically around penetration testing rights and incident notification timelines. Our policy says no custom terms. How should we handle this?",
+    "expected_action": "escalate_legal_approve",
+    "expected_keywords": ["legal", "escalate", "enterprise", "accommodate", "regulated", "compliance", "approve"],
+    "expected_reasoning": "Large enterprise deals in regulated industries get contract flexibility",
+    "similar_to_seed": "CASE-002",
+    "category": "contract",
+    "vanilla_likely_response": "Deny - policy says no custom contract terms"
+  },
+  {
+    "id": "TEST-003",
+    "title": "Disputed charge with evidence",
+    "situation": "A customer is furious, saying they were charged $299 twice this month. They've attached a bank statement screenshot showing two identical charges on different days. They're threatening to do a chargeback if we don't refund immediately. Our system only shows one charge. What do we do?",
+    "expected_action": "refund_first",
+    "expected_keywords": ["refund", "immediately", "first", "investigate later", "chargeback", "believe"],
+    "expected_reasoning": "Refund first to prevent chargeback, investigate after",
+    "similar_to_seed": "CASE-003",
+    "category": "billing",
+    "vanilla_likely_response": "Investigate first, then decide on refund"
+  },
+  {
+    "id": "TEST-004",
+    "title": "Competitor threat on key account",
+    "situation": "Our customer success manager just learned that one of our $75k/year customers has been in active discussions with our main competitor. The customer mentioned they have a demo scheduled for next Tuesday. They haven't said they're leaving, but the signs are concerning. What's our play?",
+    "expected_action": "escalate_retention",
+    "expected_keywords": ["escalate", "VP", "retention", "proactive", "discount", "executive", "immediately", "don't wait"],
+    "expected_reasoning": "Proactive retention before they decide to leave",
+    "similar_to_seed": "CASE-004",
+    "category": "retention",
+    "vanilla_likely_response": "Wait for customer to make a decision, then respond"
+  },
+  {
+    "id": "TEST-005",
+    "title": "Locked out before important meeting",
+    "situation": "An Enterprise customer ($150k/year) is locked out of their account - too many failed MFA attempts. They have an investor meeting in 90 minutes and desperately need access to their analytics dashboards. Our security policy requires a 24-hour review for locked accounts. What should we do?",
+    "expected_action": "expedite_verify",
+    "expected_keywords": ["expedite", "verify", "identity", "secondary", "Enterprise", "urgent", "temporary", "restore"],
+    "expected_reasoning": "Enterprise customers with verifiable identity can get expedited security review",
+    "similar_to_seed": "CASE-005",
+    "category": "security",
+    "vanilla_likely_response": "Follow policy - 24 hour security review required, no exceptions"
+  },
+  {
+    "id": "TEST-006",
+    "title": "Free user demanding premium support",
+    "situation": "A user on our free tier is sending angry emails demanding a phone call with our CEO about a bug they encountered. They're threatening to 'destroy our reputation on Twitter' if we don't respond within the hour. They've never paid us anything. How do we handle this?",
+    "expected_action": "hold_line",
+    "expected_keywords": ["policy", "free tier", "email support", "don't escalate", "no exception", "professional"],
+    "expected_reasoning": "Don't reward threatening behavior from non-paying users",
+    "similar_to_seed": "CASE-007",
+    "category": "support",
+    "vanilla_likely_response": "Might suggest escalating to avoid bad PR"
+  },
+  {
+    "id": "TEST-007",
+    "title": "Expired card caused suspension",
+    "situation": "A 3-year customer ($25k/year) just realized their service was suspended 2 weeks ago because their corporate card expired. They never saw our renewal emails (IT had them filtered). They want to pay immediately and restore access. Policy says suspended accounts need a review process. What do we do?",
+    "expected_action": "restore_immediately",
+    "expected_keywords": ["restore", "immediately", "waive", "good faith", "established", "payment method", "no penalty"],
+    "expected_reasoning": "Established customers with payment issues get immediate restoration",
+    "similar_to_seed": "CASE-008",
+    "category": "billing",
+    "vanilla_likely_response": "Follow suspension review process as per policy"
+  },
+  {
+    "id": "TEST-008",
+    "title": "Startup needs trial extension",
+    "situation": "A Sequoia-backed startup is on day 12 of their 14-day trial. Their VP of Engineering just went on emergency family leave and they're asking for a 3-week extension to properly evaluate when she returns. Based on their team size, they'd likely be a $25-30k/year customer. Should we extend?",
+    "expected_action": "approve_extension",
+    "expected_keywords": ["approve", "extend", "qualified", "legitimate", "high potential", "convert", "nurture"],
+    "expected_reasoning": "Qualified startups with legitimate reasons get trial extensions",
+    "similar_to_seed": "CASE-009",
+    "category": "sales",
+    "vanilla_likely_response": "Deny - trial period is 14 days as stated"
+  },
+  {
+    "id": "TEST-009",
+    "title": "Wants retroactive promotional pricing",
+    "situation": "A customer signed up 3 weeks ago at $400/month. They just saw we're running a 25% off promotion this week. They're asking if we can apply the discount to their existing subscription retroactively. They seem like a reasonable person, not angry. What's the right response?",
+    "expected_action": "decline_offer_alternative",
+    "expected_keywords": ["decline", "retroactive", "no", "but", "offer", "annual", "next renewal", "future", "commit"],
+    "expected_reasoning": "No retroactive discounts, but offer future value to redirect",
+    "similar_to_seed": "CASE-010",
+    "category": "billing",
+    "vanilla_likely_response": "Deny - discounts are not retroactive per policy"
+  },
+  {
+    "id": "TEST-010",
+    "title": "Data export in special format for migration",
+    "situation": "A $40k/year customer is migrating to a new BI tool and needs their historical data exported in Parquet format. Our policy says CSV only. They have 4 years of data and say converting from CSV would take their team weeks of work. They're asking nicely and this is their first special request ever. What should we do?",
+    "expected_action": "accommodate",
+    "expected_keywords": ["accommodate", "one-time", "courtesy", "customer value", "reasonable", "migration", "approve"],
+    "expected_reasoning": "High-value customers with reasonable one-time requests get accommodated",
+    "similar_to_seed": "CASE-006",
+    "category": "data",
+    "vanilla_likely_response": "Deny - policy says CSV format only"
+  }
+]
