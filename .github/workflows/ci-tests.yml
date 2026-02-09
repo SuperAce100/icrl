@@ -1,0 +1,144 @@
+name: CI Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python-lint:
+    name: Python Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Run Ruff
+        run: uv run ruff check src
+
+  python-typecheck:
+    name: Python Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Install ty
+        run: uv pip install --python .venv/bin/python ty
+
+      - name: Run ty
+        run: uv run ty check src
+
+  python-tests:
+    name: Python Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Run Python test suite
+        run: uv run --with pytest pytest examples/test_harbor_coding.py -v
+
+  typescript-tests:
+    name: TypeScript Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: icrl-ts
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install TypeScript dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run TypeScript test suite
+        run: bun run tests:run
+
+  typescript-lint:
+    name: TypeScript Lint
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: icrl-ts
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install TypeScript dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run TypeScript lint
+        run: bun run lint
+
+  typescript-typecheck:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: icrl-ts
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install TypeScript dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run TypeScript type check
+        run: bun run typecheck

@@ -8,9 +8,12 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from icrl.models import CodeArtifact, DeferredValidation, Trajectory
+
+if TYPE_CHECKING:
+    from icrl.models import CurationMetadata
 
 
 # Maximum length of content snippet to store for matching
@@ -331,9 +334,6 @@ def find_superseded_trajectories(
     Returns:
         List of trajectory IDs that are superseded.
     """
-    # Import here to avoid circular import
-    from icrl.models import CurationMetadata  # noqa: F811
-
     new_files = {a.file_path for a in new_artifacts}
     if not new_files:
         return []
