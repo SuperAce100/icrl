@@ -83,7 +83,12 @@ jobs:
         run: uv sync
 
       - name: Run Python test suite
-        run: uv run --with pytest pytest examples/test_harbor_coding.py -v
+        run: |
+          if [ -f tests/test_harbor_coding.py ]; then
+            uv run --with pytest pytest tests/test_harbor_coding.py -v
+          else
+            uv run --with pytest pytest examples/test_harbor_coding.py -v
+          fi
 
   typescript-tests:
     name: TypeScript Tests
