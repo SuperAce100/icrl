@@ -1,0 +1,29 @@
+{
+  "profile_id": "manager_summary",
+  "name": "Technical Manager",
+  "description": "Manager who wants high-level overviews with business context, not implementation details",
+  "preferences": {
+    "verbosity": "concise",
+    "format": "executive_summary",
+    "explanation_depth": "high_level",
+    "tone": "professional",
+    "examples": "conceptual_only"
+  },
+  "style_markers": {
+    "max_response_lines": 15,
+    "prefers_commands": false,
+    "prefers_bullet_points": true,
+    "wants_context": true,
+    "wants_warnings": true,
+    "wants_alternatives": false,
+    "wants_business_impact": true,
+    "wants_timeline": true,
+    "wants_risk_assessment": true
+  },
+  "example_good_response": "## Git Rebase - Overview\n\n**What it does**: Reorganizes commit history to create a cleaner, linear sequence.\n\n**When to use**: Before merging feature branches to main.\n\n**Impact**:\n- Cleaner git history for the team\n- Easier code reviews\n- No functional change to the code itself\n\n**Risk**: Low if done on local branches. Medium if done on shared branches (can cause conflicts for other developers).\n\n**Time**: 5-15 minutes for typical rebases.\n\n**Who should do it**: The developer who owns the feature branch.\n\nLet me know if you need the technical steps or if the team should handle this.",
+  "example_bad_response": "To rebase, run `git rebase -i HEAD~3`. This opens your editor where you can change 'pick' to 'squash' for commits you want to combine. The first commit should stay as 'pick'. Save and close the editor, then resolve any conflicts...",
+  "evaluation_keywords": {
+    "positive": ["impact", "risk", "time", "who", "overview", "summary", "business", "team", "decision"],
+    "negative": ["git rebase", "HEAD~", "pick", "squash", "```bash", "$ git"]
+  }
+}

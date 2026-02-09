@@ -461,6 +461,24 @@ db = TrajectoryDatabase(path="./trajectories", embedder=embedder)
 
 ## Examples
 
+Demo scripts are in `examples/` (see `examples/README.md`).
+Mock/offline verification scripts and test-focused walkthroughs are in `tests/`
+(see `tests/README.md`).
+
+### Minimal OpenAI Demo
+
+```bash
+export OPENAI_API_KEY=your-key
+uv run python examples/basic_openai_demo.py
+```
+
+### Minimal Anthropic Demo
+
+```bash
+export ANTHROPIC_API_KEY=your-key
+uv run python examples/basic_anthropic_demo.py
+```
+
 ### File System Navigation Agent
 
 See `examples/demo_with_real_llm.py` for a complete example of an agent that navigates a virtual file system:
@@ -482,6 +500,38 @@ from examples.mock_llm import MockLLMProvider
 
 llm = MockLLMProvider(success_rate=1.0)
 agent = Agent(llm=llm, ...)
+```
+
+Run the full offline mock demo:
+
+```bash
+uv run python tests/test_with_mock.py
+```
+
+### Agent API Walkthrough (Offline)
+
+Deterministic walkthrough of Agent APIs:
+- `train` / `run`
+- `train_sync` / `run_sync`
+- `train_batch` / `run_batch`
+- `seed_trajectories`
+- `verify_trajectory`
+
+```bash
+uv run python tests/agent_api_walkthrough.py
+```
+
+### Database API Walkthrough (Offline)
+
+Deterministic walkthrough of storage/retrieval/curation/validation APIs:
+- `TrajectoryDatabase` CRUD/search
+- `TrajectoryRetriever`
+- `CurationManager`
+- `HashEmbedder`
+- `extract_code_artifacts` and validation helpers
+
+```bash
+uv run python tests/database_api_walkthrough.py
 ```
 
 ### Harbor Coding Agent (Terminal-Bench 2.0 Compatible)
@@ -538,6 +588,4 @@ The key insight is that LLM agents can bootstrap their own performance by:
 ## License
 
 MIT
-
-
 

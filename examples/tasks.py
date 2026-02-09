@@ -1,6 +1,9 @@
 """Predefined verifiable tasks for the file system environment."""
 
-from examples.file_api_env import Task
+try:
+    from examples.file_api_env import Task
+except ModuleNotFoundError:  # pragma: no cover - direct script execution fallback
+    from file_api_env import Task
 
 # Easy tasks - direct navigation and simple commands
 EASY_TASKS = [
@@ -89,5 +92,4 @@ EVAL_TASKS = [
     MEDIUM_TASKS[1],  # Find port number
     HARD_TASKS[1],  # Find and copy main.py
 ]
-
 

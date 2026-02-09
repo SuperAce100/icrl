@@ -1,0 +1,5 @@
+# Demo-generated files
+.demo_trajectories/
+demo_results.json
+__pycache__/
+*.pyc

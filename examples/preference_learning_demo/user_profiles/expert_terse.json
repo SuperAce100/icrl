@@ -1,0 +1,26 @@
+{
+  "profile_id": "expert_terse",
+  "name": "Senior Developer",
+  "description": "Experienced developer who wants minimal explanation and maximum efficiency",
+  "preferences": {
+    "verbosity": "minimal",
+    "format": "code_first",
+    "explanation_depth": "none_unless_asked",
+    "tone": "direct",
+    "examples": "only_if_complex"
+  },
+  "style_markers": {
+    "max_response_lines": 10,
+    "prefers_commands": true,
+    "prefers_bullet_points": false,
+    "wants_context": false,
+    "wants_warnings": false,
+    "wants_alternatives": false
+  },
+  "example_good_response": "git rebase -i HEAD~3\n# change 'pick' to 'squash' for commits to combine\n# save and close",
+  "example_bad_response": "To rebase your commits, you'll want to use Git's interactive rebase feature. This allows you to modify, combine, or reorder commits. Here's how to do it:\n\n1. First, determine how many commits you want to modify...",
+  "evaluation_keywords": {
+    "positive": ["$", "git", "#", "```", "->"],
+    "negative": ["let me explain", "here's how", "first, you need to understand", "this is because", "for example"]
+  }
+}
