@@ -1,0 +1,59 @@
+---
+title: "TypeScript Package API"
+description: "TypeScript interfaces, classes, and providers"
+---
+
+## Agent
+
+```ts
+new Agent(options: AgentOptions)
+await agent.init()
+await agent.train(env, goal)
+await agent.run(env, goal)
+await agent.trainBatch(envFactory, goals)
+await agent.runBatch(envFactory, goals)
+agent.getDatabase()
+agent.getStats()
+```
+
+`AgentOptions` includes:
+
+- `llm`, `storage`, `embedder`
+- `planPrompt`, `reasonPrompt`, `actPrompt`
+- `k`, `maxSteps`
+- `seedTrajectories`, `onStep`
+- `curationThreshold`, `curationMinRetrievals`
+- `verifyTrajectory`
+
+## Database and Retrieval
+
+- `TrajectoryDatabase(storage, embedder, options?)`
+- `TrajectoryRetriever(database, k?)`
+- `CurationManager(database, options?)`
+- `ReActLoop(llm, retriever, options)`
+
+## Storage Interfaces
+
+`StorageAdapter` defines trajectory/metadata/embedding persistence and similarity search.
+
+Built-in implementation:
+
+- `FileSystemAdapter`
+
+## Providers
+
+- `OpenAIProvider`
+- `OpenAIEmbedder`
+- `AnthropicProvider`
+- `AnthropicVertexProvider`
+
+Model aliases export:
+
+- `ANTHROPIC_VERTEX_MODEL_ALIASES`
+
+## Protocols
+
+- `Environment`
+- `StepResult`
+- `LLMProvider`
+- `Embedder`

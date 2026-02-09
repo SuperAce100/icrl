@@ -1,146 +1,176 @@
 ---
 title: "CLI"
-description: "Run tasks, chat with the agent, and manage your trajectory database from the command line"
+description: "Complete reference for the Python icrl CLI"
 ---
 
-The `icrl` CLI lets you run coding tasks, start interactive chat sessions, and manage your trajectory database—all from the terminal.
+## Overview
 
-## Quick start
+The Python package ships a Typer CLI at `icrl`.
+
+Primary command groups:
+
+- `icrl run`
+- `icrl chat` / `icrl tui`
+- `icrl config ...`
+- `icrl db ...`
+- `icrl version`
+
+## Quick Start
 
 ```bash
-# Run a single task
-icrl run "add error handling to the API endpoints"
-
-# Start an interactive chat session
+icrl run "fix failing tests in this repo"
 icrl chat
-```
-
-<Tip>
-If `icrl` isn't on your PATH, you can run it as a module: `python -m icrl.cli.main`
-</Tip>
-
-## Commands
-
-### `icrl run <goal>`
-
-Run a single coding task.
-
-```bash
-icrl run "refactor this repo to use ruff" [OPTIONS]
-```
-
-| Option | Description |
-|--------|-------------|
-| `-m, --model` | Override the model (e.g., `gpt-4o`, `claude-sonnet-4-20250514`) |
-| `-d, --dir` | Working directory (defaults to current) |
-| `--no-train` | Don't save the trajectory to the database |
-| `-v, --verbose` | Show detailed thinking and tool output |
-
-The agent executes tools (file operations, shell commands, web search) to accomplish your goal. Successful runs are stored in the trajectory database for future reference.
-
-### `icrl chat` / `icrl tui`
-
-Start an interactive multi-turn chat session.
-
-```bash
-icrl chat [--model MODEL] [--dir PATH]
-```
-
-The agent maintains conversation context across turns, remembering previous tool outputs and your requests.
-
-<AccordionGroup>
-  <Accordion title="Multi-turn example">
-    ```
-    >> Create a Python file with a greeting function
-    [agent creates hello.py]
-
-    >> Now add a main block that calls it
-    [agent remembers the file and updates it]
-
-    >> /clear
-    Conversation cleared.
-    ```
-  </Accordion>
-  
-  <Accordion title="Chat commands">
-    | Command | Description |
-    |---------|-------------|
-    | `/clear` | Reset conversation history |
-    | `exit`, `quit`, `q` | Exit the session |
-  </Accordion>
-</AccordionGroup>
-
-### `icrl config`
-
-Manage your configuration settings.
-
-```bash
-# Show current settings
 icrl config show
-
-# Set a value
-icrl config set model gpt-4o-mini
-icrl config set max_steps 50
-
-# Reset to defaults
-icrl config reset
-```
-
-<Note>
-Configuration is stored in a JSON file in your user config directory. Run `icrl config show` to see the file location.
-</Note>
-
-**Available settings:**
-
-| Setting | Description |
-|---------|-------------|
-| `model` | Default LLM model |
-| `temperature` | Sampling temperature |
-| `max_tokens` | Maximum tokens per response |
-| `max_steps` | Maximum steps per task |
-| `k` | Number of examples to retrieve |
-| `db_path` | Trajectory database location |
-
-### `icrl db`
-
-Manage the trajectory database where successful runs are stored.
-
-```bash
-# View statistics
 icrl db stats
-
-# List recent trajectories
-icrl db list
-
-# Search for similar trajectories
-icrl db search "fix tests"
-
-# Show a specific trajectory
-icrl db show <id>
-
-# Clear all trajectories
-icrl db clear
 ```
 
-<Warning>
-`icrl db clear` permanently deletes all stored trajectories. Use `--force` to skip confirmation.
-</Warning>
-
-## Shell completion
-
-Enable tab completion for your shell:
+## Global Helpers
 
 ```bash
+icrl version
+icrl --help
 icrl --install-completion
 ```
 
-## Next steps
+## Command: `icrl run`
 
-<CardGroup cols={2}>
-  <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Build your first ICRL agent
-  </Card>
-  <Card title="Trajectory Database" icon="database" href="/core-concepts/trajectory-database">
-    Learn how trajectories are stored and retrieved
-  </Card>
-</CardGroup>
+```bash
+icrl run "<goal>" [OPTIONS]
+```
+
+Options:
+
+- `-m, --model TEXT`
+- `--no-train`
+- `--compare`
+- `-d, --dir PATH`
+- `-v, --verbose`
+- `--vertex-credentials PATH`
+- `--vertex-project TEXT`
+- `--vertex-location TEXT`
+- `--stats / --no-stats`
+- `-y, --auto-approve / --no-auto-approve`
+- `--ablate`
+
+Notes:
+
+- `--ablate` runs with/without retrieved examples and prints a comparison.
+- By default, successful runs can be stored to the trajectory DB.
+- `--no-train` disables storing new successful trajectories.
+
+## Commands: `icrl chat` and `icrl tui`
+
+Both start the terminal UI flow.
+
+```bash
+icrl chat [OPTIONS]
+icrl tui [OPTIONS]
+```
+
+Options:
+
+- `-m, --model TEXT`
+- `--compare`
+- `-d, --dir PATH`
+- `--stats / --no-stats`
+- `-y, --auto-approve / --no-auto-approve`
+
+## Config Commands
+
+### Show config
+
+```bash
+icrl config show
+```
+
+### Set config value
+
+```bash
+icrl config set <key> <value>
+```
+
+Supported keys:
+
+- `model`
+- `temperature`
+- `max_tokens`
+- `max_steps`
+- `k`
+- `context_compression_threshold`
+- `show_stats`
+- `auto_approve`
+- `db_path`
+- `vertex_credentials_path`
+- `vertex_project_id`
+- `vertex_location`
+
+### Reset config
+
+```bash
+icrl config reset
+```
+
+## Database Commands
+
+Default behavior is project-local DB at `<working_dir>/.icrl/trajectories`.
+Use `--global` to target the global fallback path.
+
+### Stats
+
+```bash
+icrl db stats [--dir PATH] [--global]
+```
+
+### List
+
+```bash
+icrl db list [--limit N] [--dir PATH] [--global]
+```
+
+### Show one trajectory
+
+```bash
+icrl db show <trajectory_id_or_prefix> [--dir PATH] [--global]
+```
+
+### Semantic search
+
+```bash
+icrl db search "query" [--k N] [--dir PATH] [--global]
+```
+
+### Clear database
+
+```bash
+icrl db clear [--force] [--dir PATH] [--global]
+```
+
+### Validate code persistence
+
+```bash
+icrl db validate [trajectory_id] [--include-deprecated] [--dir PATH] [--global]
+```
+
+### List deprecated trajectories
+
+```bash
+icrl db deprecated [--dir PATH] [--global]
+```
+
+### Prune low-utility/deprecated trajectories
+
+```bash
+icrl db prune [--min-utility FLOAT] [--dry-run] [--force] [--dir PATH] [--global]
+```
+
+### Extract artifacts for older trajectories
+
+```bash
+icrl db extract-artifacts [--dir PATH] [--global]
+```
+
+## Provider Selection in CLI
+
+- Default model in config is `claude-opus-4-5`.
+- If model string matches Vertex aliases/patterns, CLI uses the Vertex tool provider.
+- Otherwise CLI uses generic LiteLLM tool provider.

@@ -1,0 +1,56 @@
+---
+title: "Convex Provider"
+description: "Using the ConvexAdapter storage backend with the TypeScript package"
+---
+
+## Where It Lives
+
+The `ConvexAdapter` is implemented in:
+
+- `icrl-ts/web-example/src/lib/convex-adapter.ts`
+
+It implements the TypeScript `StorageAdapter` contract from `icrl-ts/src/storage.ts`.
+
+## Purpose
+
+`ConvexAdapter` lets `TrajectoryDatabase` persist trajectories, embeddings, and curation metadata in Convex rather than local files.
+
+## Required Option
+
+```ts
+new ConvexAdapter(client, { databaseId })
+```
+
+`databaseId` scopes all operations so multiple ICRL datasets can share one Convex project.
+
+## Methods Covered
+
+The adapter implements all required storage methods, including:
+
+- trajectory CRUD
+- curation metadata CRUD
+- embeddings save/search/delete
+- derived `StepExample` access
+
+## Example Usage
+
+```ts
+import { ConvexHttpClient } from "convex/browser";
+import { TrajectoryDatabase } from "icrl";
+import { ConvexAdapter } from "../web-example/src/lib/convex-adapter";
+
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+const adapter = new ConvexAdapter(convex as any, { databaseId });
+const db = new TrajectoryDatabase(adapter, embedder);
+await db.load();
+```
+
+## End-to-End Demo
+
+Run from `icrl-ts/`:
+
+```bash
+bun run example:web
+```
+
+This uses `examples/web-convex-demo.ts` and the same adapter implementation as the web app.

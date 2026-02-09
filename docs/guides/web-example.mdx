@@ -1,0 +1,78 @@
+---
+title: "Web Example Setup"
+description: "Detailed setup for the Next.js + Convex web demo"
+---
+
+## What This Example Is
+
+`icrl-ts/web-example` is a Next.js app that demonstrates feedback-driven training with Convex-backed persistence and configurable LLM providers.
+
+## 1. Install Dependencies
+
+From `icrl-ts/web-example/`:
+
+```bash
+pnpm install
+```
+
+## 2. Set Up Convex
+
+```bash
+npx convex dev
+```
+
+This generates `convex/_generated/*` and a deployment URL.
+
+## 3. Configure `.env.local`
+
+Required:
+
+```env
+NEXT_PUBLIC_CONVEX_URL=https://<your-deployment>.convex.cloud
+```
+
+Provider options:
+
+```env
+# Option A: Anthropic standard API
+ANTHROPIC_API_KEY=...
+
+# Optional explicit provider selection: anthropic | gemini-vertex
+LLM_PROVIDER=anthropic
+
+# Option B: Gemini Vertex
+GOOGLE_CREDENTIALS_JSON={...full service account json...}
+GOOGLE_VERTEX_LOCATION=global
+```
+
+Notes:
+
+- If `LLM_PROVIDER` is unset, selection order is: Anthropic first, then Gemini Vertex.
+- Unsupported `LLM_PROVIDER` values fail configuration checks.
+
+## 4. Start Dev Server
+
+```bash
+pnpm dev
+```
+
+Open `http://localhost:3000`.
+
+## 5. Data Model (Convex)
+
+The web demo uses these tables:
+
+- `databases`
+- `trajectories`
+- `curationMetadata`
+- `embeddings`
+- `examples`
+- `suggestionCache`
+
+Defined in `icrl-ts/web-example/convex/schema.ts`.
+
+## 6. Production Deploy
+
+- Deploy Next app (for example Vercel).
+- Configure same env vars in deployment settings.
+- Keep `NEXT_PUBLIC_CONVEX_URL` aligned with production Convex deployment.

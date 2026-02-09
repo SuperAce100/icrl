@@ -1,0 +1,67 @@
+---
+title: "TypeScript Package"
+description: "How to use the icrl TypeScript library"
+---
+
+## Install
+
+```bash
+npm install icrl openai
+# or install @anthropic-ai/sdk for AnthropicProvider
+```
+
+## Main Exports
+
+- `Agent`
+- `TrajectoryDatabase`
+- `TrajectoryRetriever`
+- `ReActLoop`
+- `CurationManager`
+- `FileSystemAdapter`
+- `OpenAIProvider`, `OpenAIEmbedder`
+- `AnthropicProvider`, `AnthropicVertexProvider`
+
+## Minimal Usage
+
+```ts
+import OpenAI from "openai";
+import { Agent, FileSystemAdapter, OpenAIEmbedder, OpenAIProvider } from "icrl";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const agent = new Agent({
+  llm: new OpenAIProvider(openai, { model: "gpt-4o-mini" }),
+  embedder: new OpenAIEmbedder(openai),
+  storage: new FileSystemAdapter("./trajectories-ts"),
+  planPrompt: "Goal: {goal}\nExamples:\n{examples}\nCreate a plan.",
+  reasonPrompt: "Goal: {goal}\nPlan: {plan}\nObservation: {observation}\nHistory:\n{history}\nExamples:\n{examples}\nThink:",
+  actPrompt: "Goal: {goal}\nPlan: {plan}\nReasoning: {reasoning}\nObservation: {observation}\nOne action only.",
+});
+
+await agent.init();
+```
+
+## Run Package Demos
+
+From `icrl-ts/`:
+
+```bash
+bun install
+bun run examples:run
+```
+
+Single demos:
+
+```bash
+bun run example:openai
+bun run example:anthropic
+bun run example:support
+bun run example:incident
+bun run example:web
+```
+
+## Run Tests
+
+```bash
+bun run tests:run
+```
