@@ -23,6 +23,15 @@
     "test:run": "vitest run",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
+    "example:basic": "tsx examples/basic.ts",
+    "example:batch": "tsx examples/batch.ts",
+    "example:database": "tsx examples/database.ts",
+    "example:retriever": "tsx examples/retriever.ts",
+    "example:loop": "tsx examples/loop.ts",
+    "example:curation": "tsx examples/curation.ts",
+    "example:models": "tsx examples/models.ts",
+    "example:providers": "tsx examples/providers.ts",
+    "examples:run": "bun run example:basic && bun run example:batch && bun run example:database && bun run example:retriever && bun run example:loop && bun run example:curation && bun run example:models && bun run example:providers",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -67,6 +76,7 @@
     "eslint": "^8.56.0",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
+    "tsx": "^4.20.3",
     "openai": "^4.28.0",
     "@anthropic-ai/sdk": "^0.20.0"
   },
