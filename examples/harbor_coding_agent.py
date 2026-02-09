@@ -726,7 +726,9 @@ async def run_demo() -> None:
         "coding agent performance.[/dim]\n"
     )
 
-    if "OPENAI_API_KEY" not in os.environ and "ANTHROPIC_API_KEY" not in os.environ:
+    has_openai_key = bool(os.environ.get("OPENAI_API_KEY"))
+    has_anthropic_key = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    if not (has_openai_key or has_anthropic_key):
         console.print(
             "[yellow]Warning: No API key found. Set OPENAI_API_KEY or ANTHROPIC_API_KEY.[/yellow]"
         )

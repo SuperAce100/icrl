@@ -1,0 +1,373 @@
+#!/usr/bin/env python3
+"""Run the Exception Handling demo comparing ICRL vs vanilla responses.
+
+This script:
+1. Loads test scenarios (edge cases requiring judgment)
+2. Runs each through ICRL (with precedents from past decisions)
+3. Runs each through vanilla (policy-only, no precedents)
+4. Evaluates and compares the responses
+
+Usage:
+    python run_demo.py              # Run full comparison
+    python run_demo.py --quick      # Run only 3 test cases
+    python run_demo.py --verbose    # Show full responses
+"""
+
+import argparse
+import asyncio
+import json
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from datetime import datetime
+
+# Add the src directory to the path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+
+
+DEMO_DIR = Path(__file__).parent
+SCENARIOS_DIR = DEMO_DIR / "scenarios"
+DEMO_DB_PATH = DEMO_DIR / ".demo_trajectories"
+POLICIES_FILE = SCENARIOS_DIR / "policies.md"
+
+
+@dataclass
+class TestResult:
+    """Result from a single test."""
+    scenario_id: str
+    mode: str  # "icrl" or "vanilla"
+    response: str
+    duration: float
+    keywords_found: list[str]
+    keywords_missing: list[str]
+    score: float
+
+
+def load_test_scenarios() -> list[dict]:
+    """Load test scenarios from JSON file."""
+    test_file = SCENARIOS_DIR / "test_scenarios.json"
+    with open(test_file) as f:
+        return json.load(f)
+
+
+def load_policies() -> str:
+    """Load the official (rigid) policies."""
+    if POLICIES_FILE.exists():
+        return POLICIES_FILE.read_text()
+    return ""
+
+
+async def get_exception_handling_response(
+    situation: str,
+    with_examples: bool = True,
+    policies: str = "",
+) -> tuple[str, float]:
+    """Get an exception handling response for a situation.
+    
+    Args:
+        situation: The exception/edge case situation
+        with_examples: Whether to use ICRL examples (past precedents)
+        policies: Official policies to include
+        
+    Returns:
+        Tuple of (response text, duration in seconds)
+    """
+    from icrl.cli.config import Config
+    from icrl.cli.providers import AnthropicVertexToolProvider
+    from icrl.database import TrajectoryDatabase
+    
+    config = Config.load()
+    
+    # Create LLM provider
+    llm = AnthropicVertexToolProvider(
+        model=config.model,
+        temperature=0.3,
+        max_tokens=1024,
+        credentials_path=config.vertex_credentials_path,
+        project_id=config.vertex_project_id,
+        location=config.vertex_location,
+    )
+    
+    # Build the prompt
+    system_prompt = """You are a senior customer success manager at ACME Corp. Your job is to handle exception requests and edge cases that don't fit neatly into standard policies.
+
+When handling exceptions:
+1. Consider the customer's history and value to the company
+2. Weigh the cost of the exception vs the cost of losing the customer
+3. Know when to escalate and to whom
+4. Make confident decisions based on precedent and business judgment
+5. Document your reasoning clearly
+
+Be decisive. Don't over-hedge on situations where precedent is clear."""
+
+    # Add policies
+    if policies:
+        system_prompt += f"\n\nOfficial Company Policies:\n{policies}"
+    
+    # Build messages
+    messages = [{"role": "system", "content": system_prompt}]
+    
+    # Add examples if using ICRL
+    if with_examples:
+        db = TrajectoryDatabase(str(DEMO_DB_PATH))
+        if len(db) > 0:
+            # Search for similar past decisions
+            similar = db.search(situation, k=3)
+            
+            if similar:
+                examples_text = "Here are some similar situations that were handled previously:\n\n"
+                for i, traj in enumerate(similar, 1):
+                    decision = traj.metadata.get("final_response", "")
+                    reasoning = traj.metadata.get("reasoning", "")
+                    escalation = traj.metadata.get("escalation", "")
+                    outcome = traj.metadata.get("outcome", "")
+                    key_factors = traj.metadata.get("key_factors", [])
+                    
+                    examples_text += f"--- Past Decision {i} ---\n"
+                    examples_text += f"Situation: {traj.goal}\n"
+                    if key_factors:
+                        examples_text += f"Key Factors: {', '.join(key_factors)}\n"
+                    if decision:
+                        examples_text += f"Decision: {decision}\n"
+                    if reasoning:
+                        examples_text += f"Reasoning: {reasoning}\n"
+                    if escalation:
+                        examples_text += f"Escalation: {escalation}\n"
+                    if outcome:
+                        examples_text += f"Outcome: {outcome}\n"
+                    examples_text += "\n"
+                
+                messages.append({
+                    "role": "user",
+                    "content": f"{examples_text}\n---\n\nNow, please handle this new situation:\n\n{situation}"
+                })
+            else:
+                messages.append({"role": "user", "content": situation})
+        else:
+            messages.append({"role": "user", "content": situation})
+    else:
+        messages.append({"role": "user", "content": situation})
+    
+    # Get response
+    start_time = datetime.now()
+    response = await llm.complete_text(messages)
+    duration = (datetime.now() - start_time).total_seconds()
+    
+    return response, duration
+
+
+def evaluate_response(response: str, expected_keywords: list[str]) -> tuple[list[str], list[str], float]:
+    """Evaluate a response against expected keywords.
+    
+    Returns:
+        Tuple of (found keywords, missing keywords, score 0-100)
+    """
+    response_lower = response.lower()
+    
+    found = []
+    missing = []
+    
+    for keyword in expected_keywords:
+        if keyword.lower() in response_lower:
+            found.append(keyword)
+        else:
+            missing.append(keyword)
+    
+    # Score is percentage of keywords found
+    if expected_keywords:
+        score = (len(found) / len(expected_keywords)) * 100
+    else:
+        score = 50  # Neutral if no keywords defined
+    
+    return found, missing, score
+
+
+async def run_test(scenario: dict, with_examples: bool, policies: str, verbose: bool = False) -> TestResult:
+    """Run a single test case."""
+    mode = "icrl" if with_examples else "vanilla"
+    
+    response, duration = await get_exception_handling_response(
+        situation=scenario["situation"],
+        with_examples=with_examples,
+        policies=policies,
+    )
+    
+    found, missing, score = evaluate_response(response, scenario["expected_keywords"])
+    
+    if verbose:
+        print(f"\n{'='*60}")
+        print(f"Response ({mode}):")
+        print(f"{'='*60}")
+        print(response)
+        print(f"\nKeywords found: {found}")
+        print(f"Keywords missing: {missing}")
+    
+    return TestResult(
+        scenario_id=scenario["id"],
+        mode=mode,
+        response=response,
+        duration=duration,
+        keywords_found=found,
+        keywords_missing=missing,
+        score=score,
+    )
+
+
+async def main():
+    parser = argparse.ArgumentParser(description="Run Exception Handling demo")
+    parser.add_argument("--quick", action="store_true", help="Run only 3 test cases")
+    parser.add_argument("--verbose", action="store_true", help="Show full responses")
+    args = parser.parse_args()
+    
+    print("🎯 Exception Handling Demo: ICRL vs Vanilla Comparison")
+    print("=" * 60)
+    
+    # Check if database exists
+    if not DEMO_DB_PATH.exists():
+        print("❌ Demo database not found. Run setup_demo.py first.")
+        sys.exit(1)
+    
+    # Load test scenarios
+    scenarios = load_test_scenarios()
+    if args.quick:
+        scenarios = scenarios[:3]
+    
+    print(f"\n📋 Running {len(scenarios)} test scenarios...")
+    
+    # Load policies
+    policies = load_policies()
+    
+    # Store results
+    icrl_results: list[TestResult] = []
+    vanilla_results: list[TestResult] = []
+    
+    for i, scenario in enumerate(scenarios, 1):
+        print(f"\n{'─'*60}")
+        print(f"Test {i}/{len(scenarios)}: {scenario['title']}")
+        print(f"{'─'*60}")
+        print(f"Situation: {scenario['situation'][:100]}...")
+        
+        # Run ICRL (with precedents)
+        print("\n🧠 Running ICRL (with precedents)...")
+        icrl_result = await run_test(scenario, with_examples=True, policies=policies, verbose=args.verbose)
+        icrl_results.append(icrl_result)
+        print(f"   Score: {icrl_result.score:.0f}% ({len(icrl_result.keywords_found)}/{len(scenario['expected_keywords'])} keywords)")
+        
+        # Run vanilla (policy-only)
+        print("\n📝 Running Vanilla (policy-only)...")
+        vanilla_result = await run_test(scenario, with_examples=False, policies=policies, verbose=args.verbose)
+        vanilla_results.append(vanilla_result)
+        print(f"   Score: {vanilla_result.score:.0f}% ({len(vanilla_result.keywords_found)}/{len(scenario['expected_keywords'])} keywords)")
+    
+    # Summary
+    print("\n" + "=" * 60)
+    print("📊 RESULTS SUMMARY")
+    print("=" * 60)
+    
+    print(f"\n{'Scenario':<12} {'Category':<15} {'ICRL':<10} {'Vanilla':<10} {'Δ':<8}")
+    print("─" * 55)
+    
+    total_icrl = 0
+    total_vanilla = 0
+    
+    for scenario, icrl, vanilla in zip(scenarios, icrl_results, vanilla_results):
+        delta = icrl.score - vanilla.score
+        delta_str = f"+{delta:.0f}%" if delta > 0 else f"{delta:.0f}%"
+        print(f"{scenario['id']:<12} {scenario['category']:<15} {icrl.score:>5.0f}%    {vanilla.score:>5.0f}%    {delta_str:<8}")
+        total_icrl += icrl.score
+        total_vanilla += vanilla.score
+    
+    avg_icrl = total_icrl / len(scenarios)
+    avg_vanilla = total_vanilla / len(scenarios)
+    avg_delta = avg_icrl - avg_vanilla
+    
+    print("─" * 55)
+    delta_str = f"+{avg_delta:.0f}%" if avg_delta > 0 else f"{avg_delta:.0f}%"
+    print(f"{'AVERAGE':<12} {'':<15} {avg_icrl:>5.0f}%    {avg_vanilla:>5.0f}%    {delta_str:<8}")
+    
+    # Analysis
+    print("\n" + "=" * 60)
+    print("📈 ANALYSIS")
+    print("=" * 60)
+    
+    print(f"\n  ICRL Average Score:    {avg_icrl:.1f}%")
+    print(f"  Vanilla Average Score: {avg_vanilla:.1f}%")
+    print(f"  Improvement:           {avg_delta:+.1f}%")
+    
+    if avg_delta > 20:
+        print("\n  ✅ ICRL significantly outperforms vanilla!")
+        print("     Learned precedents enable nuanced exception handling.")
+    elif avg_delta > 5:
+        print("\n  ✅ ICRL shows improvement over vanilla.")
+        print("     Past decisions help guide judgment calls.")
+    elif avg_delta > -5:
+        print("\n  ⚠️  Results are similar between ICRL and vanilla.")
+        print("     The test cases may not be differentiated enough.")
+    else:
+        print("\n  ❌ Unexpected: vanilla performed better.")
+        print("     Check the seed data and test cases.")
+    
+    # Show example comparison
+    if icrl_results and vanilla_results:
+        # Find the test with biggest difference
+        best_diff_idx = 0
+        best_diff = 0
+        for i, (icrl, vanilla) in enumerate(zip(icrl_results, vanilla_results)):
+            diff = icrl.score - vanilla.score
+            if diff > best_diff:
+                best_diff = diff
+                best_diff_idx = i
+        
+        if best_diff > 0:
+            scenario = scenarios[best_diff_idx]
+            icrl = icrl_results[best_diff_idx]
+            vanilla = vanilla_results[best_diff_idx]
+            
+            print(f"\n{'─'*60}")
+            print(f"📌 Best Example: {scenario['title']}")
+            print(f"{'─'*60}")
+            print(f"\nExpected action: {scenario['expected_action']}")
+            print(f"Expected reasoning: {scenario['expected_reasoning']}")
+            print(f"\nICRL found keywords: {icrl.keywords_found}")
+            print(f"Vanilla found keywords: {vanilla.keywords_found}")
+            print(f"\nICRL response (excerpt):")
+            print(f"  {icrl.response[:300]}...")
+            print(f"\nVanilla response (excerpt):")
+            print(f"  {vanilla.response[:300]}...")
+    
+    print("\n" + "=" * 60)
+    print("🏁 Demo Complete!")
+    print("=" * 60)
+    
+    # Save results
+    results_file = DEMO_DIR / "demo_results.json"
+    results = {
+        "timestamp": datetime.now().isoformat(),
+        "num_tests": len(scenarios),
+        "icrl_avg_score": avg_icrl,
+        "vanilla_avg_score": avg_vanilla,
+        "improvement": avg_delta,
+        "details": [
+            {
+                "scenario_id": s["id"],
+                "category": s["category"],
+                "expected_action": s["expected_action"],
+                "icrl_score": i.score,
+                "vanilla_score": v.score,
+                "icrl_keywords_found": i.keywords_found,
+                "vanilla_keywords_found": v.keywords_found,
+                "icrl_response": i.response,
+                "vanilla_response": v.response,
+            }
+            for s, i, v in zip(scenarios, icrl_results, vanilla_results)
+        ]
+    }
+    
+    with open(results_file, "w") as f:
+        json.dump(results, f, indent=2)
+    
+    print(f"\n📄 Results saved to: {results_file}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
