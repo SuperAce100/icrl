@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/docs",
+      "destination": "https://stanfordgraphicslab.mintlify.dev/docs"
+    },
+    {
+      "source": "/docs/:path*",
+      "destination": "https://stanfordgraphicslab.mintlify.dev/docs/:path*"
+    }
+  ]
+}
