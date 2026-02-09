@@ -26,14 +26,19 @@ npm install @anthropic-ai/sdk
 
 ```typescript
 import OpenAI from "openai";
-import { Agent, OpenAIProvider, OpenAIEmbedder } from "icrl";
+import {
+  Agent,
+  FileSystemAdapter,
+  OpenAIEmbedder,
+  OpenAIProvider,
+} from "icrl";
 
 const openai = new OpenAI();
 
 const agent = new Agent({
   llm: new OpenAIProvider(openai, { model: "gpt-4o" }),
   embedder: new OpenAIEmbedder(openai),
-  dbPath: "./trajectories",
+  storage: new FileSystemAdapter("./trajectories"),
   planPrompt: `Goal: {goal}
 
 Here are examples of similar tasks:
@@ -71,6 +76,41 @@ const trajectory = await agent.train(env, "Complete the task");
 // Inference: uses stored examples but doesn't add new ones
 const result = await agent.run(env, "Another task");
 ```
+
+## Demos and tests
+
+Demo-ready (real API) examples:
+
+```bash
+bun install
+bun run examples:run
+```
+
+Includes use-case demos:
+- customer support triage automation
+- incident response playbook generation
+
+Web integration demo (uses `web-example`'s Convex adapter):
+
+```bash
+bun run example:web
+```
+
+Run all demos including web storage integration:
+
+```bash
+bun run examples:run:all
+```
+
+Mock/local deterministic verification scripts:
+
+```bash
+bun run tests:run
+```
+
+Details:
+- `examples/README.md` for demos
+- `tests/README.md` for tests
 
 ## Core Concepts
 
@@ -186,8 +226,8 @@ Main class for training and running the ICRL agent.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `llm` | `LLMProvider` | required | LLM for generating completions |
+| `storage` | `StorageAdapter` | required | Persistence backend (e.g., `new FileSystemAdapter("./trajectories")`) |
 | `embedder` | `Embedder` | required | Embedder for semantic search |
-| `dbPath` | `string` | required | Path to trajectory database |
 | `planPrompt` | `string` | required | Template with `{goal}`, `{examples}` |
 | `reasonPrompt` | `string` | required | Template with `{goal}`, `{plan}`, `{observation}`, `{history}`, `{examples}` |
 | `actPrompt` | `string` | required | Template with `{goal}`, `{plan}`, `{reasoning}`, `{history}`, `{examples}` |
