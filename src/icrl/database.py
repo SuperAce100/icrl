@@ -3,7 +3,6 @@
 import json
 import os
 from pathlib import Path
-from typing import Any
 
 import faiss
 import numpy as np
@@ -556,7 +555,9 @@ class TrajectoryDatabase:
 
                         # Check for significant line overlap (at least 2 lines)
                         common_lines = old_lines & new_lines
-                        significant_lines = [l for l in common_lines if len(l.strip()) > 10]
+                        significant_lines = [
+                            line for line in common_lines if len(line.strip()) > 10
+                        ]
                         if len(significant_lines) >= 2:
                             has_overlap = True
                             break

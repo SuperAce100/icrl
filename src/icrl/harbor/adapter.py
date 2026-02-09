@@ -137,7 +137,6 @@ Start by exploring the codebase to find the relevant code."""
 
             # Execute each command individually (like original harness)
             all_outputs: list[str] = []
-            last_return_code = 0
 
             for cmd, timeout in commands:
                 if not cmd:
@@ -153,7 +152,6 @@ Start by exploring the codebase to find the relevant code."""
                 output, return_code = await self._execute_command_async(
                     cmd, timeout_override=timeout
                 )
-                last_return_code = return_code
 
                 self._maybe_trace_step(cmd, output)
                 self._maybe_write_agent_log(cmd, output, return_code)

@@ -51,9 +51,7 @@ console = Console()
 
 def _run_ablation(goal: str, config: Config, work_dir: Path, verbose: bool) -> None:
     """Run ablation study comparing with/without in-context examples."""
-    from rich.table import Table
-
-    from icrl.cli.ablation import AblationRunner, AblationComparison
+    from icrl.cli.ablation import AblationRunner
     from icrl.cli.providers import AnthropicVertexToolProvider, ToolLLMProvider, is_vertex_model
     from icrl.cli.tools.base import create_default_registry
 
@@ -120,9 +118,6 @@ def _run_ablation(goal: str, config: Config, work_dir: Path, verbose: bool) -> N
 def _display_ablation_results(comparison: "AblationComparison", verbose: bool) -> None:
     """Display ablation comparison results in a table."""
     from rich.table import Table
-
-    # Import here to avoid circular imports
-    from icrl.cli.ablation import AblationComparison
 
     with_ex = comparison.with_examples
     without_ex = comparison.without_examples
@@ -488,7 +483,7 @@ def run(
             for i, opt in enumerate(options, 1):
                 console.print(f"  [cyan]{i}.[/] {opt}")
             console.print(
-                "[dim]Select 1-{n}, or type the option text.[/]".format(n=len(options))
+                f"[dim]Select 1-{len(options)}, or type the option text.[/]"
             )
             # Return the raw selection so the caller can interpret it.
             return typer.prompt("→", default="1")

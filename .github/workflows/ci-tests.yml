@@ -1,0 +1,176 @@
+name: ICRL
+
+on:
+  pull_request:
+
+jobs:
+  python-lint:
+    name: Python Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add Python icon
+        run: |
+          echo "![Python CI](https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/.github/assets/python-action.svg)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Run Ruff
+        run: uv run ruff check src
+
+  python-typecheck:
+    name: Python Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add Python icon
+        run: |
+          echo "![Python CI](https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/.github/assets/python-action.svg)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Install ty
+        run: uv pip install --python .venv/bin/python ty
+
+      - name: Run ty
+        run: uv run ty check src
+
+  python-tests:
+    name: Python Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add Python icon
+        run: |
+          echo "![Python CI](https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/.github/assets/python-action.svg)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Run Python test suite
+        run: |
+          export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+          if [ -f tests/test_harbor_coding.py ]; then
+            uv run --with pytest python -m pytest tests/test_harbor_coding.py -v
+          elif [ -f examples/test_harbor_coding.py ]; then
+            uv run --with pytest python -m pytest examples/test_harbor_coding.py -v
+          else
+            echo "No harbor coding test file found" >&2
+            exit 1
+          fi
+
+  typescript-tests:
+    name: TypeScript Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: icrl-ts
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add TypeScript icon
+        run: |
+          echo "![TypeScript CI](https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/.github/assets/typescript-action.svg)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install TypeScript dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run TypeScript test suite
+        run: bun run tests:run
+
+  typescript-lint:
+    name: TypeScript Lint
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: icrl-ts
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add TypeScript icon
+        run: |
+          echo "![TypeScript CI](https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/.github/assets/typescript-action.svg)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install TypeScript dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run TypeScript lint
+        run: bun run lint
+
+  typescript-typecheck:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: icrl-ts
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add TypeScript icon
+        run: |
+          echo "![TypeScript CI](https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/.github/assets/typescript-action.svg)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install TypeScript dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run TypeScript type check
+        run: bun run typecheck
