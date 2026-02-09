@@ -30,13 +30,24 @@ function parseDotEnv(text: string): Record<string, string> {
 export function loadWorkspaceEnv(): void {
   const rootDir = path.resolve(__dirname, "..", "..");
   const envPath = path.join(rootDir, ".env");
+  const webEnvPath = path.join(rootDir, "icrl-ts", "web-example", ".env.local");
 
-  if (!fs.existsSync(envPath)) return;
+  if (fs.existsSync(envPath)) {
+    const parsed = parseDotEnv(fs.readFileSync(envPath, "utf-8"));
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!process.env[key]) {
+        process.env[key] = value;
+      }
+    }
+  }
 
-  const parsed = parseDotEnv(fs.readFileSync(envPath, "utf-8"));
-  for (const [key, value] of Object.entries(parsed)) {
-    if (!process.env[key]) {
-      process.env[key] = value;
+  // Also load web-example env vars (e.g., NEXT_PUBLIC_CONVEX_URL).
+  if (fs.existsSync(webEnvPath)) {
+    const parsed = parseDotEnv(fs.readFileSync(webEnvPath, "utf-8"));
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!process.env[key]) {
+        process.env[key] = value;
+      }
     }
   }
 

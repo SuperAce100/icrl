@@ -86,6 +86,22 @@ bun install
 bun run examples:run
 ```
 
+Includes use-case demos:
+- customer support triage automation
+- incident response playbook generation
+
+Web integration demo (uses `web-example`'s Convex adapter):
+
+```bash
+bun run example:web
+```
+
+Run all demos including web storage integration:
+
+```bash
+bun run examples:run:all
+```
+
 Mock/local deterministic verification scripts:
 
 ```bash
