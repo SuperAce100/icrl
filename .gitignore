@@ -32,3 +32,5 @@ tsconfig.tsbuildinfo
 
 # ICRL per-project trajectory databases
 .icrl/
+.vercel/
+.vercel
