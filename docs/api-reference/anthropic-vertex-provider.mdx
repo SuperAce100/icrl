@@ -1,0 +1,35 @@
+---
+title: "AnthropicVertexProvider"
+description: "Python provider for Claude models on Google Vertex AI"
+---
+
+## Constructor
+
+```python
+AnthropicVertexProvider(
+    model: str = "claude-opus-4-5",
+    temperature: float = 0.7,
+    max_tokens: int | None = None,
+    system_prompt: str | None = None,
+    credentials_path: str | Path | None = None,
+    project_id: str | None = None,
+    location: str | None = None,
+    **kwargs: Any,
+)
+```
+
+## Key Features
+
+- model alias mapping (`MODEL_ALIASES`)
+- automatic credential discovery (`credentials.json`, gcloud ADC path, env)
+- project/location setup via params or env
+- token profile helpers:
+  - `get_token_profile()`
+  - `get_last_call_profile()`
+  - `complete_sync(...)`
+
+## Runtime Properties
+
+- `provider.model`
+- `provider.project_id`
+- `provider.location`

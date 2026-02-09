@@ -1,17 +1,9 @@
 ---
-title: StepContext
-description: "Context available during step execution and prompt formatting"
+title: "StepContext"
+description: "Prompt-formatting context for one step"
 ---
 
-## Overview
-
-`StepContext` contains all the contextual information available during a step, including the goal, plan, current observation, history, and retrieved examples. It's used for prompt formatting and passed to step callbacks.
-
-```python
-from icrl import StepContext
-```
-
-## Definition
+## Schema
 
 ```python
 class StepContext(BaseModel):
@@ -19,266 +11,28 @@ class StepContext(BaseModel):
     plan: str
     observation: str
     reasoning: str = ""
-    history: list[Step] = Field(default_factory=list)
-    examples: list[Trajectory] = Field(default_factory=list)
+    history: list[Step] = []
+    examples: list[StepExample] = []
 ```
-
-## Fields
-
-<ParamField path="goal" type="str" required>
-  The current goal/task description.
-</ParamField>
-
-<ParamField path="plan" type="str" required>
-  The plan generated at the start of the episode.
-</ParamField>
-
-<ParamField path="observation" type="str" required>
-  The current observation from the environment.
-</ParamField>
-
-<ParamField path="reasoning" type="str" default='""'>
-  The reasoning generated for the current step (empty until reasoning phase completes).
-</ParamField>
-
-<ParamField path="history" type="list[Step]" default="[]">
-  List of previous steps taken in this episode.
-</ParamField>
-
-<ParamField path="examples" type="list[Trajectory]" default="[]">
-  Retrieved example trajectories for this step.
-</ParamField>
 
 ## Methods
 
-### format_examples
+```python
+context.format_examples() -> str
+context.format_history() -> str
+```
+
+Behavior includes built-in truncation and limits to reduce prompt blowups.
+
+Related model:
 
 ```python
-def format_examples(self) -> str
-```
-
-Format retrieved examples as a string suitable for prompt inclusion.
-
-<ResponseField name="return" type="str">
-  Formatted string with all examples separated by `---`.
-</ResponseField>
-
-```python
-context = StepContext(
-    goal="Find config",
-    plan="1. Navigate\n2. Read",
-    observation="Current dir: /",
-    examples=[trajectory1, trajectory2],
-)
-
-examples_str = context.format_examples()
-```
-
-Output:
-```
-Goal: Previous task 1
-Plan: 1. Step one
-2. Step two
-Steps:
-  Step 1:
-    Observation: Started
-    Reasoning: Need to begin
-    Action: start
-
----
-
-Goal: Previous task 2
-Plan: 1. Do this
-Steps:
-  Step 1:
-    Observation: Ready
-    Reasoning: Execute
-    Action: execute
-```
-
-If no examples:
-```
-No examples available.
-```
-
-### format_history
-
-```python
-def format_history(self) -> str
-```
-
-Format step history as a string suitable for prompt inclusion.
-
-<ResponseField name="return" type="str">
-  Formatted string with each step on a line.
-</ResponseField>
-
-```python
-context = StepContext(
-    goal="Find config",
-    plan="Plan here",
-    observation="Current state",
-    history=[
-        Step(observation="Start", reasoning="Begin", action="ls"),
-        Step(observation="Files shown", reasoning="Navigate", action="cd /etc"),
-        Step(observation="In /etc", reasoning="List again", action="ls"),
-    ],
-    examples=[],
-)
-
-history_str = context.format_history()
-```
-
-Output:
-```
-Step 1: ls -> Start
-Step 2: cd /etc -> Files shown
-Step 3: ls -> In /etc
-```
-
-If no history:
-```
-No previous steps.
-```
-
-## Creating StepContext
-
-### For Testing Prompts
-
-```python
-from icrl import StepContext, Step, Trajectory
-
-context = StepContext(
-    goal="Complete the task",
-    plan="1. First step\n2. Second step",
-    observation="Current state: ready",
-    reasoning="I should proceed with step 1",
-    history=[
-        Step(observation="Initial", reasoning="Start", action="begin"),
-    ],
-    examples=[
-        Trajectory(
-            goal="Similar task",
-            plan="1. Do this",
-            steps=[Step(observation="A", reasoning="B", action="C")],
-            success=True,
-        ),
-    ],
-)
-```
-
-### Minimal
-
-```python
-context = StepContext(
-    goal="My goal",
-    plan="My plan",
-    observation="What I see",
-)
-```
-
-## Using in Prompt Formatting
-
-The internal `ReActLoop` uses `StepContext` to format prompts:
-
-```python
-def _format_prompt(self, template: str, context: StepContext) -> str:
-    return template.format(
-        goal=context.goal,
-        plan=context.plan,
-        observation=context.observation,
-        reasoning=context.reasoning,
-        history=context.format_history(),
-        examples=context.format_examples(),
-    )
-```
-
-You can use this pattern for testing:
-
-```python
-REASON_PROMPT = """Goal: {goal}
-Plan: {plan}
-History: {history}
-Observation: {observation}
-Examples: {examples}
-
-Think step by step:"""
-
-formatted = REASON_PROMPT.format(
-    goal=context.goal,
-    plan=context.plan,
-    history=context.format_history(),
-    observation=context.observation,
-    examples=context.format_examples(),
-)
-
-print(formatted)
-```
-
-## In Step Callbacks
-
-`StepContext` is passed to the `on_step` callback:
-
-```python
-from icrl import Step, StepContext
-
-def on_step(step: Step, context: StepContext) -> None:
-    # Current step info
-    print(f"Action taken: {step.action}")
-    
-    # Context info
-    print(f"Goal: {context.goal}")
-    print(f"Current observation: {context.observation[:50]}...")
-    print(f"Steps so far: {len(context.history)}")
-    print(f"Examples retrieved: {len(context.examples)}")
-    
-    # Format for logging
-    print(f"History:\n{context.format_history()}")
-
-agent = Agent(..., on_step=on_step)
-```
-
-## Advanced: Custom Formatting
-
-Override formatting for specific needs:
-
-```python
-def custom_format_examples(context: StepContext) -> str:
-    if not context.examples:
-        return "No prior experience with similar tasks."
-    
-    lines = ["Relevant past experiences:"]
-    for i, ex in enumerate(context.examples, 1):
-        lines.append(f"\n{i}. Task: {ex.goal}")
-        lines.append(f"   Approach: {ex.plan.split(chr(10))[0]}")
-        lines.append(f"   Result: {'Succeeded' if ex.success else 'Failed'}")
-        lines.append(f"   Steps: {len(ex.steps)}")
-    
-    return "\n".join(lines)
-
-def custom_format_history(context: StepContext) -> str:
-    if not context.history:
-        return "This is the first action."
-    
-    lines = [f"Previous {len(context.history)} action(s):"]
-    for step in context.history[-5:]:  # Last 5 only
-        lines.append(f"  - {step.action}")
-    
-    if len(context.history) > 5:
-        lines.insert(1, f"  ... ({len(context.history) - 5} earlier steps omitted)")
-    
-    return "\n".join(lines)
-```
-
-## Serialization
-
-```python
-# To dictionary
-data = context.model_dump()
-
-# From dictionary
-context = StepContext.model_validate(data)
-
-# Note: examples and history contain nested models
-# They are properly serialized/deserialized
+class StepExample(BaseModel):
+    goal: str
+    plan: str
+    observation: str
+    reasoning: str
+    action: str
+    trajectory_id: str
+    step_index: int
 ```

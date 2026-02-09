@@ -1,243 +1,40 @@
 ---
 title: "Trajectory Database"
-description: "Learn how ICRL stores and retrieves trajectories using FAISS-backed semantic search"
+description: "How trajectories, embeddings, and curation metadata are stored"
 ---
 
-## Overview
+## Python Database
 
-The **Trajectory Database** is the persistent memory of your ICRL agent. It stores successful trajectories on disk and uses FAISS for efficient semantic similarity search.
+`TrajectoryDatabase` persists to disk at `db_path`:
 
-## Database structure
+- `trajectories/*.json`
+- `index.faiss`
+- `index_ids.json`
+- `curation.json`
+- `embedder.json`
 
-When you create an agent with `db_path="./trajectories"`, ICRL creates the following structure:
+Key points:
 
-```
-./trajectories/
-├── trajectories/          # Individual trajectory files
-│   ├── <uuid-1>.json
-│   ├── <uuid-2>.json
-│   └── ...
-├── index.faiss            # FAISS vector index for fast search
-├── index_ids.json         # Mapping between FAISS indices and trajectory IDs
-└── curation.json          # Utility tracking for each trajectory
-```
+- stores trajectories and step-level examples
+- searches with FAISS cosine similarity (normalized embeddings)
+- tracks curation metadata per trajectory
+- supports deferred validation and deprecation/supersession metadata
 
-## Trajectory storage
+## TypeScript Database
 
-Each trajectory is stored as a JSON file:
+TypeScript `TrajectoryDatabase` uses a `StorageAdapter` interface.
 
-```json trajectory.json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "goal": "Navigate to /home/user and list files",
-  "plan": "1. Use cd to navigate\n2. Use ls to list",
-  "steps": [
-    {
-      "observation": "Current directory: /",
-      "reasoning": "I need to navigate to /home/user first",
-      "action": "cd /home/user"
-    },
-    {
-      "observation": "Changed directory to /home/user",
-      "reasoning": "Now I can list the files",
-      "action": "ls"
-    }
-  ],
-  "success": true,
-  "metadata": {}
-}
-```
+Built-in adapter:
 
-## Semantic search
+- `FileSystemAdapter` (JSON-backed, cosine search in adapter)
 
-The database uses **sentence-transformers** for embedding and **FAISS** for vector search:
+Web example adapter:
 
-```python
-# How search works internally
-query = "Find the config file"
-embedding = embedder.embed_single(query)
+- `ConvexAdapter` (in `web-example/src/lib/convex-adapter.ts`)
 
-# FAISS finds the k most similar trajectories
-indices = faiss_index.search(embedding, k=3)
+## Search Surfaces
 
-# Return the corresponding trajectories
-return [trajectories[idx] for idx in indices]
-```
+- Trajectory-level: `search(query, k)`
+- Step-level: `search_steps(...)` in Python and `searchSteps(...)` in TypeScript
 
-### Embedding strategy
-
-By default, trajectories are embedded using their goal and plan:
-
-```python
-def _get_embedding_text(trajectory: Trajectory) -> str:
-    return f"{trajectory.goal}\n{trajectory.plan}"
-```
-
-This captures both the intent (goal) and approach (plan) of each trajectory.
-
-## Using the database directly
-
-Access the database through your agent:
-
-```python database_usage.py
-# Access the database
-db = agent.database
-
-# Search for similar trajectories
-similar = db.search("find configuration files", k=3)
-for traj in similar:
-    print(f"Goal: {traj.goal}")
-    print(f"Steps: {len(traj.steps)}")
-
-# Get all trajectories
-all_trajectories = db.get_all()
-print(f"Total stored: {len(all_trajectories)}")
-
-# Get a specific trajectory
-traj = db.get("trajectory-id")
-
-# Remove a trajectory manually
-db.remove("trajectory-id")
-```
-
-## Key methods
-
-| Method | Description |
-|--------|-------------|
-| `add(trajectory)` | Add a trajectory to the database |
-| `get(id)` | Get a trajectory by ID |
-| `search(query, k)` | Find `k` most similar trajectories |
-| `get_all()` | Get all trajectories |
-| `remove(id)` | Remove a trajectory by ID |
-| `len(db)` | Get number of trajectories |
-
-## Retriever integration
-
-The `TrajectoryRetriever` wraps the database with episode-aware retrieval:
-
-```python retriever.py
-from icrl.retriever import TrajectoryRetriever
-
-retriever = TrajectoryRetriever(database, k=3)
-
-# Retrieve for planning phase
-examples = retriever.retrieve_for_plan(goal)
-
-# Retrieve for step (includes plan and observation context)
-examples = retriever.retrieve_for_step(goal, plan, observation)
-
-# Record episode result for curation
-retriever.record_episode_result(success=True)
-```
-
-<Note>
-The retriever tracks which trajectories are used in each episode. This information powers the curation system.
-</Note>
-
-## Custom embeddings
-
-Use a different embedding model for better accuracy or speed:
-
-```python custom_embedder.py
-from icrl.embedder import SentenceTransformerEmbedder
-from icrl.database import TrajectoryDatabase
-
-# Use a larger, more accurate model
-embedder = SentenceTransformerEmbedder(
-    model_name="all-mpnet-base-v2"
-)
-
-db = TrajectoryDatabase(
-    path="./trajectories",
-    embedder=embedder,
-)
-```
-
-### Available models
-
-| Model | Dimensions | Speed | Quality |
-|-------|------------|-------|---------|
-| `all-MiniLM-L6-v2` | 384 | Fast | Good |
-| `all-mpnet-base-v2` | 768 | Medium | Better |
-| `all-distilroberta-v1` | 768 | Medium | Better |
-
-## Persistence
-
-The database automatically persists to disk:
-
-- **Trajectories**: Saved immediately after `add()`
-- **Index**: Updated and saved after each `add()` or `remove()`
-- **Curation**: Saved after each retrieval result is recorded
-
-Loading happens automatically when you create a new instance:
-
-```python persistence.py
-# First run - creates new database
-db = TrajectoryDatabase("./trajectories")
-
-# Later run - loads existing data
-db = TrajectoryDatabase("./trajectories")
-print(f"Loaded {len(db)} trajectories")
-```
-
-## Best practices
-
-<AccordionGroup>
-  <Accordion title="Use separate databases for different tasks">
-    Keep trajectories organized by domain:
-    
-    ```python
-    # Web navigation agent
-    web_agent = Agent(db_path="./db/web_nav", ...)
-    
-    # File system agent
-    fs_agent = Agent(db_path="./db/file_sys", ...)
-    ```
-  </Accordion>
-  
-  <Accordion title="Seed with initial trajectories">
-    Bootstrap your agent with known-good examples:
-    
-    ```python
-    from icrl import Trajectory, Step
-    
-    seed = Trajectory(
-        goal="Example task",
-        plan="1. Do this\n2. Do that",
-        steps=[
-            Step(observation="Start", reasoning="Think", action="act"),
-        ],
-        success=True,
-    )
-    
-    agent = Agent(
-        ...,
-        seed_trajectories=[seed],
-    )
-    ```
-  </Accordion>
-  
-  <Accordion title="Monitor database size">
-    Track growth and consider curation settings:
-    
-    ```python
-    stats = agent.get_stats()
-    print(f"Trajectories: {stats['total_trajectories']}")
-    print(f"Success rate: {stats['success_rate']:.1%}")
-    
-    if stats['total_trajectories'] > 1000:
-        print("Consider more aggressive curation")
-    ```
-  </Accordion>
-</AccordionGroup>
-
-## Next steps
-
-<CardGroup cols={2}>
-  <Card title="Curation" icon="filter" href="/core-concepts/curation">
-    Learn how low-utility trajectories are automatically pruned
-  </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/trajectory-database">
-    Explore the complete TrajectoryDatabase API
-  </Card>
-</CardGroup>
+ReAct retrieval primarily uses step-level search.

@@ -1,360 +1,48 @@
 ---
 title: "Custom LLM Providers"
-description: "Integrate custom LLM backends with your ICRL agents"
+description: "Implement your own provider for Python or TypeScript"
 ---
 
-## Overview
+## Python Provider Contract
 
-ICRL includes a built-in `LiteLLMProvider` that supports 100+ models. However, you may want to use a custom LLM integration for:
-
-- Self-hosted models
-- Custom API endpoints
-- Rate limiting or caching
-- Specialized inference setups
-
-## The LLMProvider protocol
-
-Every LLM provider must implement the `LLMProvider` protocol:
-
-```python protocol.py
-from icrl import LLMProvider, Message
-
-class MyLLMProvider:
-    async def complete(self, messages: list[Message]) -> str:
-        """Generate a completion from the given messages.
-        
-        Args:
-            messages: List of Message(role, content) objects.
-        
-        Returns:
-            Generated text as a string.
-        """
-        ...
-```
-
-## The Message class
-
-Messages are simple Pydantic models:
+Implement:
 
 ```python
-from icrl import Message
-
-message = Message(role="user", content="Hello, world!")
-# message.role -> "user"
-# message.content -> "Hello, world!"
+async def complete(messages: list[Message]) -> str:
+    ...
 ```
 
-Common roles:
-- `"user"`: User/human messages
-- `"assistant"`: Model responses
-- `"system"`: System prompts
+`Message` has:
 
-## Provider implementations
+- `role: str`
+- `content: str`
 
-<Tabs>
-  <Tab title="OpenAI-Compatible">
-    For OpenAI-compatible APIs:
-    
-    ```python openai_provider.py
-    from openai import AsyncOpenAI
-    from icrl import Message
+## TypeScript Provider Contract
 
-    class OpenAIProvider:
-        def __init__(
-            self,
-            model: str = "gpt-4o-mini",
-            api_key: str | None = None,
-            base_url: str | None = None,
-            temperature: float = 0.7,
-        ):
-            self.model = model
-            self.temperature = temperature
-            self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
-        
-        async def complete(self, messages: list[Message]) -> str:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": m.role, "content": m.content}
-                    for m in messages
-                ],
-                temperature=self.temperature,
-            )
-            return response.choices[0].message.content or ""
-    ```
-  </Tab>
-  
-  <Tab title="Anthropic Claude">
-    For Anthropic's Claude:
-    
-    ```python anthropic_provider.py
-    import anthropic
-    from icrl import Message
+Implement:
 
-    class AnthropicProvider:
-        def __init__(
-            self,
-            model: str = "claude-3-5-sonnet-20241022",
-            api_key: str | None = None,
-            max_tokens: int = 1024,
-        ):
-            self.model = model
-            self.max_tokens = max_tokens
-            self.client = anthropic.AsyncAnthropic(api_key=api_key)
-        
-        async def complete(self, messages: list[Message]) -> str:
-            # Separate system message if present
-            system = None
-            chat_messages = []
-            
-            for m in messages:
-                if m.role == "system":
-                    system = m.content
-                else:
-                    chat_messages.append({
-                        "role": m.role,
-                        "content": m.content,
-                    })
-            
-            response = await self.client.messages.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                system=system,
-                messages=chat_messages,
-            )
-            return response.content[0].text
-    ```
-  </Tab>
-  
-  <Tab title="Ollama (Local)">
-    For locally-hosted models via Ollama:
-    
-    ```python ollama_provider.py
-    import httpx
-    from icrl import Message
-
-    class OllamaProvider:
-        def __init__(
-            self,
-            model: str = "llama3",
-            base_url: str = "http://localhost:11434",
-        ):
-            self.model = model
-            self.base_url = base_url
-        
-        async def complete(self, messages: list[Message]) -> str:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/api/chat",
-                    json={
-                        "model": self.model,
-                        "messages": [
-                            {"role": m.role, "content": m.content}
-                            for m in messages
-                        ],
-                        "stream": False,
-                    },
-                    timeout=120.0,
-                )
-                response.raise_for_status()
-                return response.json()["message"]["content"]
-    ```
-  </Tab>
-  
-  <Tab title="vLLM">
-    For high-performance inference with vLLM:
-    
-    ```python vllm_provider.py
-    from openai import AsyncOpenAI
-    from icrl import Message
-
-    class VLLMProvider:
-        def __init__(
-            self,
-            model: str,
-            base_url: str = "http://localhost:8000/v1",
-        ):
-            self.model = model
-            self.client = AsyncOpenAI(
-                api_key="EMPTY",  # vLLM doesn't require a key
-                base_url=base_url,
-            )
-        
-        async def complete(self, messages: list[Message]) -> str:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": m.role, "content": m.content}
-                    for m in messages
-                ],
-            )
-            return response.choices[0].message.content or ""
-    ```
-  </Tab>
-</Tabs>
-
-## Provider wrappers
-
-### Retry logic
-
-Handle transient failures:
-
-```python retry_provider.py
-import asyncio
-from icrl import Message
-
-class RetryProvider:
-    def __init__(self, base_provider, max_retries: int = 3):
-        self.base = base_provider
-        self.max_retries = max_retries
-    
-    async def complete(self, messages: list[Message]) -> str:
-        for attempt in range(self.max_retries):
-            try:
-                return await self.base.complete(messages)
-            except Exception as e:
-                if attempt == self.max_retries - 1:
-                    raise
-                await asyncio.sleep(2 ** attempt)
+```ts
+interface LLMProvider {
+  complete(messages: Message[]): Promise<string>;
+}
 ```
 
-### Caching
+## Built-in Providers
 
-Reduce API calls for repeated prompts:
+Python:
 
-```python cached_provider.py
-import hashlib
-import json
-from icrl import Message
+- `LiteLLMProvider`
+- `AnthropicVertexProvider`
 
-class CachedProvider:
-    def __init__(self, base_provider):
-        self.base = base_provider
-        self._cache = {}
-    
-    def _key(self, messages: list[Message]) -> str:
-        data = json.dumps([{"role": m.role, "content": m.content} for m in messages])
-        return hashlib.sha256(data.encode()).hexdigest()
-    
-    async def complete(self, messages: list[Message]) -> str:
-        key = self._key(messages)
-        
-        if key in self._cache:
-            return self._cache[key]
-        
-        result = await self.base.complete(messages)
-        self._cache[key] = result
-        return result
-```
+TypeScript:
 
-### Fallback
+- `OpenAIProvider`
+- `AnthropicProvider`
+- `AnthropicVertexProvider`
 
-Use a backup provider when the primary fails:
+## Common Adapter Pattern
 
-```python fallback_provider.py
-class FallbackProvider:
-    def __init__(self, primary, fallback):
-        self.primary = primary
-        self.fallback = fallback
-    
-    async def complete(self, messages: list[Message]) -> str:
-        try:
-            return await self.primary.complete(messages)
-        except Exception:
-            return await self.fallback.complete(messages)
-```
-
-## Mock provider for testing
-
-Test without making API calls:
-
-```python mock_provider.py
-from icrl import Message
-
-class MockProvider:
-    def __init__(self):
-        self.calls = []
-    
-    async def complete(self, messages: list[Message]) -> str:
-        self.calls.append(messages)
-        
-        # Return sensible defaults based on prompt
-        content = messages[-1].content.lower()
-        
-        if "plan" in content:
-            return "1. First step\n2. Second step"
-        elif "reason" in content or "think" in content:
-            return "I should proceed with the task."
-        else:
-            return "execute"
-```
-
-<Tip>
-Use mock providers during development to iterate quickly without API costs or latency.
-</Tip>
-
-## Combining providers
-
-Create composite providers for production:
-
-```python composite_provider.py
-# Production setup with retry, cache, and fallback
-llm = RetryProvider(
-    CachedProvider(
-        FallbackProvider(
-            primary=OpenAIProvider(model="gpt-4o"),
-            fallback=OllamaProvider(model="llama3"),
-        )
-    ),
-    max_retries=3,
-)
-```
-
-## Using custom providers
-
-```python agent_setup.py
-from icrl import Agent
-
-# Create your custom provider
-llm = OllamaProvider(model="llama3")
-
-# Or with wrappers
-llm = RetryProvider(CachedProvider(OllamaProvider(model="llama3")))
-
-# Use with agent
-agent = Agent(
-    llm=llm,
-    db_path="./trajectories",
-    plan_prompt="...",
-    reason_prompt="...",
-    act_prompt="...",
-)
-```
-
-## Synchronous support
-
-Add sync methods for convenience:
-
-```python sync_provider.py
-import asyncio
-
-class MyProvider:
-    async def complete(self, messages: list[Message]) -> str:
-        # Async implementation
-        ...
-    
-    def complete_sync(self, messages: list[Message]) -> str:
-        """Synchronous wrapper."""
-        return asyncio.run(self.complete(messages))
-```
-
-## Next steps
-
-<CardGroup cols={2}>
-  <Card title="Batch Training" icon="layer-group" href="/guides/batch-training">
-    Train on multiple tasks efficiently
-  </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/llm-provider">
-    Complete LLMProvider API documentation
-  </Card>
-</CardGroup>
+1. Map internal message format to SDK format.
+2. Handle system prompt semantics for provider.
+3. Return plain text string.
+4. Keep token/timeouts/retries in provider layer.

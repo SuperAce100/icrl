@@ -1,133 +1,49 @@
 ---
 title: "Introduction"
-description: "Build self-improving LLM agents that learn from their own successful experiences using In-Context Reinforcement Learning"
+description: "ICRL for Python and TypeScript: self-improving agents that learn from successful trajectories"
 ---
 
-<Frame>
-  <img
-    className="block dark:hidden"
-    src="/images/hero-light.svg"
-    alt="ICRL architecture diagram showing Bootstrap, Retrieve, Generate, and Curate phases"
-  />
-  <img
-    className="hidden dark:block"
-    src="/images/hero-dark.svg"
-    alt="ICRL architecture diagram showing Bootstrap, Retrieve, Generate, and Curate phases"
-  />
-</Frame>
+## What ICRL Is
 
-## What is ICRL?
+ICRL (In-Context Reinforcement Learning) is a trajectory-learning framework for LLM agents.
 
-ICRL implements the **In-Context Reinforcement Learning** (ICRL) algorithm, enabling your LLM agents to bootstrap their own performance by learning from successful task completions.
+It works by:
 
-Instead of requiring you to craft examples manually, ICRL agents:
+1. Running tasks in an environment.
+2. Storing successful trajectories.
+3. Retrieving similar prior steps during future runs.
+4. Curating low-utility trajectories over time.
 
-1. **Attempt tasks** and record successful trajectories automatically
-2. **Retrieve relevant examples** at each decision point using semantic search
-3. **Improve over time** as they accumulate more successful experiences
-4. **Self-curate** by pruning low-utility examples from their memory
+## What You Get
 
-<CardGroup cols={2}>
-  <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Get your first ICRL agent running in under 5 minutes
-  </Card>
-  <Card title="Core Concepts" icon="book" href="/core-concepts/icrl-algorithm">
-    Understand how the ICRL algorithm works
-  </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/overview">
-    Explore the complete API documentation
-  </Card>
-  <Card title="Examples" icon="flask" href="/examples/file-system-agent">
-    Learn from real-world implementation examples
-  </Card>
-</CardGroup>
+- Python package: `icrl`
+- TypeScript package: `icrl`
+- Python CLI: `icrl` (tool-calling coding assistant)
+- TypeScript web demo: Next.js + Convex example
 
-## Key features
+## Package Scope
 
-<AccordionGroup>
-  <Accordion title="Self-improving agents" icon="brain">
-    Your agents automatically learn from successful experiences. Each completed task becomes a potential example for future similar tasks, improving performance without manual intervention.
-  </Accordion>
-  <Accordion title="Semantic retrieval" icon="magnifying-glass">
-    ICRL uses FAISS-backed vector similarity search with sentence transformers to find the most relevant examples for each situation. You configure how many examples to retrieve with the `k` parameter.
-  </Accordion>
-  <Accordion title="Automatic curation" icon="wand-magic-sparkles">
-    Low-utility trajectories are automatically pruned based on their contribution to successful outcomes. You control the aggressiveness of curation through threshold settings.
-  </Accordion>
-  <Accordion title="100+ LLM support" icon="plug">
-    The built-in LiteLLM provider supports OpenAI, Anthropic, Google, Azure, and many other providers through a unified interface.
-  </Accordion>
-  <Accordion title="Customizable prompts" icon="message">
-    Template-based prompts give you complete control over how your agent plans, reasons, and acts.
-  </Accordion>
-</AccordionGroup>
+- Python package focuses on:
+  - ReAct loop (`Agent`, `ReActLoop`)
+  - FAISS-backed `TrajectoryDatabase`
+  - Built-in providers (`LiteLLMProvider`, `AnthropicVertexProvider`)
+  - CLI and database utilities
 
-## How it works
+- TypeScript package focuses on:
+  - Same algorithmic abstractions (`Agent`, `TrajectoryDatabase`, `TrajectoryRetriever`, `CurationManager`)
+  - Pluggable storage (`StorageAdapter`), including `FileSystemAdapter`
+  - Built-in providers (`OpenAIProvider`, `AnthropicProvider`, `AnthropicVertexProvider`)
 
-The ICRL algorithm follows four phases:
+## How The Algorithm Runs
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      ICRL Algorithm                             │
-├─────────────────────────────────────────────────────────────────┤
-│  1. BOOTSTRAP: Agent attempts tasks, stores successes           │
-│  2. RETRIEVE: Semantic search finds relevant examples           │
-│  3. GENERATE: LLM uses examples for better decisions            │
-│  4. CURATE: Low-utility examples are pruned over time          │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. `reset(goal)` on environment.
+2. Generate plan using retrieved examples.
+3. Repeat reasoning/action/observation steps.
+4. If successful in training mode, store trajectory.
+5. Update retrieval feedback and run curation periodically.
 
-Each episode follows a **Plan → Reason → Act** loop:
+## Next Steps
 
-<Steps>
-  <Step title="Plan">
-    Generate a high-level strategy using retrieved examples from similar past tasks
-  </Step>
-  <Step title="Reason">
-    Analyze the current observation with context from similar situations
-  </Step>
-  <Step title="Act">
-    Execute the next action based on your reasoning
-  </Step>
-  <Step title="Observe">
-    Get environment feedback and loop back to Reason until the task completes
-  </Step>
-</Steps>
-
-## Research foundation
-
-ICRL implements the algorithm described in:
-
-> **Self-Generated In-Context Examples Improve LLM Agents for Sequential Decision-Making Tasks**
-
-<Note>
-The research demonstrates that self-generated examples can match or exceed the performance of human-crafted demonstrations while being significantly more scalable.
-</Note>
-
-## Quick example
-
-```python quickstart.py
-import asyncio
-from icrl import Agent, LiteLLMProvider
-
-# Create your agent
-agent = Agent(
-    llm=LiteLLMProvider(model="gpt-4o-mini"),
-    db_path="./trajectories",
-    plan_prompt="Goal: {goal}\n\nExamples:\n{examples}\n\nCreate a plan:",
-    reason_prompt="Goal: {goal}\nPlan: {plan}\nObservation: {observation}\nThink step by step:",
-    act_prompt="Goal: {goal}\nPlan: {plan}\nReasoning: {reasoning}\nNext action:",
-    k=3,           # Number of examples to retrieve
-    max_steps=30,  # Maximum steps per episode
-)
-
-# Training: successful trajectories are stored for future use
-trajectory = asyncio.run(agent.train(env, goal="Complete the task"))
-
-# Inference: uses stored examples but doesn't add new ones
-trajectory = asyncio.run(agent.run(env, goal="Complete another task"))
-```
-
-<Check>
-Ready to build your first self-improving agent? Head to the [Quickstart guide](/quickstart) to get started in under 5 minutes.
-</Check>
+- Start with `/installation`
+- Build first run at `/quickstart`
+- Read algorithm details at `/core-concepts/icrl-algorithm`

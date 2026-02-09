@@ -1,268 +1,32 @@
 ---
 title: "Curation"
-description: "Understand how ICRL automatically prunes low-utility trajectories to maintain a high-quality example database"
+description: "How ICRL prunes low-utility trajectories"
 ---
 
-## Overview
+## Utility Tracking
 
-**Curation** is the process of automatically removing low-utility trajectories from the database. This ensures that your agent's example pool remains high-quality and that poor examples don't negatively influence future decisions.
+Curation tracks retrieval outcomes per trajectory:
 
-## How curation works
+- retrieval count
+- success count after retrieval
+- derived utility score
 
-The curation system tracks two metrics for each trajectory:
+A trajectory is considered for pruning only after minimum retrieval evidence.
 
-1. **Times retrieved**: How often this trajectory was used as an example
-2. **Times led to success**: How often episodes using this trajectory succeeded
+## Python Curation Details
 
-The **utility score** is calculated as:
+Python metadata also includes:
 
-```
-utility_score = times_led_to_success / times_retrieved
-```
+- deferred validations (`DeferredValidation`)
+- persistence score updates
+- deprecation and supersession fields
 
-A trajectory is **pruned** when:
-- It has been retrieved at least `min_retrievals` times
-- Its utility score falls below `threshold`
+This enables pruning decisions that combine retrieval success and post-hoc validation signals.
 
-## Configuration
+## TypeScript Curation Details
 
-Configure curation when creating your agent:
+TypeScript curation currently uses retrieval-based signals via `CurationManager` plus storage metadata fields.
 
-```python curation_config.py
-agent = Agent(
-    llm=llm,
-    db_path="./trajectories",
-    plan_prompt="...",
-    reason_prompt="...",
-    act_prompt="...",
-    
-    # Curation settings
-    curation_threshold=0.3,       # Prune if utility < 30%
-    curation_min_retrievals=5,    # After at least 5 retrievals
-)
-```
+## Trigger Model
 
-### Parameters
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `curation_threshold` | 0.3 | Utility score below which trajectories are pruned |
-| `curation_min_retrievals` | 5 | Minimum retrievals before a trajectory can be pruned |
-
-## When curation runs
-
-Curation is triggered automatically after successful training episodes:
-
-```python
-# In Agent.train()
-async def train(self, env, goal):
-    trajectory = await self._loop.run(env, goal)
-    
-    if trajectory.success:
-        self._database.add(trajectory)
-        self._curation.maybe_curate()  # Check if curation should run
-    
-    return trajectory
-```
-
-<Note>
-By default, curation runs every 10 successful episodes. This batching improves performance while keeping the database clean.
-</Note>
-
-## Utility tracking
-
-Each time trajectories are retrieved and used, the system tracks the result:
-
-<Steps>
-  <Step title="During retrieval">
-    Trajectory IDs are recorded when used as examples
-  </Step>
-  <Step title="Episode completes">
-    The success/failure result is recorded
-  </Step>
-  <Step title="Utility updated">
-    Scores are recalculated for all retrieved trajectories
-  </Step>
-  <Step title="Curation runs">
-    Low-utility trajectories are removed if they meet the criteria
-  </Step>
-</Steps>
-
-## Example scenario
-
-Consider a database with these trajectories:
-
-| Trajectory | Times Retrieved | Times Led to Success | Utility Score |
-|------------|-----------------|---------------------|---------------|
-| A | 10 | 8 | 0.80 |
-| B | 7 | 2 | 0.29 |
-| C | 3 | 1 | 0.33 |
-| D | 6 | 5 | 0.83 |
-
-With `threshold=0.3` and `min_retrievals=5`:
-
-- **A**: Utility 0.80 ≥ 0.3 → **Keep**
-- **B**: Retrieved 7 ≥ 5, Utility 0.29 < 0.3 → **Prune**
-- **C**: Retrieved 3 < 5 → **Keep** (not enough data yet)
-- **D**: Utility 0.83 ≥ 0.3 → **Keep**
-
-## Curation strategies
-
-<Tabs>
-  <Tab title="Conservative">
-    Keep more trajectories. Good for small datasets or early training:
-    
-    ```python
-    agent = Agent(
-        ...,
-        curation_threshold=0.1,       # Only prune truly bad examples
-        curation_min_retrievals=10,   # Need more evidence before pruning
-    )
-    ```
-  </Tab>
-  <Tab title="Balanced (default)">
-    Good starting point for most use cases:
-    
-    ```python
-    agent = Agent(
-        ...,
-        curation_threshold=0.3,
-        curation_min_retrievals=5,
-    )
-    ```
-  </Tab>
-  <Tab title="Aggressive">
-    Keep only high-performers. Good for large datasets:
-    
-    ```python
-    agent = Agent(
-        ...,
-        curation_threshold=0.5,      # High bar for retention
-        curation_min_retrievals=3,   # Prune quickly
-    )
-    ```
-  </Tab>
-</Tabs>
-
-## Monitoring curation
-
-Track curation activity to understand your database health:
-
-```python monitoring.py
-# Get current utility scores
-scores = agent._curation.get_utility_scores()
-
-# Find low-performing trajectories
-low = agent._curation.get_low_utility_trajectories()
-print(f"Candidates for pruning: {len(low)}")
-
-# Check database health
-stats = agent.get_stats()
-print(f"Total: {stats['total_trajectories']}")
-print(f"Success rate: {stats['success_rate']:.1%}")
-```
-
-## Manual curation
-
-You can also curate manually when needed:
-
-```python manual_curation.py
-# Remove a specific trajectory
-agent.database.remove("trajectory-id")
-
-# Force curation check
-removed = agent._curation.curate()
-print(f"Removed {len(removed)} low-utility trajectories")
-
-# Preview what would be pruned
-low_utility = agent._curation.get_low_utility_trajectories()
-for traj_id in low_utility:
-    traj = agent.database.get(traj_id)
-    print(f"Would prune: {traj.goal[:50]}...")
-```
-
-## Curation metadata
-
-Each trajectory has associated metadata stored in `curation.json`:
-
-```json curation.json
-[
-  {
-    "trajectory_id": "550e8400-e29b-41d4-a716-446655440000",
-    "times_retrieved": 10,
-    "times_led_to_success": 8,
-    "utility_score": 0.8
-  },
-  {
-    "trajectory_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-    "times_retrieved": 7,
-    "times_led_to_success": 2,
-    "utility_score": 0.285714
-  }
-]
-```
-
-Access this metadata programmatically:
-
-```python metadata.py
-meta = agent.database.get_curation_metadata(trajectory.id)
-if meta:
-    print(f"Retrieved: {meta.times_retrieved}")
-    print(f"Successes: {meta.times_led_to_success}")
-    print(f"Utility: {meta.utility_score:.2f}")
-```
-
-## Best practices
-
-<AccordionGroup>
-  <Accordion title="Start with conservative settings">
-    During initial training, use lower thresholds to retain more data:
-    
-    ```python
-    # Early phase
-    agent = Agent(..., curation_threshold=0.1, curation_min_retrievals=10)
-    
-    # After database is established, tighten curation
-    agent._curation._threshold = 0.3
-    agent._curation._min_retrievals = 5
-    ```
-  </Accordion>
-  
-  <Accordion title="Monitor before aggressive pruning">
-    Check what would be pruned before using aggressive settings:
-    
-    ```python
-    low = agent._curation.get_low_utility_trajectories()
-    for traj_id in low:
-        traj = agent.database.get(traj_id)
-        print(f"Would prune: {traj.goal}")
-    ```
-  </Accordion>
-  
-  <Accordion title="Consider task difficulty">
-    For difficult tasks, even lower success rates may be acceptable:
-    
-    ```python
-    # Hard tasks - keep more examples
-    hard_agent = Agent(..., curation_threshold=0.15)
-    
-    # Easy tasks - be more selective
-    easy_agent = Agent(..., curation_threshold=0.5)
-    ```
-  </Accordion>
-</AccordionGroup>
-
-<Warning>
-Aggressive curation on a small database can remove valuable examples. Start conservative and tighten settings as your database grows.
-</Warning>
-
-## Next steps
-
-<CardGroup cols={2}>
-  <Card title="API Reference" icon="code" href="/api-reference/curation-manager">
-    Explore the complete CurationManager API
-  </Card>
-  <Card title="Batch Training" icon="layer-group" href="/guides/batch-training">
-    Train on multiple tasks efficiently
-  </Card>
-</CardGroup>
+`CurationManager.maybe_curate()` increments episode counter and runs pruning every `curate_every` episodes (default `10`).
