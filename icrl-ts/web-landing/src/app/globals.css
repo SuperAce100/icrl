@@ -152,9 +152,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-@layer utilities {
-  .section-rule {
-    @apply border-t border-border/70;
-  }
-}
