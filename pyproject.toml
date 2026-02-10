@@ -3,10 +3,21 @@ name = "icrl"
 version = "0.1.0"
 description = "In-Context Reinforcement Learning for LLM Agents"
 readme = "README.md"
+license = { file = "LICENSE" }
 authors = [
     { name = "Asanshay Gupta", email = "46036121+SuperAce100@users.noreply.github.com" }
 ]
 requires-python = ">=3.12"
+keywords = ["llm", "agents", "reinforcement-learning", "retrieval", "ai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
 dependencies = [
     "pydantic>=2.0.0",
     "litellm>=1.0.0",
@@ -16,12 +27,18 @@ dependencies = [
     "rich>=13.0.0",
     "python-dotenv>=1.0.0",
     "harbor>=0.1.0",
-    "typer[all]>=0.9.0",
+    "typer>=0.9.0",
     "textual>=0.40.0",
     "httpx>=0.25.0",
     "beautifulsoup4>=4.12.0",
     "google-cloud-aiplatform>=1.38",
 ]
+
+[project.urls]
+Homepage = "https://github.com/SuperAce100/icrl"
+Repository = "https://github.com/SuperAce100/icrl"
+Documentation = "https://github.com/SuperAce100/icrl/tree/main/docs"
+Issues = "https://github.com/SuperAce100/icrl/issues"
 
 [project.scripts]
 icrl = "icrl.cli.main:app"
