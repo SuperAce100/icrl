@@ -4,29 +4,28 @@ import { Github } from "lucide-react";
 
 export function SiteFooter() {
   return (
-    <footer className="relative overflow-hidden bg-background/90">
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-44 opacity-35 dark:opacity-25">
+    <footer className="relative overflow-hidden bg-background pt-6 md:pt-6">
+      {/* Flourish — fades in from top, adapts to light/dark */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-20 dark:opacity-10"
+        style={{
+          maskImage: "linear-gradient(to bottom, transparent 0%, transparent 40%, black 130%)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, transparent 0%, transparent 40%, black 130%)",
+        }}
+      >
         <Image
           src="/visuals/footer-flourish.png"
           alt=""
           fill
-          className="object-cover object-bottom"
-          sizes="100vw"
-          priority={false}
+          className="object-cover object-bottom dark:invert"
+          aria-hidden="true"
         />
       </div>
-      <div className="pointer-events-none absolute inset-0 bg-background/80" />
-      <div className="relative mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-6 sm:flex-row">
-        <p className="text-xs text-muted-foreground">
-          In-Context Reinforcement Learning. Built with ICRL in 2026.
-        </p>
+
+      <div className="relative mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 pb-6 pt-6 sm:flex-row">
+        <p className="text-xs text-primary/80 font-medium">In-Context Reinforcement Learning</p>
         <nav className="flex items-center gap-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Landing
-          </Link>
           <Link
             href="/docs"
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"

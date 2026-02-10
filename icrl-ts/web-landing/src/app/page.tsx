@@ -163,37 +163,28 @@ export default function LandingPage() {
       <main className="min-h-screen bg-background">
         <SiteHeader />
 
-        <section aria-label="Hero" className="mx-auto max-w-6xl px-6 pb-12 pt-12 md:pt-16">
-          <div className="mx-auto max-w-4xl space-y-6 text-center">
-            <div className="flex items-center justify-center">
-              <Image
-                src="/logo_hero_light.svg"
-                alt="ICRL — In-Context Reinforcement Learning"
-                width={280}
-                height={24}
-                className="dark:hidden"
-                priority
-              />
-              <Image
-                src="/logo_hero_dark.svg"
-                alt="ICRL — In-Context Reinforcement Learning"
-                width={280}
-                height={24}
-                className="hidden dark:block"
-                priority
-              />
-            </div>
-            <h1 className="font-[family-name:var(--font-archivo)] text-4xl font-semibold leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl">
-              instant, continuous,
-              <br />
-              reinforcement learning
-              <br />
-              for LLM agents
-            </h1>
-            <p className="mx-auto max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg">
-              ICRL turns successful trajectories into reusable decision context so agents improve on
-              the next task instead of waiting for retraining.
-            </p>
+        <section
+          aria-label="Hero"
+          className="mx-auto px-6 pb-12 pt-12 md:pt-32 md:pb-32 max-w-2xl space-y-6 text-center"
+        >
+          <h1 className="font-heading text-4xl font-semibold leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl">
+            instant, continuous,
+            <br />
+            reinforcement learning
+            <br />
+            for LLM agents
+          </h1>
+          <p className="mx-auto text-base leading-7 text-muted-foreground sm:text-lg text-balance">
+            ICRL turns successful trajectories into reusable decision context so agents improve on
+            the next task instead of waiting for retraining.
+          </p>
+          <div className="flex justify-center">
+            <Button asChild>
+              <a href="/docs">
+                <BookOpen className="size-4" />
+                Open docs
+              </a>
+            </Button>
           </div>
         </section>
 
@@ -202,7 +193,7 @@ export default function LandingPage() {
             <Card className="border-primary/60 bg-card shadow-none md:col-span-7">
               <CardHeader>
                 <CardTitle asChild>
-                  <h2 className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
+                  <h2 className="font-heading text-2xl tracking-tight text-foreground">
                     What is ICRL
                   </h2>
                 </CardTitle>
@@ -234,7 +225,7 @@ export default function LandingPage() {
             <Card className="border-border/70 bg-card shadow-none md:col-span-5">
               <CardHeader>
                 <CardTitle asChild>
-                  <h2 className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
+                  <h2 className="font-heading text-2xl tracking-tight text-foreground">
                     ICRL vs traditional RL
                   </h2>
                 </CardTitle>
@@ -263,7 +254,7 @@ export default function LandingPage() {
             <Card className="border-border/70 bg-card shadow-none md:col-span-7">
               <CardHeader>
                 <CardTitle asChild>
-                  <h2 className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
+                  <h2 className="font-heading text-xl tracking-tight text-foreground">
                     Common use cases
                   </h2>
                 </CardTitle>
@@ -288,9 +279,7 @@ export default function LandingPage() {
             <Card className="border-border/70 bg-card shadow-none md:col-span-5">
               <CardHeader>
                 <CardTitle asChild>
-                  <h2 className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
-                    CLI
-                  </h2>
+                  <h2 className="font-heading text-xl tracking-tight text-foreground">CLI</h2>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -320,9 +309,7 @@ export default function LandingPage() {
             <Card className="border-border/70 bg-card shadow-none md:col-span-5">
               <CardHeader>
                 <CardTitle asChild>
-                  <h2 className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
-                    ICRLHF
-                  </h2>
+                  <h2 className="font-heading text-xl tracking-tight text-foreground">ICRLHF</h2>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -353,7 +340,7 @@ export default function LandingPage() {
             <Card className="border-border/70 bg-card shadow-none md:col-span-7">
               <CardHeader>
                 <CardTitle asChild>
-                  <h2 className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
+                  <h2 className="font-heading text-xl tracking-tight text-foreground">
                     Proven through Stanford research
                   </h2>
                 </CardTitle>
@@ -399,7 +386,7 @@ export default function LandingPage() {
             >
               <CardContent className="flex flex-col gap-5 py-6 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-2">
-                  <h2 className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
+                  <h2 className="font-heading text-2xl tracking-tight text-foreground">
                     Start building with ICRL
                   </h2>
                   <p className="text-sm leading-6 text-muted-foreground">
