@@ -108,7 +108,7 @@ export default function LandingPage() {
               </div>
               <div className="border border-border/60 bg-muted/30 p-3 text-foreground">
                 <Image
-                  src="/visuals/icrl-memory-loop.svg"
+                  src="/visuals/icrl-memory-loop.png"
                   alt="Diagram of ICRL trajectory memory loop"
                   width={1200}
                   height={720}
@@ -131,7 +131,7 @@ export default function LandingPage() {
               </p>
               <div className="border border-border/60 bg-muted/20 p-3 text-foreground">
                 <Image
-                  src="/visuals/icrl-runtime-surface.svg"
+                  src="/visuals/icrl-runtime-surface.png"
                   alt="Visualization of runtime reinforcement improving over steps"
                   width={1200}
                   height={720}
@@ -155,7 +155,7 @@ export default function LandingPage() {
             <CardContent className="space-y-4">
               <div className="border border-border/60 bg-muted/20 p-3 text-foreground">
                 <Image
-                  src="/visuals/icrl-self-improvement-grid.svg"
+                  src="/visuals/icrl-self-improvement-grid.png"
                   alt="Grid view of iterative self-improvement across tasks"
                   width={1200}
                   height={720}
