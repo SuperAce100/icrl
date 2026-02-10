@@ -1,73 +1,30 @@
 import Image from "next/image";
-import { ArrowRight, ArrowUpRight, BookOpen, Bot, Code2, Database, Package, Sparkles, Target } from "lucide-react";
+import { ArrowUpRight, BookOpen, BrainCircuit, Code2, Package, Sparkles, Target, Terminal } from "lucide-react";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { WorkflowHalftone } from "@/components/workflow-halftone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WorkflowHalftone } from "@/components/workflow-halftone";
 
-const workflowStages = [
-  {
-    step: "Step 1",
-    title: "Capture successful trajectories",
-    body: "Store verified trajectories from real task completions as reusable memory.",
-    image: "/visuals/workflow-capture-natural.png",
-    alt: "Workflow stage for capturing successful trajectories",
-  },
-  {
-    step: "Step 2",
-    title: "Retrieve matching prior wins",
-    body: "Select relevant successful traces at the exact point an agent needs guidance.",
-    image: "/visuals/workflow-retrieve-natural.png",
-    alt: "Workflow stage for retrieving relevant successful trajectories",
-  },
-  {
-    step: "Step 3",
-    title: "Reinforce instantly at runtime",
-    body: "Condition the next action on proven context so behavior improves on the next attempt.",
-    image: "/visuals/workflow-reinforce-natural.png",
-    alt: "Workflow stage for instant in-context reinforcement",
-  },
-];
+const flourishes = {
+  capture: "/visuals/workflow-capture-natural.png",
+  retrieve: "/visuals/workflow-retrieve-natural.png",
+  reinforce: "/visuals/workflow-reinforce-natural.png",
+};
 
 const useCases = [
-  {
-    title: "Support + Ops agents",
-    body: "Recurring workflows become higher quality after each successful run.",
-    icon: Bot,
-  },
-  {
-    title: "Code and DevOps copilots",
-    body: "Fix patterns and command sequences are reused without retraining cycles.",
-    icon: Code2,
-  },
-  {
-    title: "Data and SQL assistants",
-    body: "Iterative query tasks improve in-context as outcomes are curated.",
-    icon: Database,
-  },
+  "Support and operations agents for repeated workflows",
+  "Coding and DevOps copilots with recurring fix patterns",
+  "Data and SQL assistants in iterative query loops",
+  "Browser and API automation with repeatable flow steps",
 ];
 
-const comparisons = [
-  {
-    label: "ICRL",
-    points: [
-      "Reinforcement during runtime",
-      "Uses successful trajectories as memory",
-      "No policy training infrastructure required",
-      "Adapts immediately to repeated tasks",
-    ],
-  },
-  {
-    label: "Traditional RL",
-    points: [
-      "Improvement after training cycles",
-      "Requires optimization over model weights",
-      "Higher infra and experimentation overhead",
-      "Slower feedback loop from success to behavior",
-    ],
-  },
+const rlDiff = [
+  "ICRL reinforces behavior at runtime, not after training cycles",
+  "ICRL reuses successful trajectories instead of policy optimization",
+  "ICRL avoids heavyweight RL infra and delayed retraining loops",
+  "ICRL adapts immediately to repeated tasks in production",
 ];
 
 export default function LandingPage() {
@@ -75,219 +32,152 @@ export default function LandingPage() {
     <main className="min-h-screen bg-background">
       <SiteHeader />
 
-      <section className="mx-auto max-w-6xl px-6 pb-10 pt-12 md:pt-16">
-        <div className="mx-auto max-w-3xl space-y-5 text-center">
+      <section className="mx-auto max-w-6xl px-6 pb-10 pt-10 md:pt-14">
+        <div className="mx-auto max-w-3xl space-y-4 text-center">
           <div className="flex items-center justify-center">
             <Image src="/logo_hero_light.svg" alt="ICRL" width={280} height={24} className="dark:hidden" priority />
             <Image src="/logo_hero_dark.svg" alt="ICRL" width={280} height={24} className="hidden dark:block" priority />
           </div>
-          <h1 className="font-[family-name:var(--font-archivo)] text-balance text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl md:text-5xl">
-            Instant reinforcement learning for production agents.
-          </h1>
-          <p className="text-balance text-base leading-7 text-muted-foreground sm:text-lg">
-            ICRL turns successful trajectories into reusable in-context memory, so agents improve right away instead of
-            waiting for retraining.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Button asChild>
-              <a href="https://github.com/SuperAce100/icrl/tree/main/icrl-ts" target="_blank" rel="noreferrer noopener">
-                <Sparkles className="size-4" />
-                Install package
-              </a>
-            </Button>
-            <Button asChild variant="ghost">
-              <a href="https://www.npmjs.com/package/icrl" target="_blank" rel="noreferrer noopener">
-                <Package className="size-4" />
-                npm
-              </a>
-            </Button>
-            <Button asChild variant="ghost">
-              <a href="https://pypi.org/project/icrl/" target="_blank" rel="noreferrer noopener">
-                <Package className="size-4" />
-                PyPI
-              </a>
-            </Button>
-            <Button asChild variant="ghost">
-              <a href="https://arxiv.org/abs/2505.00234" target="_blank" rel="noreferrer noopener">
-                <BookOpen className="size-4" />
-                Read paper
-              </a>
-            </Button>
-          </div>
+          <p className="text-sm leading-6 text-muted-foreground">In-Context Reinforcement Learning for production agents</p>
         </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-6 pb-20">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:auto-rows-[minmax(180px,auto)]">
-          <Card className="border-primary/60 bg-card shadow-none md:col-span-12">
-            <CardHeader>
-              <CardTitle className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
-                Visual workflow: how ICRL improves agents immediately
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="hidden items-center gap-3 text-[11px] uppercase tracking-[0.08em] text-muted-foreground md:flex">
-                <span>Capture</span>
-                <ArrowRight className="size-3 text-primary" />
-                <span>Retrieve</span>
-                <ArrowRight className="size-3 text-primary" />
-                <span>Reinforce</span>
-              </div>
-              <div className="grid gap-4 md:grid-cols-3">
-                {workflowStages.map((stage) => (
-                  <div key={stage.title} className="relative overflow-hidden border border-border/60 bg-muted/20 p-4">
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24" style={{ maskImage: "linear-gradient(to top, black, transparent)" }}>
-                      <WorkflowHalftone image={stage.image} label={stage.alt} fitMode="fill" className="h-full opacity-55" />
-                    </div>
-                    <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 border border-primary/40 bg-background/30" />
-                    <div className="pointer-events-none absolute inset-0 bg-background/70" />
-                    <div className="relative space-y-3">
-                      <p className="inline-flex border border-primary/60 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
-                        {stage.step}
-                      </p>
-                      <p className="text-sm font-semibold text-foreground">{stage.title}</p>
-                      <p className="text-sm leading-6 text-muted-foreground">{stage.body}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-border/70 bg-card shadow-none md:col-span-5">
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24" style={{ maskImage: "linear-gradient(to top, black, transparent)" }}>
-              <WorkflowHalftone
-                image={workflowStages[0].image}
-                label="Decorative flourish for ICRL card"
-                fitMode="fill"
-                className="h-full opacity-40"
-              />
+          <Card className="relative overflow-hidden border-primary/60 bg-card shadow-none md:col-span-6">
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-24" style={{ maskImage: "linear-gradient(to left, black, transparent)" }}>
+              <WorkflowHalftone image={flourishes.capture} label="What is ICRL flourish" fitMode="fill" className="h-full opacity-45" />
             </div>
             <div className="pointer-events-none absolute inset-0 bg-background/80" />
             <CardHeader>
-              <CardTitle className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
-                Why teams choose ICRL
+              <CardTitle className="relative font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
+                What is ICRL
               </CardTitle>
             </CardHeader>
             <CardContent className="relative space-y-3">
               <p className="text-sm leading-6 text-muted-foreground">
-                It delivers self-improvement at inference time. You keep your model stack and gain a fast reinforcement
-                mechanism directly in product workflows.
+                ICRL stores successful trajectories and retrieves them at decision time so agents can reinforce behavior instantly.
+                It turns each production success into usable context for the very next related task.
               </p>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Immediate feedback-to-behavior loop</li>
-                <li>No delayed policy updates</li>
-                <li>Works with existing model APIs</li>
+              <p className="text-sm leading-6 text-muted-foreground">The result is immediate self-improvement without waiting for retraining.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-border/70 bg-card shadow-none md:col-span-6">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24" style={{ maskImage: "linear-gradient(to top, black, transparent)" }}>
+              <WorkflowHalftone image={flourishes.retrieve} label="ICRL vs traditional RL flourish" fitMode="fill" className="h-full opacity-40" />
+            </div>
+            <div className="pointer-events-none absolute inset-0 bg-background/80" />
+            <CardHeader>
+              <CardTitle className="relative font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
+                ICRL vs traditional RL
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative">
+              <ul className="space-y-2 text-sm leading-6 text-muted-foreground">
+                {rlDiff.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
               </ul>
             </CardContent>
           </Card>
 
           <Card className="relative overflow-hidden border-border/70 bg-card shadow-none md:col-span-7">
-            <div
-              className="pointer-events-none absolute right-0 top-0 h-28 w-44"
-              style={{ maskImage: "linear-gradient(to bottom left, black, transparent)" }}
-            >
-              <WorkflowHalftone
-                image={workflowStages[1].image}
-                label="Decorative flourish for comparison card"
-                fitMode="fill"
-                className="h-full opacity-45"
-              />
+            <div className="pointer-events-none absolute left-0 top-0 h-24 w-28" style={{ maskImage: "linear-gradient(to bottom right, black, transparent)" }}>
+              <WorkflowHalftone image={flourishes.reinforce} label="Use case flourish" fitMode="fill" className="h-full opacity-40" />
             </div>
             <div className="pointer-events-none absolute inset-0 bg-background/80" />
             <CardHeader>
-              <CardTitle className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
-                ICRL vs traditional RL
+              <CardTitle className="relative font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
+                Common use cases
               </CardTitle>
             </CardHeader>
-            <CardContent className="relative grid gap-4 sm:grid-cols-2">
-              {comparisons.map((group) => (
-                <div key={group.label} className="space-y-2 border border-border/60 bg-muted/20 p-4">
-                  <p className="text-sm font-semibold uppercase tracking-[0.08em] text-foreground">{group.label}</p>
-                  <ul className="space-y-1.5 text-sm leading-6 text-muted-foreground">
-                    {group.points.map((point) => (
-                      <li key={point}>{point}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden border-border/70 bg-card shadow-none md:col-span-7">
-            <div className="pointer-events-none absolute inset-y-0 left-0 w-20" style={{ maskImage: "linear-gradient(to right, black, transparent)" }}>
-              <WorkflowHalftone
-                image={workflowStages[2].image}
-                label="Decorative flourish for use case card"
-                fitMode="fill"
-                className="h-full opacity-45"
-              />
-            </div>
-            <div className="pointer-events-none absolute inset-0 bg-background/80" />
-            <CardHeader>
-              <CardTitle className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
-                Instant self-improvement use cases
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative space-y-4">
-              {useCases.map((item) => (
-                <div key={item.title} className="border border-border/60 bg-muted/20 p-4">
-                  <div className="mb-2 flex items-center gap-2">
-                    <item.icon className="size-4 text-primary" />
-                    <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                  </div>
-                  <p className="text-sm leading-6 text-muted-foreground">{item.body}</p>
-                </div>
-              ))}
+            <CardContent className="relative">
+              <ul className="space-y-2 text-sm leading-6 text-muted-foreground">
+                {useCases.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
 
           <Card className="relative overflow-hidden border-border/70 bg-card shadow-none md:col-span-5">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-20" style={{ maskImage: "linear-gradient(to bottom, black, transparent)" }}>
-              <WorkflowHalftone
-                image={workflowStages[1].image}
-                label="Decorative flourish for package links"
-                fitMode="fill"
-                className="h-full opacity-35"
-              />
+              <WorkflowHalftone image={flourishes.capture} label="CLI flourish" fitMode="fill" className="h-full opacity-35" />
             </div>
             <div className="pointer-events-none absolute inset-0 bg-background/80" />
             <CardHeader>
-              <CardTitle className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
-                Published packages
+              <CardTitle className="relative font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
+                CLI
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative space-y-2">
+              <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                <Terminal className="size-4 text-primary" /> Python + TypeScript workflow support
+              </p>
+              <pre className="border border-border/60 bg-muted/20 p-3 font-mono text-xs leading-6 text-foreground">{`pip install icrl\nbun add icrl\nicrl --help`}</pre>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-border/70 bg-card shadow-none md:col-span-5">
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-20" style={{ maskImage: "linear-gradient(to left, black, transparent)" }}>
+              <WorkflowHalftone image={flourishes.retrieve} label="ICRLHF flourish" fitMode="fill" className="h-full opacity-40" />
+            </div>
+            <div className="pointer-events-none absolute inset-0 bg-background/80" />
+            <CardHeader>
+              <CardTitle className="relative font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
+                ICRLHF
               </CardTitle>
             </CardHeader>
             <CardContent className="relative space-y-3">
+              <p className="inline-flex items-center gap-2 text-sm text-foreground">
+                <BrainCircuit className="size-4 text-primary" />
+                In-Context RL from Human Feedback
+              </p>
+              <p className="text-sm leading-6 text-muted-foreground">
+                Curate preferred trajectories and retrieval priorities from human feedback, then reinforce better behavior in
+                context without retraining your base model.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-border/70 bg-card shadow-none md:col-span-7">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24" style={{ maskImage: "linear-gradient(to top, black, transparent)" }}>
+              <WorkflowHalftone image={flourishes.reinforce} label="Stanford research flourish" fitMode="fill" className="h-full opacity-40" />
+            </div>
+            <div className="pointer-events-none absolute inset-0 bg-background/80" />
+            <CardHeader>
+              <CardTitle className="relative font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
+                Proven through Stanford research
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative space-y-3">
+              <p className="text-sm leading-6 text-muted-foreground">
+                The Stanford paper demonstrates strong gains across ALFWorld, InterCode-SQL, and Wordcraft by converting
+                successful runs into immediate in-context reinforcement.
+              </p>
               <a
-                href="https://www.npmjs.com/package/icrl"
+                href="https://arxiv.org/abs/2505.00234"
                 target="_blank"
                 rel="noreferrer noopener"
-                className="flex items-center justify-between border border-border/60 bg-muted/20 px-4 py-3 text-sm text-foreground transition-colors hover:bg-muted/40"
+                className="inline-flex items-center gap-2 text-sm text-foreground hover:text-primary"
               >
-                <span>npm: `icrl`</span>
-                <ArrowUpRight className="size-4 text-primary" />
-              </a>
-              <a
-                href="https://pypi.org/project/icrl/"
-                target="_blank"
-                rel="noreferrer noopener"
-                className="flex items-center justify-between border border-border/60 bg-muted/20 px-4 py-3 text-sm text-foreground transition-colors hover:bg-muted/40"
-              >
-                <span>PyPI: `icrl`</span>
-                <ArrowUpRight className="size-4 text-primary" />
+                <BookOpen className="size-4" />
+                Read the original research
+                <ArrowUpRight className="size-4" />
               </a>
             </CardContent>
           </Card>
 
-          <Card className="border-primary/60 bg-card shadow-none md:col-span-12">
-            <CardContent className="flex flex-col gap-5 py-6 md:flex-row md:items-center md:justify-between">
+          <Card className="relative overflow-hidden border-primary/60 bg-card shadow-none md:col-span-12">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24" style={{ maskImage: "linear-gradient(to top, black, transparent)" }}>
+              <WorkflowHalftone image={flourishes.capture} label="CTA flourish" fitMode="fill" className="h-full opacity-35" />
+            </div>
+            <div className="pointer-events-none absolute inset-0 bg-background/80" />
+            <CardContent className="relative flex flex-col gap-5 py-6 md:flex-row md:items-center md:justify-between">
               <div className="space-y-2">
-                <p className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
-                  Build agents that learn while they run.
-                </p>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  Start with the TypeScript package, then connect your trajectory store and retrieval policy.
-                </p>
+                <p className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">Start building with ICRL</p>
+                <p className="text-sm leading-6 text-muted-foreground">Ship self-improving agents with instant reinforcement in production.</p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <Button asChild>
@@ -299,19 +189,25 @@ export default function LandingPage() {
                 <Button asChild variant="ghost">
                   <a href="https://www.npmjs.com/package/icrl" target="_blank" rel="noreferrer noopener">
                     <Package className="size-4" />
-                    npm package
+                    npm
                   </a>
                 </Button>
                 <Button asChild variant="ghost">
                   <a href="https://pypi.org/project/icrl/" target="_blank" rel="noreferrer noopener">
                     <Package className="size-4" />
-                    PyPI package
+                    PyPI
                   </a>
                 </Button>
                 <Button asChild variant="ghost">
-                  <a href="https://arxiv.org/abs/2505.00234" target="_blank" rel="noreferrer noopener">
-                    <ArrowUpRight className="size-4" />
-                    Original paper
+                  <a href="https://github.com/SuperAce100/icrl/tree/main/icrl-ts" target="_blank" rel="noreferrer noopener">
+                    <Code2 className="size-4" />
+                    TS package
+                  </a>
+                </Button>
+                <Button asChild variant="ghost">
+                  <a href="https://github.com/SuperAce100/icrl" target="_blank" rel="noreferrer noopener">
+                    <Sparkles className="size-4" />
+                    GitHub
                   </a>
                 </Button>
               </div>
