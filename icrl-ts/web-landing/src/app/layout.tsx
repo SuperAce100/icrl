@@ -20,6 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://icrl.dev"),
   title: "ICRL | In-Context Reinforcement Learning",
   description:
     "A one-page explainer of the ICRL algorithm: bootstrap, retrieve, generate, and curate.",
