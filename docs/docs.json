@@ -63,7 +63,6 @@
               "guides/prompt-templates",
               "guides/custom-environments",
               "guides/custom-llm-providers",
-              "guides/publishing-to-pypi",
               "guides/batch-training"
             ]
           },
