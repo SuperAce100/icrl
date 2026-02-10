@@ -63,7 +63,6 @@
               "guides/prompt-templates",
               "guides/custom-environments",
               "guides/custom-llm-providers",
-              "guides/publishing-to-pypi",
               "guides/batch-training"
             ]
           },
@@ -119,7 +118,7 @@
         {
           "anchor": "PyPI",
           "icon": "python",
-          "href": "https://pypi.org/project/icrl/"
+          "href": "https://pypi.org/project/icrl-py/"
         }
         ]
     }
