@@ -355,26 +355,23 @@ export default function LandingPage() {
               <CardHeader>
                 <CardTitle asChild>
                   <h2 className="font-heading text-xl tracking-tight text-foreground">
-                    A coding agent that learns your codebase
+                    Codebase specific agents
                   </h2>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-2">
                 <p className="text-sm leading-6 text-muted-foreground">
-                  ICRL ships with a built-in coding agent you can run from your terminal — like
-                  Claude Code or Codex, but one that{" "}
-                  <span className="font-semibold text-foreground">gets better over time</span>.
-                  Every task it completes successfully becomes a reference for future work, so it
-                  builds up project-specific knowledge that generic assistants never develop.
+                  One thing ICRL enables is to specialize an agent to a specific codebase. Using the
+                  ICRL CLI, you can launch a terminal UI like Claude Code or Codex that creates an
+                  interactive coding assistant in your shell. Unlike static assistants, it{" "}
+                  <span className="font-semibold text-foreground">gets better over time</span> as
+                  successful trajectories are stored and retrieved for future tasks.
                 </p>
-                <pre className="border border-border/60 bg-muted/20 p-3 font-mono text-xs leading-6 text-foreground">{`icrl run "fix failing tests" --compare
-icrl run "add input validation to the API"
-icrl db stats`}</pre>
-                <p className="text-xs leading-5 text-muted-foreground">
+                <pre className="border border-border/60 bg-muted/20 p-3 font-mono text-xs text-foreground">{`uv run icrl chat`}</pre>
+                <p className="text-sm leading-6 text-muted-foreground">
                   The more you use it, the better it gets at understanding your project&apos;s
-                  patterns, conventions, and architecture. No fine-tuning, no prompt engineering —
-                  just accumulated experience from successful trajectories in{" "}
-                  <span className="font-mono text-foreground">.icrl/trajectories</span>.
+                  patterns, conventions, and architecture, like a custom model was finetuned to your
+                  codebase.
                 </p>
               </CardContent>
             </Card>
@@ -390,10 +387,9 @@ icrl db stats`}</pre>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm leading-6 text-muted-foreground">
-                  <span className="font-semibold text-foreground">ICRLHF</span> extends ICRL with
-                  human feedback. Instead of only learning from task success, agents can learn from
-                  any signal you provide — preferences, corrections, approvals, or rejections. These
-                  signals become durable training data retrieved at inference time.
+                  ICRL can be used with any feedback signal, not just task success. With ICRLHF,
+                  agents can learn from human preferences in real time, reacting to the first thumbs
+                  up or down signal they receive.
                 </p>
                 <div className="grid gap-2">
                   {feedbackSignals.map((signal) => (
@@ -419,16 +415,15 @@ icrl db stats`}</pre>
               <CardHeader>
                 <CardTitle asChild>
                   <h2 className="font-heading text-xl tracking-tight text-foreground">
-                    Built by Stanford researchers, presented at NeurIPS
+                    Built out of academic research
                   </h2>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm leading-6 text-muted-foreground">
-                  This package was built by the authors of the original ICRL research at{" "}
-                  <span className="font-semibold text-foreground">Stanford Graphics Lab</span>. The
-                  core ideas were validated in two peer-reviewed papers and presented at{" "}
-                  <span className="font-semibold text-foreground">NeurIPS</span>.
+                  This package was built by Stanford Graphics Lab researchers who have been
+                  developing ICRL since 2024. You can read more about the research in the following
+                  papers:
                 </p>
                 <div className="space-y-3">
                   <div className="space-y-2">
@@ -436,11 +431,12 @@ icrl db stats`}</pre>
                       href="https://arxiv.org/abs/2505.00234"
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="block border border-border/60 bg-muted/20 p-3 space-y-1.5 transition-colors hover:border-primary/40 hover:bg-muted/30"
+                      className="block border border-border/60 bg-muted/20 p-3 space-y-1.5 hover:border-primary/80"
                     >
                       <p className="text-xs font-semibold text-foreground">
                         Self-Generated In-Context Examples Improve LLM Agents for Sequential
-                        Decision-Making Tasks
+                        Decision-Making Tasks{" "}
+                        <span className="text-muted-foreground italic">(NeurIPS 2025)</span>
                       </p>
                       <p className="text-[11px] leading-4 text-muted-foreground">
                         Converting successful trajectories into retrieval-time reinforcement
@@ -473,13 +469,16 @@ icrl db stats`}</pre>
                       href="https://arxiv.org/abs/2512.02543"
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="block border border-border/60 bg-muted/20 p-3 space-y-1.5 transition-colors hover:border-primary/40 hover:bg-muted/30"
+                      className="block border border-border/60 bg-muted/20 p-3 space-y-1.5 hover:border-primary/80"
                     >
                       <p className="text-xs font-semibold text-foreground">
-                        In-Context Distillation with Self-Consistency Cascades
+                        In-Context Distillation with Self-Consistency Cascades: A Simple,
+                        Training-Free Way to Reduce LLM Agent Costs
                       </p>
                       <p className="text-[11px] leading-4 text-muted-foreground">
-                        Training-free cost reduction. Amortizes after 843 episodes.
+                        Training-free cost reduction by using a larger model to generate in-context
+                        examples for a smaller model. GPT-4.1-mini with distillation exceeds Claude
+                        4.5 Sonnet performance.
                       </p>
                       <span className="inline-flex items-center gap-1.5 text-xs text-foreground">
                         <BookOpen className="size-3.5" />
