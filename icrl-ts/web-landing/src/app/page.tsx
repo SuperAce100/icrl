@@ -1,16 +1,33 @@
 import Image from "next/image";
-import { ArrowUpRight, BookOpen, Bot, Code2, Database, Gauge, Sparkles, Target } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, Bot, Code2, Database, Package, Sparkles, Target } from "lucide-react";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const improvementSteps = [
-  "Capture successful trajectories from real runs.",
-  "Retrieve the right trajectories at decision time.",
-  "Condition the next response on proven behavior.",
-  "Improve quality immediately on the next similar task.",
+const workflowStages = [
+  {
+    step: "Step 1",
+    title: "Capture successful trajectories",
+    body: "Store verified trajectories from real task completions as reusable memory.",
+    image: "/visuals/icrl-memory-loop.png",
+    alt: "Workflow stage for capturing successful trajectories",
+  },
+  {
+    step: "Step 2",
+    title: "Retrieve matching prior wins",
+    body: "Select relevant successful traces at the exact point an agent needs guidance.",
+    image: "/visuals/icrl-self-improvement-grid.png",
+    alt: "Workflow stage for retrieving relevant successful trajectories",
+  },
+  {
+    step: "Step 3",
+    title: "Reinforce instantly at runtime",
+    body: "Condition the next action on proven context so behavior improves on the next attempt.",
+    image: "/visuals/icrl-runtime-surface.png",
+    alt: "Workflow stage for instant in-context reinforcement",
+  },
 ];
 
 const useCases = [
@@ -78,6 +95,18 @@ export default function LandingPage() {
               </a>
             </Button>
             <Button asChild variant="ghost">
+              <a href="https://www.npmjs.com/package/icrl" target="_blank" rel="noreferrer noopener">
+                <Package className="size-4" />
+                npm
+              </a>
+            </Button>
+            <Button asChild variant="ghost">
+              <a href="https://pypi.org/project/icrl/" target="_blank" rel="noreferrer noopener">
+                <Package className="size-4" />
+                PyPI
+              </a>
+            </Button>
+            <Button asChild variant="ghost">
               <a href="https://arxiv.org/abs/2505.00234" target="_blank" rel="noreferrer noopener">
                 <BookOpen className="size-4" />
                 Read paper
@@ -89,55 +118,48 @@ export default function LandingPage() {
 
       <section className="mx-auto max-w-6xl px-6 pb-20">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:auto-rows-[minmax(180px,auto)]">
-          <Card className="border-primary/60 bg-card shadow-none md:col-span-8 md:row-span-2">
+          <Card className="border-primary/60 bg-card shadow-none md:col-span-12">
             <CardHeader>
               <CardTitle className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
-                The ICRL learning loop
+                Visual workflow: how ICRL improves agents immediately
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-6 md:grid-cols-[1fr_1.15fr] md:items-center">
-              <div className="space-y-3">
-                {improvementSteps.map((step, index) => (
-                  <div key={step} className="flex items-start gap-3">
-                    <span className="mt-0.5 inline-flex size-5 items-center justify-center border border-primary/60 text-[11px] font-semibold text-primary">
-                      {index + 1}
-                    </span>
-                    <p className="text-sm leading-6 text-muted-foreground">{step}</p>
+            <CardContent className="space-y-4">
+              <div className="hidden items-center gap-3 text-[11px] uppercase tracking-[0.08em] text-muted-foreground md:flex">
+                <span>Capture</span>
+                <ArrowRight className="size-3 text-primary" />
+                <span>Retrieve</span>
+                <ArrowRight className="size-3 text-primary" />
+                <span>Reinforce</span>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                {workflowStages.map((stage) => (
+                  <div key={stage.title} className="space-y-3 border border-border/60 bg-muted/20 p-3">
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">{stage.step}</p>
+                      <p className="text-sm font-semibold text-foreground">{stage.title}</p>
+                    </div>
+                    <div className="border border-border/60 bg-background p-2 text-foreground">
+                      <Image src={stage.image} alt={stage.alt} width={1200} height={720} className="h-auto w-full" />
+                    </div>
+                    <p className="text-sm leading-6 text-muted-foreground">{stage.body}</p>
                   </div>
                 ))}
-              </div>
-              <div className="border border-border/60 bg-muted/30 p-3 text-foreground">
-                <Image
-                  src="/visuals/icrl-memory-loop.png"
-                  alt="Diagram of ICRL trajectory memory loop"
-                  width={1200}
-                  height={720}
-                  className="h-auto w-full"
-                />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border/70 bg-card shadow-none md:col-span-4 md:row-span-2">
+          <Card className="border-border/70 bg-card shadow-none md:col-span-5">
             <CardHeader>
               <CardTitle className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
                 Why teams choose ICRL
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <p className="text-sm leading-6 text-muted-foreground">
                 It delivers self-improvement at inference time. You keep your model stack and gain a fast reinforcement
                 mechanism directly in product workflows.
               </p>
-              <div className="border border-border/60 bg-muted/20 p-3 text-foreground">
-                <Image
-                  src="/visuals/icrl-runtime-surface.png"
-                  alt="Visualization of runtime reinforcement improving over steps"
-                  width={1200}
-                  height={720}
-                  className="h-auto w-full"
-                />
-              </div>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>Immediate feedback-to-behavior loop</li>
                 <li>No delayed policy updates</li>
@@ -152,17 +174,7 @@ export default function LandingPage() {
                 ICRL vs traditional RL
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="border border-border/60 bg-muted/20 p-3 text-foreground">
-                <Image
-                  src="/visuals/icrl-self-improvement-grid.png"
-                  alt="Grid view of iterative self-improvement across tasks"
-                  width={1200}
-                  height={720}
-                  className="h-auto w-full"
-                />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+            <CardContent className="grid gap-4 sm:grid-cols-2">
               {comparisons.map((group) => (
                 <div key={group.label} className="space-y-2 border border-border/60 bg-muted/20 p-4">
                   <p className="text-sm font-semibold uppercase tracking-[0.08em] text-foreground">{group.label}</p>
@@ -173,11 +185,10 @@ export default function LandingPage() {
                   </ul>
                 </div>
               ))}
-              </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border/70 bg-card shadow-none md:col-span-5">
+          <Card className="border-border/70 bg-card shadow-none md:col-span-7">
             <CardHeader>
               <CardTitle className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
                 Instant self-improvement use cases
@@ -193,6 +204,34 @@ export default function LandingPage() {
                   <p className="text-sm leading-6 text-muted-foreground">{item.body}</p>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/70 bg-card shadow-none md:col-span-5">
+            <CardHeader>
+              <CardTitle className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
+                Published packages
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <a
+                href="https://www.npmjs.com/package/icrl"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="flex items-center justify-between border border-border/60 bg-muted/20 px-4 py-3 text-sm text-foreground transition-colors hover:bg-muted/40"
+              >
+                <span>npm: `icrl`</span>
+                <ArrowUpRight className="size-4 text-primary" />
+              </a>
+              <a
+                href="https://pypi.org/project/icrl/"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="flex items-center justify-between border border-border/60 bg-muted/20 px-4 py-3 text-sm text-foreground transition-colors hover:bg-muted/40"
+              >
+                <span>PyPI: `icrl`</span>
+                <ArrowUpRight className="size-4 text-primary" />
+              </a>
             </CardContent>
           </Card>
 
@@ -214,9 +253,15 @@ export default function LandingPage() {
                   </a>
                 </Button>
                 <Button asChild variant="ghost">
-                  <a href="https://github.com/SuperAce100/icrl/tree/main/icrl-ts" target="_blank" rel="noreferrer noopener">
-                    <Gauge className="size-4" />
-                    View package
+                  <a href="https://www.npmjs.com/package/icrl" target="_blank" rel="noreferrer noopener">
+                    <Package className="size-4" />
+                    npm package
+                  </a>
+                </Button>
+                <Button asChild variant="ghost">
+                  <a href="https://pypi.org/project/icrl/" target="_blank" rel="noreferrer noopener">
+                    <Package className="size-4" />
+                    PyPI package
                   </a>
                 </Button>
                 <Button asChild variant="ghost">
