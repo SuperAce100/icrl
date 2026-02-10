@@ -82,8 +82,8 @@ const result = await agent.run(env, "Another task");
 Demo-ready (real API) examples:
 
 ```bash
-bun install
-bun run examples:run
+npm install
+npm run examples:run
 ```
 
 Includes use-case demos:
@@ -93,19 +93,19 @@ Includes use-case demos:
 Web integration demo (uses `web-example`'s Convex adapter):
 
 ```bash
-bun run example:web
+npm run example:web
 ```
 
 Run all demos including web storage integration:
 
 ```bash
-bun run examples:run:all
+npm run examples:run:all
 ```
 
 Mock/local deterministic verification scripts:
 
 ```bash
-bun run tests:run
+npm run tests:run
 ```
 
 Details:
@@ -299,6 +299,43 @@ const provider = new AnthropicProvider(new Anthropic(), {
 │   ├── <uuid-2>.json
 │   └── ...
 └── curation.json
+```
+
+## Publishing (Maintainers)
+
+Publish from the `icrl-ts` directory after merging to `main`.
+
+1. Ensure you are logged into npm:
+
+```bash
+npm whoami
+# if needed:
+npm login
+```
+
+2. Install dependencies and run release checks:
+
+```bash
+npm install
+npm run release:check
+```
+
+3. Bump the package version (choose patch/minor/major):
+
+```bash
+npm version patch
+```
+
+4. Publish the package:
+
+```bash
+npm publish --access public
+```
+
+5. Push the version commit and tag created by `npm version`:
+
+```bash
+git push origin main --follow-tags
 ```
 
 ## License
