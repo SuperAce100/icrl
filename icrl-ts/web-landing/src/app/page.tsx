@@ -1,51 +1,55 @@
-import { ArrowUpRight, BookOpen, Database, Eye, PenSquare, Rocket, Sparkles, Target } from "lucide-react";
+import Image from "next/image";
+import { ArrowUpRight, BookOpen, Bot, Code2, Database, Gauge, Sparkles, Target } from "lucide-react";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const highlights = [
-  {
-    title: "Instant Learning Loop",
-    body: "Every successful trajectory is immediately reusable context for future tasks.",
-    icon: PenSquare,
-    featured: true,
-  },
-  {
-    title: "Reliable Inference",
-    body: "Improve output quality without waiting on heavyweight retraining cycles.",
-    icon: Eye,
-    featured: false,
-  },
-];
-
-const benefits = [
-  {
-    title: "Ship faster",
-    body: "Agent quality improves while your product is in use, not only after model retraining.",
-  },
-  {
-    title: "Lower complexity",
-    body: "Use trajectory memory and retrieval instead of a full RL pipeline and training infra.",
-  },
-  {
-    title: "Higher relevance",
-    body: "Examples come from your own successful runs, so guidance matches your real tasks.",
-  },
+const improvementSteps = [
+  "Capture successful trajectories from real runs.",
+  "Retrieve the right trajectories at decision time.",
+  "Condition the next response on proven behavior.",
+  "Improve quality immediately on the next similar task.",
 ];
 
 const useCases = [
-  "Support and operations agents that solve repeated workflows",
-  "Coding and DevOps copilots with recurring command and fix patterns",
-  "SQL and data assistants in iterative query-and-feedback tasks",
-  "Browser and API automation where successful flows repeat",
+  {
+    title: "Support + Ops agents",
+    body: "Recurring workflows become higher quality after each successful run.",
+    icon: Bot,
+  },
+  {
+    title: "Code and DevOps copilots",
+    body: "Fix patterns and command sequences are reused without retraining cycles.",
+    icon: Code2,
+  },
+  {
+    title: "Data and SQL assistants",
+    body: "Iterative query tasks improve in-context as outcomes are curated.",
+    icon: Database,
+  },
 ];
 
-const benchmarkRows = [
-  { name: "ALFWorld", result: "73% → 93%" },
-  { name: "InterCode-SQL", result: "75% → 82%" },
-  { name: "Wordcraft", result: "55% → 72%" },
+const comparisons = [
+  {
+    label: "ICRL",
+    points: [
+      "Reinforcement during runtime",
+      "Uses successful trajectories as memory",
+      "No policy training infrastructure required",
+      "Adapts immediately to repeated tasks",
+    ],
+  },
+  {
+    label: "Traditional RL",
+    points: [
+      "Improvement after training cycles",
+      "Requires optimization over model weights",
+      "Higher infra and experimentation overhead",
+      "Slower feedback loop from success to behavior",
+    ],
+  },
 ];
 
 export default function LandingPage() {
@@ -53,23 +57,27 @@ export default function LandingPage() {
     <main className="min-h-screen bg-background">
       <SiteHeader />
 
-      <section className="mx-auto max-w-6xl px-6 pb-16 pt-16 md:pt-24">
-        <div className="max-w-4xl space-y-6">
+      <section className="mx-auto max-w-6xl px-6 pb-10 pt-12 md:pt-16">
+        <div className="mx-auto max-w-3xl space-y-5 text-center">
+          <div className="flex items-center justify-center">
+            <Image src="/logo_hero_light.svg" alt="ICRL" width={280} height={24} className="dark:hidden" priority />
+            <Image src="/logo_hero_dark.svg" alt="ICRL" width={280} height={24} className="hidden dark:block" priority />
+          </div>
           <h1 className="font-[family-name:var(--font-archivo)] text-balance text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl md:text-5xl">
-            ICRL turns successful agent runs into immediate reinforcement.
+            Instant reinforcement learning for production agents.
           </h1>
-          <p className="max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg">
-            Build self-improving LLM agents in production. ICRL stores successful trajectories, retrieves them at the
-            right decision points, and improves behavior on the next related task.
+          <p className="text-balance text-base leading-7 text-muted-foreground sm:text-lg">
+            ICRL turns successful trajectories into reusable in-context memory, so agents improve right away instead of
+            waiting for retraining.
           </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button asChild size="lg">
-              <a href="#get-started">
-                Get started
-                <Rocket className="size-4" />
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Button asChild>
+              <a href="https://github.com/SuperAce100/icrl/tree/main/icrl-ts" target="_blank" rel="noreferrer noopener">
+                <Sparkles className="size-4" />
+                Install package
               </a>
             </Button>
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="ghost">
               <a href="https://arxiv.org/abs/2505.00234" target="_blank" rel="noreferrer noopener">
                 <BookOpen className="size-4" />
                 Read paper
@@ -77,143 +85,150 @@ export default function LandingPage() {
             </Button>
           </div>
         </div>
-
-        <div className="mt-12 grid gap-6 md:grid-cols-2">
-          {highlights.map((item) => (
-            <Card
-              key={item.title}
-              className={
-                item.featured
-                  ? "border-primary bg-card shadow-none"
-                  : "border-border/70 bg-card/80 text-foreground shadow-none"
-              }
-            >
-              <CardHeader className="flex-row items-start justify-between gap-4">
-                <item.icon className="size-8 text-primary" />
-                <ArrowUpRight className="size-6 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <CardTitle className="font-[family-name:var(--font-archivo)] text-2xl font-semibold leading-tight tracking-tight text-foreground">
-                  {item.title}
-                </CardTitle>
-                <p className="text-base leading-7 text-muted-foreground">{item.body}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
       </section>
 
-      <section id="why" className="mx-auto max-w-6xl px-6 py-4">
-        <div className="grid gap-6 md:grid-cols-3">
-          {benefits.map((item) => (
-            <Card key={item.title} className="border-border/70 bg-card/80 shadow-none">
-              <CardHeader>
-                <CardTitle className="font-[family-name:var(--font-archivo)] text-2xl font-semibold leading-tight tracking-tight text-foreground">
-                  {item.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-base leading-7 text-muted-foreground">{item.body}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section id="use-cases" className="mx-auto max-w-6xl px-6 py-12">
-        <div className="space-y-6">
-          <h2 className="font-[family-name:var(--font-archivo)] text-3xl font-semibold tracking-tight text-foreground">
-            Use cases where ICRL wins
-          </h2>
-          <Card className="border-border/70 bg-card/80 shadow-none">
-            <CardContent className="pt-6">
-              <ul className="grid gap-4 md:grid-cols-2">
-                {useCases.map((item) => (
-                  <li key={item} className="text-base leading-7 text-muted-foreground">
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-6 py-4">
-        <div className="grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
-          <Card className="border-border/70 bg-card/80 shadow-none">
+      <section className="mx-auto max-w-6xl px-6 pb-20">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:auto-rows-[minmax(180px,auto)]">
+          <Card className="border-primary/60 bg-card shadow-none md:col-span-8 md:row-span-2">
             <CardHeader>
-              <CardTitle className="font-[family-name:var(--font-archivo)] text-3xl font-semibold tracking-tight text-foreground">
-                Why ICRL over traditional RL
+              <CardTitle className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
+                The ICRL learning loop
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-base leading-7 text-muted-foreground">
-                Traditional RL pipelines optimize weights over training cycles. ICRL improves behavior through
-                retrieval-ready memory, making reinforcement immediate and operationally simpler.
-              </p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="bg-muted/60 p-4 text-sm text-muted-foreground">No retraining lag</div>
-                <div className="bg-muted/60 p-4 text-sm text-muted-foreground">No policy pipeline overhead</div>
-                <div className="bg-muted/60 p-4 text-sm text-muted-foreground">Grounded in real successful runs</div>
-                <div className="bg-muted/60 p-4 text-sm text-muted-foreground">Works with existing model APIs</div>
+            <CardContent className="grid gap-6 md:grid-cols-[1fr_1.15fr] md:items-center">
+              <div className="space-y-3">
+                {improvementSteps.map((step, index) => (
+                  <div key={step} className="flex items-start gap-3">
+                    <span className="mt-0.5 inline-flex size-5 items-center justify-center border border-primary/60 text-[11px] font-semibold text-primary">
+                      {index + 1}
+                    </span>
+                    <p className="text-sm leading-6 text-muted-foreground">{step}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="border border-border/60 bg-muted/30 p-3 text-foreground">
+                <Image
+                  src="/visuals/icrl-memory-loop.svg"
+                  alt="Diagram of ICRL trajectory memory loop"
+                  width={1200}
+                  height={720}
+                  className="h-auto w-full"
+                />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border/70 bg-card/80 shadow-none">
+          <Card className="border-border/70 bg-card shadow-none md:col-span-4 md:row-span-2">
             <CardHeader>
-              <CardTitle className="font-[family-name:var(--font-archivo)] text-2xl font-semibold tracking-tight text-foreground">
-                Reported gains
+              <CardTitle className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
+                Why teams choose ICRL
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {benchmarkRows.map((row) => (
-                <div key={row.name} className="space-y-1">
-                  <p className="text-base font-semibold text-foreground">{row.name}</p>
-                  <p className="text-base text-muted-foreground">{row.result}</p>
+              <p className="text-sm leading-6 text-muted-foreground">
+                It delivers self-improvement at inference time. You keep your model stack and gain a fast reinforcement
+                mechanism directly in product workflows.
+              </p>
+              <div className="border border-border/60 bg-muted/20 p-3 text-foreground">
+                <Image
+                  src="/visuals/icrl-runtime-surface.svg"
+                  alt="Visualization of runtime reinforcement improving over steps"
+                  width={1200}
+                  height={720}
+                  className="h-auto w-full"
+                />
+              </div>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>Immediate feedback-to-behavior loop</li>
+                <li>No delayed policy updates</li>
+                <li>Works with existing model APIs</li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/70 bg-card shadow-none md:col-span-7">
+            <CardHeader>
+              <CardTitle className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
+                ICRL vs traditional RL
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="border border-border/60 bg-muted/20 p-3 text-foreground">
+                <Image
+                  src="/visuals/icrl-self-improvement-grid.svg"
+                  alt="Grid view of iterative self-improvement across tasks"
+                  width={1200}
+                  height={720}
+                  className="h-auto w-full"
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+              {comparisons.map((group) => (
+                <div key={group.label} className="space-y-2 border border-border/60 bg-muted/20 p-4">
+                  <p className="text-sm font-semibold uppercase tracking-[0.08em] text-foreground">{group.label}</p>
+                  <ul className="space-y-1.5 text-sm leading-6 text-muted-foreground">
+                    {group.points.map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
                 </div>
               ))}
-              <p className="pt-2 text-xs text-muted-foreground">Source: arXiv:2505.00234</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/70 bg-card shadow-none md:col-span-5">
+            <CardHeader>
+              <CardTitle className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
+                Instant self-improvement use cases
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {useCases.map((item) => (
+                <div key={item.title} className="border border-border/60 bg-muted/20 p-4">
+                  <div className="mb-2 flex items-center gap-2">
+                    <item.icon className="size-4 text-primary" />
+                    <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                  </div>
+                  <p className="text-sm leading-6 text-muted-foreground">{item.body}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/60 bg-card shadow-none md:col-span-12">
+            <CardContent className="flex flex-col gap-5 py-6 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-2">
+                <p className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
+                  Build agents that learn while they run.
+                </p>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Start with the TypeScript package, then connect your trajectory store and retrieval policy.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button asChild>
+                  <a href="/docs">
+                    <Target className="size-4" />
+                    Open docs
+                  </a>
+                </Button>
+                <Button asChild variant="ghost">
+                  <a href="https://github.com/SuperAce100/icrl/tree/main/icrl-ts" target="_blank" rel="noreferrer noopener">
+                    <Gauge className="size-4" />
+                    View package
+                  </a>
+                </Button>
+                <Button asChild variant="ghost">
+                  <a href="https://arxiv.org/abs/2505.00234" target="_blank" rel="noreferrer noopener">
+                    <ArrowUpRight className="size-4" />
+                    Original paper
+                  </a>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
-      </section>
-
-      <section id="get-started" className="mx-auto max-w-6xl px-6 pb-20 pt-12">
-        <Card className="border-primary bg-card shadow-none">
-          <CardHeader>
-            <CardTitle className="font-[family-name:var(--font-archivo)] text-3xl font-semibold tracking-tight text-foreground">
-              Start building with ICRL
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <pre className="overflow-x-auto bg-stone-950 p-4 font-mono text-sm leading-relaxed text-stone-100">
-{`npm install icrl
-npm install openai`}
-            </pre>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button asChild>
-                <a href="https://github.com/SuperAce100/icrl/tree/main/icrl-ts" target="_blank" rel="noreferrer noopener">
-                  <Database className="size-4" />
-                  View TypeScript package
-                </a>
-              </Button>
-              <Button asChild variant="ghost">
-                <a href="/docs">
-                  <Sparkles className="size-4" />
-                  Open docs
-                </a>
-              </Button>
-              <Button asChild variant="ghost">
-                <a href="https://arxiv.org/abs/2505.00234" target="_blank" rel="noreferrer noopener">
-                  <Target className="size-4" />
-                  Paper
-                </a>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </section>
 
       <SiteFooter />
