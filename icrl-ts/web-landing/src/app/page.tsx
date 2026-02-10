@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import {
-  ArrowRight,
   ArrowUpRight,
   BookOpen,
   Bot,
-  BrainCircuit,
   CheckCircle2,
   Code2,
   Database,
-  GitBranch,
+  MessageSquare,
   Package,
   Sparkles,
   Target,
   Terminal,
+  ThumbsUp,
 } from "lucide-react";
 
 import { SiteFooter } from "@/components/site-footer";
@@ -87,66 +85,87 @@ const jsonLd = [
   },
 ];
 
-const loopStages = [
-  "Attempt tasks in an environment",
-  "Store successful trajectories",
-  "Retrieve by goal + step observation",
-  "Curate low-utility trajectories over time",
-];
+const GITHUB_BASE = "https://github.com/SuperAce100/icrl/tree/main";
 
 const comparisonRows = [
   {
-    label: "When behavior improves",
-    icrl: "During runtime on the next similar task",
-    traditional: "After a retraining cycle completes",
+    dimension: "When it improves",
+    icrl: "Immediately, on the next similar task",
+    traditional: "After a full retraining cycle",
   },
   {
-    label: "What is updated",
-    icrl: "In-context memory (trajectory retrieval)",
-    traditional: "Model/policy weights",
+    dimension: "What changes",
+    icrl: "In-context examples (retrieval memory)",
+    traditional: "Model weights / policy parameters",
   },
   {
-    label: "Infra profile",
-    icrl: "Trajectory DB + retrieval + curation",
-    traditional: "Training pipelines + eval + deployment rollouts",
+    dimension: "Infrastructure",
+    icrl: "Lightweight trajectory DB + retrieval",
+    traditional: "GPU training pipelines + eval + rollouts",
   },
   {
-    label: "Feedback latency",
-    icrl: "Immediate",
-    traditional: "Batch-delayed",
+    dimension: "Feedback latency",
+    icrl: "Instant — same session",
+    traditional: "Batch-delayed — hours to days",
+  },
+  {
+    dimension: "Works with frozen models",
+    icrl: "Yes — no fine-tuning needed",
+    traditional: "No — requires weight updates",
   },
 ];
-
-const codingTools = ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "WebSearch", "WebFetch"];
 
 const useCases = [
   {
     title: "Coding agents",
     detail:
-      "Harbor coding workflows and Terminal-Bench style tasks improve from successful trajectories.",
-    source: "examples/harbor_coding_agent.py",
+      "Coding workflows and Terminal-Bench style tasks get better from successful trajectories.",
+    path: "examples/harbor_coding_agent.py",
     icon: Code2,
   },
   {
-    title: "Filesystem/task agents",
+    title: "Filesystem / task agents",
     detail:
-      "Command-style environments (`ls`, `cd`, `cat`, `find`) become more reliable across repeated goals.",
-    source: "examples/file_api_env.py",
+      "Shell-style environments become more reliable as the agent accumulates experience across repeated goals.",
+    path: "examples/file_api_env.py",
     icon: Terminal,
   },
   {
     title: "Support triage",
     detail:
       "Routing and reply quality improve as successful triage outputs are retained and reused.",
-    source: "icrl-ts/examples/support-triage-demo.ts",
+    path: "icrl-ts/examples/support-triage-demo.ts",
     icon: Bot,
   },
   {
-    title: "Feedback-driven web workflows",
+    title: "Human-in-the-loop workflows",
     detail:
       "Human choices between candidate answers become durable training signals for future retrieval.",
-    source: "icrl-ts/web-example",
+    path: "icrl-ts/web-example",
     icon: Database,
+  },
+];
+
+const feedbackSignals = [
+  {
+    icon: ThumbsUp,
+    label: "Human preference",
+    example: "User picks the best of N candidate outputs",
+  },
+  {
+    icon: CheckCircle2,
+    label: "Task success / failure",
+    example: "Tests pass, build succeeds, goal reached",
+  },
+  {
+    icon: Code2,
+    label: "Code review signals",
+    example: "PR approved, changes requested, comments",
+  },
+  {
+    icon: MessageSquare,
+    label: "Conversational corrections",
+    example: "User edits, rephrases, or overrides the output",
   },
 ];
 
@@ -188,8 +207,10 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── Bento grid ── */}
         <section aria-label="Features" className="mx-auto max-w-6xl px-6 pb-20">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:auto-rows-[minmax(190px,auto)]">
+            {/* ─── What is ICRL (text-heavy intro) ─── */}
             <Card className="border-primary/60 bg-card shadow-none md:col-span-7">
               <CardHeader>
                 <CardTitle asChild>
@@ -198,30 +219,51 @@ export default function LandingPage() {
                   </h2>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-5">
+              <CardContent className="space-y-4">
                 <p className="text-sm leading-6 text-muted-foreground">
-                  ICRL is a trajectory-learning framework where the agent runs tasks, keeps
-                  successful episodes, retrieves similar prior steps during future runs, and curates
-                  stale/low-signal entries over time.
+                  <span className="font-semibold text-foreground">
+                    In-Context Reinforcement Learning (ICRL)
+                  </span>{" "}
+                  is a framework that lets LLM agents learn from their own experience at runtime —
+                  without any fine-tuning, retraining, or prompt engineering. When an agent
+                  successfully completes a task, ICRL stores that trajectory. The next time a
+                  similar task comes up, the agent retrieves the most relevant past steps and uses
+                  them as in-context examples to guide its decisions.
                 </p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {loopStages.map((stage) => (
-                    <div
-                      key={stage}
-                      className="flex items-center gap-2 border border-border/60 bg-muted/20 px-3 py-2"
-                    >
-                      <ArrowRight className="size-3 text-primary" />
-                      <span className="text-xs text-foreground">{stage}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="inline-flex items-center gap-2 border border-border/60 bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground">
-                  <GitBranch className="size-3.5 text-primary" />
-                  ReAct loop with step-level retrieval (`retrieve_for_plan`, `retrieve_for_step`)
-                </div>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Think of it as giving your agent a growing memory of what has worked before. Over
+                  time, low-quality or outdated trajectories are automatically curated out, so the
+                  agent&apos;s experience stays fresh and relevant. The result is an agent that gets
+                  measurably better with every task it completes — all while using the same frozen
+                  model underneath.
+                </p>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  ICRL works with any LLM provider and any agentic framework. It ships as a
+                  lightweight{" "}
+                  <a
+                    href="https://www.npmjs.com/package/icrl"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="underline underline-offset-2 text-foreground hover:text-primary"
+                  >
+                    npm
+                  </a>{" "}
+                  and{" "}
+                  <a
+                    href="https://pypi.org/project/icrl/"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="underline underline-offset-2 text-foreground hover:text-primary"
+                  >
+                    PyPI
+                  </a>{" "}
+                  package with a simple API: store trajectories, retrieve by goal and step
+                  observation, and curate over time.
+                </p>
               </CardContent>
             </Card>
 
+            {/* ─── ICRL vs Traditional RL (proper table) ─── */}
             <Card className="border-border/70 bg-card shadow-none md:col-span-5">
               <CardHeader>
                 <CardTitle asChild>
@@ -230,27 +272,35 @@ export default function LandingPage() {
                   </h2>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                {comparisonRows.map((row) => (
-                  <div
-                    key={row.label}
-                    className="grid gap-2 border border-border/60 bg-muted/20 p-3"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-primary">
-                      {row.label}
-                    </p>
-                    <p className="text-xs leading-5 text-foreground">
-                      <span className="font-semibold">ICRL:</span> {row.icrl}
-                    </p>
-                    <p className="text-xs leading-5 text-muted-foreground">
-                      <span className="font-semibold text-foreground">Traditional RL:</span>{" "}
-                      {row.traditional}
-                    </p>
-                  </div>
-                ))}
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border/60">
+                        <th className="pb-2 pr-3 text-left font-semibold text-muted-foreground" />
+                        <th className="pb-2 px-3 text-left font-semibold text-primary">ICRL</th>
+                        <th className="pb-2 pl-3 text-left font-semibold text-muted-foreground">
+                          Traditional RL
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {comparisonRows.map((row) => (
+                        <tr key={row.dimension} className="border-b border-border/30 last:border-0">
+                          <td className="py-2.5 pr-3 font-medium text-foreground whitespace-nowrap">
+                            {row.dimension}
+                          </td>
+                          <td className="py-2.5 px-3 text-foreground">{row.icrl}</td>
+                          <td className="py-2.5 pl-3 text-muted-foreground">{row.traditional}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </CardContent>
             </Card>
 
+            {/* ─── Common use cases (with GitHub links) ─── */}
             <Card className="border-border/70 bg-card shadow-none md:col-span-7">
               <CardHeader>
                 <CardTitle asChild>
@@ -270,115 +320,157 @@ export default function LandingPage() {
                       <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
                     </div>
                     <p className="text-xs leading-5 text-muted-foreground">{item.detail}</p>
-                    <p className="font-mono text-[11px] text-muted-foreground">{item.source}</p>
+                    <a
+                      href={`${GITHUB_BASE}/${item.path}`}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {item.path}
+                      <ArrowUpRight className="size-3" />
+                    </a>
                   </div>
                 ))}
               </CardContent>
             </Card>
 
+            {/* ─── CLI / Coding Agent ─── */}
             <Card className="border-border/70 bg-card shadow-none md:col-span-5">
-              <CardHeader>
-                <CardTitle asChild>
-                  <h2 className="font-heading text-xl tracking-tight text-foreground">CLI</h2>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <pre className="border border-border/60 bg-muted/20 p-3 font-mono text-xs leading-6 text-foreground">{`icrl run "fix failing tests in this repo" --compare\nicrl db stats\nicrl db search "pytest fixture" -k 5\nicrl db validate --dir .`}</pre>
-                <div className="grid grid-cols-2 gap-2">
-                  {codingTools.map((tool) => (
-                    <div
-                      key={tool}
-                      className="border border-border/60 bg-background px-2 py-1 text-center text-[11px] text-foreground"
-                    >
-                      {tool}
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs leading-5 text-muted-foreground">
-                  Project-local storage defaults to{" "}
-                  <span className="font-mono text-foreground">.icrl/trajectories</span>. Use{" "}
-                  <span className="font-mono text-foreground">--global</span> to target shared DB,
-                  and use
-                  <span className="font-mono text-foreground"> db validate</span> /{" "}
-                  <span className="font-mono text-foreground">db prune</span>
-                  for code-persistence-aware curation.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/70 bg-card shadow-none md:col-span-5">
-              <CardHeader>
-                <CardTitle asChild>
-                  <h2 className="font-heading text-xl tracking-tight text-foreground">ICRLHF</h2>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="inline-flex items-center gap-2 text-sm text-foreground">
-                  <BrainCircuit className="size-4 text-primary" />
-                  In-context reinforcement from human preference signals
-                </p>
-                <div className="space-y-2">
-                  <div className="border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                    1. Generate multiple candidate answers
-                  </div>
-                  <div className="border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                    2. Human selects best answer or writes a better one
-                  </div>
-                  <div className="border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                    3. Store chosen/rejected outputs for retrieval-time reinforcement
-                  </div>
-                </div>
-                <p className="text-xs leading-5 text-muted-foreground">
-                  Implemented in the web example with Convex tables like
-                  <span className="font-mono text-foreground"> examples</span>,
-                  <span className="font-mono text-foreground"> trajectories</span>, and
-                  <span className="font-mono text-foreground"> curationMetadata</span>.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/70 bg-card shadow-none md:col-span-7">
               <CardHeader>
                 <CardTitle asChild>
                   <h2 className="font-heading text-xl tracking-tight text-foreground">
-                    Proven through Stanford research
+                    A coding agent that learns your codebase
                   </h2>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm leading-6 text-muted-foreground">
-                  The paper,{" "}
-                  <cite className="not-italic text-foreground">
-                    Self-Generated In-Context Examples Improve LLM Agents for Sequential
-                    Decision-Making Tasks
-                  </cite>
-                  , reports gains from converting successful trajectories into retrieval-time
-                  reinforcement.
+                  ICRL ships with a built-in coding agent you can run from your terminal — like
+                  Claude Code or Codex, but one that{" "}
+                  <span className="font-semibold text-foreground">gets better over time</span>.
+                  Every task it completes successfully becomes a reference for future work, so it
+                  builds up project-specific knowledge that generic assistants never develop.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <div className="inline-flex items-center gap-1 border border-border/60 bg-muted/20 px-2.5 py-1 text-xs text-foreground">
-                    <CheckCircle2 className="size-3.5 text-primary" /> ALFWorld
-                  </div>
-                  <div className="inline-flex items-center gap-1 border border-border/60 bg-muted/20 px-2.5 py-1 text-xs text-foreground">
-                    <CheckCircle2 className="size-3.5 text-primary" /> InterCode-SQL
-                  </div>
-                  <div className="inline-flex items-center gap-1 border border-border/60 bg-muted/20 px-2.5 py-1 text-xs text-foreground">
-                    <CheckCircle2 className="size-3.5 text-primary" /> Wordcraft
-                  </div>
-                </div>
-                <a
-                  href="https://arxiv.org/abs/2505.00234"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="inline-flex items-center gap-2 text-sm text-foreground hover:text-primary"
-                >
-                  <BookOpen className="size-4" />
-                  Read original paper
-                  <ArrowUpRight className="size-4" />
-                </a>
+                <pre className="border border-border/60 bg-muted/20 p-3 font-mono text-xs leading-6 text-foreground">{`icrl run "fix failing tests" --compare
+icrl run "add input validation to the API"
+icrl db stats`}</pre>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  The more you use it, the better it gets at understanding your project&apos;s
+                  patterns, conventions, and architecture. No fine-tuning, no prompt engineering —
+                  just accumulated experience from successful trajectories in{" "}
+                  <span className="font-mono text-foreground">.icrl/trajectories</span>.
+                </p>
               </CardContent>
             </Card>
 
+            {/* ─── ICRLHF ─── */}
+            <Card className="border-border/70 bg-card shadow-none md:col-span-5">
+              <CardHeader>
+                <CardTitle asChild>
+                  <h2 className="font-heading text-xl tracking-tight text-foreground">
+                    ICRLHF — learning from any feedback signal
+                  </h2>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm leading-6 text-muted-foreground">
+                  <span className="font-semibold text-foreground">ICRLHF</span> extends ICRL with
+                  human feedback. Instead of only learning from task success, agents can learn from
+                  any signal you provide — preferences, corrections, approvals, or rejections. These
+                  signals become durable training data retrieved at inference time.
+                </p>
+                <div className="grid gap-2">
+                  {feedbackSignals.map((signal) => (
+                    <div
+                      key={signal.label}
+                      className="flex items-start gap-2.5 border border-border/60 bg-muted/20 px-3 py-2"
+                    >
+                      <signal.icon className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                      <div>
+                        <p className="text-xs font-semibold text-foreground">{signal.label}</p>
+                        <p className="text-[11px] leading-4 text-muted-foreground">
+                          {signal.example}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* ─── Stanford Research ─── */}
+            <Card className="border-border/70 bg-card shadow-none md:col-span-7">
+              <CardHeader>
+                <CardTitle asChild>
+                  <h2 className="font-heading text-xl tracking-tight text-foreground">
+                    Built by Stanford researchers, presented at NeurIPS
+                  </h2>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm leading-6 text-muted-foreground">
+                  This package was built by the authors of the original ICRL research at{" "}
+                  <span className="font-semibold text-foreground">Stanford Graphics Lab</span>. The
+                  core ideas were validated in two peer-reviewed papers and presented at{" "}
+                  <span className="font-semibold text-foreground">NeurIPS</span>.
+                </p>
+                <div className="space-y-3">
+                  <div className="border border-border/60 bg-muted/20 p-3 space-y-1.5">
+                    <p className="text-xs font-semibold text-foreground">
+                      Self-Generated In-Context Examples Improve LLM Agents for Sequential
+                      Decision-Making Tasks
+                    </p>
+                    <p className="text-[11px] leading-4 text-muted-foreground">
+                      Shows that converting successful trajectories into retrieval-time
+                      reinforcement improves LLM agent performance on ALFWorld, InterCode-SQL, and
+                      Wordcraft benchmarks.
+                    </p>
+                    <a
+                      href="https://arxiv.org/abs/2505.00234"
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="inline-flex items-center gap-1.5 text-xs text-foreground hover:text-primary transition-colors"
+                    >
+                      <BookOpen className="size-3.5" />
+                      arxiv.org/abs/2505.00234
+                      <ArrowUpRight className="size-3" />
+                    </a>
+                  </div>
+                  <div className="border border-border/60 bg-muted/20 p-3 space-y-1.5">
+                    <p className="text-xs font-semibold text-foreground">
+                      In-Context Distillation with Self-Consistency Cascades
+                    </p>
+                    <p className="text-[11px] leading-4 text-muted-foreground">
+                      A training-free method to reduce LLM agent costs by 2-2.5x at iso-accuracy.
+                      Combines in-context distillation with self-consistency cascades for
+                      economically viable agentic systems.
+                    </p>
+                    <a
+                      href="https://arxiv.org/abs/2512.02543"
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="inline-flex items-center gap-1.5 text-xs text-foreground hover:text-primary transition-colors"
+                    >
+                      <BookOpen className="size-3.5" />
+                      arxiv.org/abs/2512.02543
+                      <ArrowUpRight className="size-3" />
+                    </a>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {["ALFWorld", "InterCode-SQL", "Wordcraft", "AppWorld"].map((bench) => (
+                    <div
+                      key={bench}
+                      className="inline-flex items-center gap-1 border border-border/60 bg-muted/20 px-2.5 py-1 text-xs text-foreground"
+                    >
+                      <CheckCircle2 className="size-3.5 text-primary" /> {bench}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* ─── CTA ─── */}
             <Card
               className="border-primary/60 bg-card shadow-none md:col-span-12"
               role="complementary"

@@ -12,6 +12,14 @@
     "light": "#F88D39",
     "dark": "#F88D39"
   },
+  "appearance": {
+    "background": {
+      "color": {
+        "light": "#fafaf9",
+        "dark": "#1c1917"
+      }
+    }
+  },
   "contextual": {
     "options": ["copy", "view"]
   },
@@ -120,7 +128,7 @@
           "icon": "python",
           "href": "https://pypi.org/project/icrl-py/"
         }
-        ]
+      ]
     }
   },
   "footerSocials": {
