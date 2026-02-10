@@ -66,7 +66,7 @@
 :root {
   --radius: 0rem;
   /* Light mode - Stone light background */
-  --background: #fafaf9;
+  --background: #fffcfa;
   --foreground: #292524;
   --card: #ffffff;
   --card-foreground: #292524;

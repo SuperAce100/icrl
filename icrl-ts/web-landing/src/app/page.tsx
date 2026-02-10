@@ -1,19 +1,24 @@
 import type { Metadata } from "next";
 import {
+  ArrowRight,
   ArrowUpRight,
   BookOpen,
   Bot,
   CheckCircle2,
   Code2,
   Database,
+  Globe,
+  Home,
   MessageSquare,
   Package,
+  PenLine,
   Sparkles,
   Target,
   Terminal,
   ThumbsUp,
 } from "lucide-react";
 
+import { CopyableInstallSnippet } from "@/components/copyable-install-snippet";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
@@ -113,6 +118,16 @@ const comparisonRows = [
     icrl: "Yes — no fine-tuning needed",
     traditional: "No — requires weight updates",
   },
+  {
+    dimension: "Computational cost",
+    icrl: "Minimal — storage + retrieval, no training",
+    traditional: "High — full training runs, GPUs, evals",
+  },
+  {
+    dimension: "Interpretability",
+    icrl: "Explicit — retrievable examples show what worked",
+    traditional: "Implicit — behavior encoded in weights",
+  },
 ];
 
 const useCases = [
@@ -184,7 +199,7 @@ export default function LandingPage() {
 
         <section
           aria-label="Hero"
-          className="mx-auto px-6 pb-12 pt-12 md:pt-32 md:pb-32 max-w-2xl space-y-6 text-center"
+          className="mx-auto px-6 pb-12 pt-12 md:pt-28 md:pb-28 max-w-2xl space-y-8 text-center"
         >
           <h1 className="font-heading text-4xl font-semibold leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl">
             instant, continuous,
@@ -194,10 +209,11 @@ export default function LandingPage() {
             for LLM agents
           </h1>
           <p className="mx-auto text-base leading-7 text-muted-foreground sm:text-lg text-balance">
-            ICRL turns successful trajectories into reusable decision context so agents improve on
-            the next task instead of waiting for retraining.
+            In-context reinforcement learning improves agents in real time by putting agent&apos;s
+            most useful past actions into context for the next task.
           </p>
-          <div className="flex justify-center">
+          <div className="flex flex-wrap justify-center items-center gap-4">
+            <CopyableInstallSnippet />
             <Button asChild>
               <a href="/docs">
                 <BookOpen className="size-4" />
@@ -211,7 +227,7 @@ export default function LandingPage() {
         <section aria-label="Features" className="mx-auto max-w-6xl px-6 pb-20">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:auto-rows-[minmax(190px,auto)]">
             {/* ─── What is ICRL (text-heavy intro) ─── */}
-            <Card className="border-primary/60 bg-card shadow-none md:col-span-7">
+            <Card className="bg-card shadow-none md:col-span-5">
               <CardHeader>
                 <CardTitle asChild>
                   <h2 className="font-heading text-2xl tracking-tight text-foreground">
@@ -250,7 +266,7 @@ export default function LandingPage() {
                   </a>{" "}
                   and{" "}
                   <a
-                    href="https://pypi.org/project/icrl/"
+                    href="https://pypi.org/project/icrl-py/"
                     target="_blank"
                     rel="noreferrer noopener"
                     className="underline underline-offset-2 text-foreground hover:text-primary"
@@ -264,7 +280,7 @@ export default function LandingPage() {
             </Card>
 
             {/* ─── ICRL vs Traditional RL (proper table) ─── */}
-            <Card className="border-border/70 bg-card shadow-none md:col-span-5">
+            <Card className="border-border/70 bg-card shadow-none md:col-span-7">
               <CardHeader>
                 <CardTitle asChild>
                   <h2 className="font-heading text-2xl tracking-tight text-foreground">
@@ -277,9 +293,11 @@ export default function LandingPage() {
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-border/60">
-                        <th className="pb-2 pr-3 text-left font-semibold text-muted-foreground" />
-                        <th className="pb-2 px-3 text-left font-semibold text-primary">ICRL</th>
-                        <th className="pb-2 pl-3 text-left font-semibold text-muted-foreground">
+                        <th className="pb-2 pt-2 pr-3 text-left font-semibold text-muted-foreground" />
+                        <th className="bg-primary/5 px-3 pb-2 pt-2 text-left font-semibold text-primary">
+                          ICRL
+                        </th>
+                        <th className="pb-2 pt-2 pl-3 text-left font-semibold text-muted-foreground">
                           Traditional RL
                         </th>
                       </tr>
@@ -290,7 +308,7 @@ export default function LandingPage() {
                           <td className="py-2.5 pr-3 font-medium text-foreground whitespace-nowrap">
                             {row.dimension}
                           </td>
-                          <td className="py-2.5 px-3 text-foreground">{row.icrl}</td>
+                          <td className="bg-primary/5 py-2.5 px-3 text-foreground">{row.icrl}</td>
                           <td className="py-2.5 pl-3 text-muted-foreground">{row.traditional}</td>
                         </tr>
                       ))}
@@ -311,25 +329,23 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="grid gap-3 sm:grid-cols-2">
                 {useCases.map((item) => (
-                  <div
+                  <a
                     key={item.title}
-                    className="space-y-2 border border-border/60 bg-muted/20 p-3"
+                    href={`${GITHUB_BASE}/${item.path}`}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="block space-y-2 border border-border/60 bg-muted/20 p-3 hover:border-primary/80"
                   >
                     <div className="flex items-center gap-2">
                       <item.icon className="size-4 text-primary" />
                       <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
+                      <ArrowUpRight className="ml-auto size-3 text-muted-foreground" />
                     </div>
                     <p className="text-xs leading-5 text-muted-foreground">{item.detail}</p>
-                    <a
-                      href={`${GITHUB_BASE}/${item.path}`}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground hover:text-primary transition-colors"
-                    >
+                    <span className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
                       {item.path}
-                      <ArrowUpRight className="size-3" />
-                    </a>
-                  </div>
+                    </span>
+                  </a>
                 ))}
               </CardContent>
             </Card>
@@ -415,64 +431,84 @@ icrl db stats`}</pre>
                   <span className="font-semibold text-foreground">NeurIPS</span>.
                 </p>
                 <div className="space-y-3">
-                  <div className="border border-border/60 bg-muted/20 p-3 space-y-1.5">
-                    <p className="text-xs font-semibold text-foreground">
-                      Self-Generated In-Context Examples Improve LLM Agents for Sequential
-                      Decision-Making Tasks
-                    </p>
-                    <p className="text-[11px] leading-4 text-muted-foreground">
-                      Shows that converting successful trajectories into retrieval-time
-                      reinforcement improves LLM agent performance on ALFWorld, InterCode-SQL, and
-                      Wordcraft benchmarks.
-                    </p>
+                  <div className="space-y-2">
                     <a
                       href="https://arxiv.org/abs/2505.00234"
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="inline-flex items-center gap-1.5 text-xs text-foreground hover:text-primary transition-colors"
+                      className="block border border-border/60 bg-muted/20 p-3 space-y-1.5 transition-colors hover:border-primary/40 hover:bg-muted/30"
                     >
-                      <BookOpen className="size-3.5" />
-                      arxiv.org/abs/2505.00234
-                      <ArrowUpRight className="size-3" />
+                      <p className="text-xs font-semibold text-foreground">
+                        Self-Generated In-Context Examples Improve LLM Agents for Sequential
+                        Decision-Making Tasks
+                      </p>
+                      <p className="text-[11px] leading-4 text-muted-foreground">
+                        Converting successful trajectories into retrieval-time reinforcement
+                        improves agent performance. Exceeds gpt-4o-mini→gpt-4o upgrade gains.
+                      </p>
+                      <span className="inline-flex items-center gap-1.5 text-xs text-foreground">
+                        <BookOpen className="size-3.5" />
+                        arxiv.org/abs/2505.00234
+                        <ArrowUpRight className="size-3" />
+                      </span>
                     </a>
+                    <div className="flex flex-row flex-wrap gap-2">
+                      {[
+                        { name: "ALFWorld", stat: "73%→93%", icon: Home },
+                        { name: "InterCode-SQL", stat: "75%→79%", icon: Database },
+                        { name: "Wordcraft", stat: "55%→64%", icon: PenLine },
+                      ].map(({ name, stat, icon: Icon }) => (
+                        <span
+                          key={name}
+                          className="inline-flex items-center gap-1 border border-border/60 bg-muted/20 px-2 py-0.5 text-[11px]"
+                        >
+                          <Icon className="size-3 text-primary" />
+                          {name} {stat}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <div className="border border-border/60 bg-muted/20 p-3 space-y-1.5">
-                    <p className="text-xs font-semibold text-foreground">
-                      In-Context Distillation with Self-Consistency Cascades
-                    </p>
-                    <p className="text-[11px] leading-4 text-muted-foreground">
-                      A training-free method to reduce LLM agent costs by 2-2.5x at iso-accuracy.
-                      Combines in-context distillation with self-consistency cascades for
-                      economically viable agentic systems.
-                    </p>
+                  <div className="space-y-2">
                     <a
                       href="https://arxiv.org/abs/2512.02543"
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="inline-flex items-center gap-1.5 text-xs text-foreground hover:text-primary transition-colors"
+                      className="block border border-border/60 bg-muted/20 p-3 space-y-1.5 transition-colors hover:border-primary/40 hover:bg-muted/30"
                     >
-                      <BookOpen className="size-3.5" />
-                      arxiv.org/abs/2512.02543
-                      <ArrowUpRight className="size-3" />
+                      <p className="text-xs font-semibold text-foreground">
+                        In-Context Distillation with Self-Consistency Cascades
+                      </p>
+                      <p className="text-[11px] leading-4 text-muted-foreground">
+                        Training-free cost reduction. Amortizes after 843 episodes.
+                      </p>
+                      <span className="inline-flex items-center gap-1.5 text-xs text-foreground">
+                        <BookOpen className="size-3.5" />
+                        arxiv.org/abs/2512.02543
+                        <ArrowUpRight className="size-3" />
+                      </span>
                     </a>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {["ALFWorld", "InterCode-SQL", "Wordcraft", "AppWorld"].map((bench) => (
-                    <div
-                      key={bench}
-                      className="inline-flex items-center gap-1 border border-border/60 bg-muted/20 px-2.5 py-1 text-xs text-foreground"
-                    >
-                      <CheckCircle2 className="size-3.5 text-primary" /> {bench}
+                    <div className="flex flex-row flex-wrap gap-2">
+                      {[
+                        { name: "ALFWorld", stat: "2.5× cost ↓", icon: Home },
+                        { name: "AppWorld", stat: "2× cost ↓", icon: Globe },
+                      ].map(({ name, stat, icon: Icon }) => (
+                        <span
+                          key={name}
+                          className="inline-flex items-center gap-1 border border-border/60 bg-muted/20 px-2 py-0.5 text-[11px]"
+                        >
+                          <Icon className="size-3 text-primary" />
+                          {name} {stat}
+                        </span>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* ─── CTA ─── */}
             <Card
-              className="border-primary/60 bg-card shadow-none md:col-span-12"
+              className="border-primary/60 bg-linear-to-r from-primary/5 via-card to-transparent shadow-none md:col-span-12"
               role="complementary"
               aria-label="Call to action"
             >
@@ -528,6 +564,11 @@ icrl db stats`}</pre>
             </Card>
           </div>
         </section>
+
+        <div
+          className="h-px w-full bg-linear-to-r from-transparent via-border/60 to-transparent"
+          aria-hidden
+        />
 
         <SiteFooter />
       </main>
