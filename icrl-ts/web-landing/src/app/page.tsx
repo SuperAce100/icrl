@@ -151,10 +151,10 @@ export default function LandingPage() {
                 retrieval-ready memory, making reinforcement immediate and operationally simpler.
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl bg-muted/60 p-4 font-mono text-xl text-muted-foreground">No retraining lag</div>
-                <div className="rounded-xl bg-muted/60 p-4 font-mono text-xl text-muted-foreground">No policy pipeline overhead</div>
-                <div className="rounded-xl bg-muted/60 p-4 font-mono text-xl text-muted-foreground">Grounded in real successful runs</div>
-                <div className="rounded-xl bg-muted/60 p-4 font-mono text-xl text-muted-foreground">Works with existing model APIs</div>
+                <div className="bg-muted/60 p-4 font-mono text-xl text-muted-foreground">No retraining lag</div>
+                <div className="bg-muted/60 p-4 font-mono text-xl text-muted-foreground">No policy pipeline overhead</div>
+                <div className="bg-muted/60 p-4 font-mono text-xl text-muted-foreground">Grounded in real successful runs</div>
+                <div className="bg-muted/60 p-4 font-mono text-xl text-muted-foreground">Works with existing model APIs</div>
               </div>
             </CardContent>
           </Card>
@@ -184,7 +184,7 @@ export default function LandingPage() {
             <CardTitle className="font-mono text-4xl font-semibold tracking-tight text-foreground">Start building with ICRL</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            <pre className="overflow-x-auto rounded-xl bg-stone-950 p-4 font-mono text-sm leading-relaxed text-stone-100">
+            <pre className="overflow-x-auto bg-stone-950 p-4 font-mono text-sm leading-relaxed text-stone-100">
 {`npm install icrl
 npm install openai`}
             </pre>

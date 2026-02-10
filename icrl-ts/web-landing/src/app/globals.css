@@ -63,7 +63,7 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0rem;
   /* Light mode - Stone light background */
   --background: #fafaf9;
   --foreground: #292524;
