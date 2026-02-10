@@ -199,7 +199,7 @@ export default function LandingPage() {
           aria-label="Hero"
           className="mx-auto px-6 pb-12 pt-12 md:pt-28 md:pb-28 max-w-2xl space-y-8 text-center"
         >
-          <h1 className="font-heading text-4xl font-semibold leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl">
+          <h1 className="font-heading text-4xl  leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl">
             instant, continuous,
             <br />
             reinforcement learning
