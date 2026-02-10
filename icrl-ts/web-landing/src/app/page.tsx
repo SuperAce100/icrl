@@ -55,10 +55,10 @@ export default function LandingPage() {
 
       <section className="mx-auto max-w-6xl px-6 pb-16 pt-16 md:pt-24">
         <div className="max-w-4xl space-y-6">
-          <h1 className="text-balance font-mono text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl">
+          <h1 className="font-[family-name:var(--font-archivo)] text-balance text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl md:text-5xl">
             ICRL turns successful agent runs into immediate reinforcement.
           </h1>
-          <p className="max-w-3xl font-mono text-xl leading-relaxed text-muted-foreground">
+          <p className="max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg">
             Build self-improving LLM agents in production. ICRL stores successful trajectories, retrieves them at the
             right decision points, and improves behavior on the next related task.
           </p>
@@ -93,10 +93,10 @@ export default function LandingPage() {
                 <ArrowUpRight className="size-6 text-muted-foreground" />
               </CardHeader>
               <CardContent className="space-y-3">
-                <CardTitle className="font-mono text-4xl font-semibold leading-none tracking-tight text-foreground">
+                <CardTitle className="font-[family-name:var(--font-archivo)] text-2xl font-semibold leading-tight tracking-tight text-foreground">
                   {item.title}
                 </CardTitle>
-                <p className="font-mono text-xl leading-relaxed text-muted-foreground">{item.body}</p>
+                <p className="text-base leading-7 text-muted-foreground">{item.body}</p>
               </CardContent>
             </Card>
           ))}
@@ -108,12 +108,12 @@ export default function LandingPage() {
           {benefits.map((item) => (
             <Card key={item.title} className="border-border/70 bg-card/80 shadow-none">
               <CardHeader>
-                <CardTitle className="font-mono text-3xl font-semibold leading-tight tracking-tight text-foreground">
+                <CardTitle className="font-[family-name:var(--font-archivo)] text-2xl font-semibold leading-tight tracking-tight text-foreground">
                   {item.title}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="font-mono text-xl leading-relaxed text-muted-foreground">{item.body}</p>
+                <p className="text-base leading-7 text-muted-foreground">{item.body}</p>
               </CardContent>
             </Card>
           ))}
@@ -122,12 +122,14 @@ export default function LandingPage() {
 
       <section id="use-cases" className="mx-auto max-w-6xl px-6 py-12">
         <div className="space-y-6">
-          <h2 className="font-mono text-4xl font-semibold tracking-tight text-foreground">Use cases where ICRL wins</h2>
+          <h2 className="font-[family-name:var(--font-archivo)] text-3xl font-semibold tracking-tight text-foreground">
+            Use cases where ICRL wins
+          </h2>
           <Card className="border-border/70 bg-card/80 shadow-none">
             <CardContent className="pt-6">
               <ul className="grid gap-4 md:grid-cols-2">
                 {useCases.map((item) => (
-                  <li key={item} className="font-mono text-xl leading-relaxed text-muted-foreground">
+                  <li key={item} className="text-base leading-7 text-muted-foreground">
                     {item}
                   </li>
                 ))}
@@ -141,38 +143,38 @@ export default function LandingPage() {
         <div className="grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
           <Card className="border-border/70 bg-card/80 shadow-none">
             <CardHeader>
-              <CardTitle className="font-mono text-4xl font-semibold tracking-tight text-foreground">
+              <CardTitle className="font-[family-name:var(--font-archivo)] text-3xl font-semibold tracking-tight text-foreground">
                 Why ICRL over traditional RL
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="font-mono text-xl text-muted-foreground">
+              <p className="text-base leading-7 text-muted-foreground">
                 Traditional RL pipelines optimize weights over training cycles. ICRL improves behavior through
                 retrieval-ready memory, making reinforcement immediate and operationally simpler.
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="bg-muted/60 p-4 font-mono text-xl text-muted-foreground">No retraining lag</div>
-                <div className="bg-muted/60 p-4 font-mono text-xl text-muted-foreground">No policy pipeline overhead</div>
-                <div className="bg-muted/60 p-4 font-mono text-xl text-muted-foreground">Grounded in real successful runs</div>
-                <div className="bg-muted/60 p-4 font-mono text-xl text-muted-foreground">Works with existing model APIs</div>
+                <div className="bg-muted/60 p-4 text-sm text-muted-foreground">No retraining lag</div>
+                <div className="bg-muted/60 p-4 text-sm text-muted-foreground">No policy pipeline overhead</div>
+                <div className="bg-muted/60 p-4 text-sm text-muted-foreground">Grounded in real successful runs</div>
+                <div className="bg-muted/60 p-4 text-sm text-muted-foreground">Works with existing model APIs</div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-border/70 bg-card/80 shadow-none">
             <CardHeader>
-              <CardTitle className="font-mono text-3xl font-semibold tracking-tight text-foreground">
+              <CardTitle className="font-[family-name:var(--font-archivo)] text-2xl font-semibold tracking-tight text-foreground">
                 Reported gains
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {benchmarkRows.map((row) => (
                 <div key={row.name} className="space-y-1">
-                  <p className="font-mono text-xl font-semibold text-foreground">{row.name}</p>
-                  <p className="font-mono text-xl text-muted-foreground">{row.result}</p>
+                  <p className="text-base font-semibold text-foreground">{row.name}</p>
+                  <p className="text-base text-muted-foreground">{row.result}</p>
                 </div>
               ))}
-              <p className="pt-2 font-mono text-sm text-muted-foreground">Source: arXiv:2505.00234</p>
+              <p className="pt-2 text-xs text-muted-foreground">Source: arXiv:2505.00234</p>
             </CardContent>
           </Card>
         </div>
@@ -181,7 +183,9 @@ export default function LandingPage() {
       <section id="get-started" className="mx-auto max-w-6xl px-6 pb-20 pt-12">
         <Card className="border-primary bg-card shadow-none">
           <CardHeader>
-            <CardTitle className="font-mono text-4xl font-semibold tracking-tight text-foreground">Start building with ICRL</CardTitle>
+            <CardTitle className="font-[family-name:var(--font-archivo)] text-3xl font-semibold tracking-tight text-foreground">
+              Start building with ICRL
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <pre className="overflow-x-auto bg-stone-950 p-4 font-mono text-sm leading-relaxed text-stone-100">
