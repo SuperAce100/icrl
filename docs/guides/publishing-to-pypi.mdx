@@ -5,7 +5,7 @@ description: "Release checklist and commands for publishing the Python package w
 
 ## Prerequisites
 
-- PyPI project owner/maintainer access for `icrl`
+- PyPI project owner/maintainer access for `icrl-py`
 - Python 3.12+
 - `uv` installed
 - A PyPI API token with publish permission
@@ -23,10 +23,7 @@ Update the version in both files:
 uv build
 ```
 
-This creates:
-
-- `dist/icrl-<version>.tar.gz`
-- `dist/icrl-<version>-py3-none-any.whl`
+This creates distribution artifacts under `dist/` for the `icrl-py` package.
 
 ## 3. Validate metadata before upload
 
@@ -37,7 +34,7 @@ uvx twine check dist/*
 Optional smoke test from the built wheel:
 
 ```bash
-uvx --from ./dist/icrl-<version>-py3-none-any.whl \
+uvx --from ./dist/icrl_py-<version>-py3-none-any.whl \
   python -c "import icrl; print(icrl.__version__)"
 ```
 
@@ -67,11 +64,11 @@ uv publish
 
 ## 6. Verify release
 
-- Confirm the version on PyPI: `https://pypi.org/project/icrl/`
+- Confirm the version on PyPI: `https://pypi.org/project/icrl-py/`
 - Install in a fresh environment:
 
 ```bash
-pip install icrl==<version>
+pip install icrl-py==<version>
 python -c "import icrl; print(icrl.__version__)"
 ```
 

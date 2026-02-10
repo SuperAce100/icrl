@@ -9,9 +9,9 @@ ICRL implements the In-Context Reinforcement Learning algorithm, enabling LLM ag
 ### Install from PyPI
 
 ```bash
-pip install icrl
+pip install icrl-py
 # or with uv
-uv add icrl
+uv add icrl-py
 ```
 
 ### Install from source
@@ -588,4 +588,3 @@ The key insight is that LLM agents can bootstrap their own performance by:
 ## License
 
 MIT
-
