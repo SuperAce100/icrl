@@ -1,6 +1,6 @@
 {
   "name": "icrl",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "In-Context Reinforcement Learning for LLM Agents",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
