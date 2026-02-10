@@ -21,10 +21,7 @@
     }
   },
   "contextual": {
-    "options": [
-      "copy",
-      "view"
-    ]
+    "options": ["copy", "view"]
   },
   "fonts": {
     "heading": {
@@ -53,11 +50,7 @@
         "groups": [
           {
             "group": "Getting Started",
-            "pages": [
-              "introduction",
-              "installation",
-              "quickstart"
-            ]
+            "pages": ["introduction", "installation", "quickstart"]
           },
           {
             "group": "Core Concepts",
@@ -84,9 +77,16 @@
           {
             "group": "Examples",
             "pages": [
+              "examples/basic-openai-demo",
+              "examples/basic-anthropic-demo",
               "examples/file-system-agent",
               "examples/harbor-coding-agent",
-              "examples/testing-with-mock-llm"
+              "examples/testing-with-mock-llm",
+              "examples/it-support-demo",
+              "examples/exception-handling-demo",
+              "examples/preference-learning-demo",
+              "examples/codebase-patterns-demo",
+              "examples/typescript-demos"
             ]
           }
         ]
@@ -96,9 +96,7 @@
         "groups": [
           {
             "group": "Overview",
-            "pages": [
-              "api-reference/overview"
-            ]
+            "pages": ["api-reference/overview"]
           },
           {
             "group": "Python API",

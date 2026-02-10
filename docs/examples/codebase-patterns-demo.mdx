@@ -1,0 +1,90 @@
+---
+title: "Codebase Patterns Demo"
+description: "ICRL learns your team's APIResponse, exception handling, and service layer patterns"
+---
+
+## Overview
+
+The codebase patterns demo shows ICRL's ability to learn and apply your team's specific coding patterns, conventions, and architectural decisions. Vanilla LLMs use generic patterns; ICRL learns from successful trajectories and applies your `APIResponse` wrapper, custom exceptions, and service layer conventions automatically.
+
+## The Problem
+
+Every time you ask a vanilla LLM to add a new API endpoint, it uses generic patterns:
+
+- Generic error handling (`raise HTTPException(...)`)
+- Standard response formats (raw dicts)
+- Default logging approaches
+
+You end up repeatedly correcting it: _"No, we use our custom `APIResponse` wrapper!"_
+
+## How ICRL Solves This
+
+After successfully completing 2–3 similar tasks, ICRL:
+
+1. **Stores successful trajectories** with your corrections baked in
+2. **Retrieves relevant examples** when you ask for similar tasks
+3. **Applies your patterns automatically** without re-prompting
+
+## Demo Structure
+
+```
+examples/codebase_patterns_demo/
+├── README.md
+├── setup_demo.py              # Prepares the demo environment
+├── run_demo.sh
+├── validate_patterns.py
+└── mock_codebase/
+    ├── app/
+    │   ├── main.py
+    │   ├── core/
+    │   │   ├── response.py      # Custom APIResponse wrapper
+    │   │   ├── exceptions.py    # Custom exception hierarchy
+    │   │   └── logging.py       # Structured logging
+    │   ├── models/
+    │   ├── routes/             # users.py, products.py
+    │   └── services/
+    ├── tests/
+    ├── _reference/             # Expected outputs for comparison
+    └── pyproject.toml
+```
+
+## Custom Patterns (What ICRL Learns)
+
+1. **Response wrapper** — All endpoints return `APIResponse[T]`, not raw dicts
+2. **Exception handling** — Use `NotFoundError`, `ValidationError` from `app.core.exceptions`, not `HTTPException`
+3. **Service layer** — Routes delegate to services; business logic lives in services
+4. **Structured logging** — Use `get_logger(__name__)` and consistent context
+
+## Running the Demo
+
+This demo uses the **ICRL CLI** (`icrl chat`) interactively:
+
+```bash
+cd examples/codebase_patterns_demo
+uv run python setup_demo.py
+
+cd mock_codebase
+
+# 1. First task: Add orders endpoint (ICRL explores and learns)
+uv run icrl chat
+# Ask: "Add a GET /orders endpoint that returns a list of orders. Follow the existing patterns."
+# Say 'yes' to save the trajectory
+
+# 2. Second task: Add categories endpoint (ICRL applies learned patterns)
+# Ask: "Add a GET /categories endpoint with CRUD operations"
+# ICRL retrieves the orders trajectory and applies patterns immediately
+
+# 3. Ablation: Compare with and without examples
+uv run icrl run "Add a GET /items endpoint" --ablate
+```
+
+## What to Observe
+
+- **First task** — ICRL explores `users.py`, `products.py`, `response.py`, etc., and creates the endpoint following exact patterns
+- **Second task** — ICRL retrieves the orders trajectory and applies correct patterns from step 1: fewer exploration steps, faster completion
+- **Ablation** — `--ablate` runs with and without retrieved examples and prints a comparison
+
+## Prerequisites
+
+- `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` set
+- ICRL CLI installed (`uv run icrl chat` from project root)

@@ -1,0 +1,49 @@
+---
+title: "Basic Anthropic Demo"
+description: "Minimal ICRL run with Anthropic — verify your Claude setup"
+---
+
+## Overview
+
+The basic Anthropic demo mirrors the OpenAI demo but uses Claude models. It tries common Anthropic model IDs in order until one succeeds. Use it to confirm your `ANTHROPIC_API_KEY` is valid.
+
+## Prerequisites
+
+- `ANTHROPIC_API_KEY` set in your environment
+- Python 3.12+
+- `icrl-py` installed
+
+## Run
+
+```bash
+uv run python examples/basic_anthropic_demo.py
+```
+
+Optional model override (tried first if set):
+
+```bash
+MODEL=claude-sonnet-4-5 uv run python examples/basic_anthropic_demo.py
+```
+
+## Model Fallback
+
+If `MODEL` is not set, the script tries these in order:
+
+1. `claude-sonnet-4-5`
+2. `claude-sonnet-4`
+3. `claude-3-7-sonnet-latest`
+4. `claude-3-5-sonnet-latest`
+
+It stops on the first model that succeeds.
+
+## Expected Output
+
+```
+Model: claude-sonnet-4-5
+Success: True
+Steps: 1
+```
+
+## Source
+
+`examples/basic_anthropic_demo.py` — about 80 lines, including model fallback logic.

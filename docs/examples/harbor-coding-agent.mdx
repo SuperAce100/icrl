@@ -3,22 +3,33 @@ title: "Harbor Coding Agent"
 description: "Python coding-agent example aligned with Harbor-style sandbox workflows"
 ---
 
+## Overview
+
+The Harbor coding agent demonstrates ICRL's performance improvement on realistic software engineering tasks. It uses a simulated coding workspace (`/workspace/src`, `/workspace/tests`) with shell-like commands for editing, navigation, and testing. The demo shows baseline vs post-training behavior on verifiable coding tasks.
+
 ## Source Files
 
-- `examples/harbor_coding_agent.py`
-- `tests/test_harbor_coding.py`
-
-## What It Demonstrates
-
-- coding workspace simulation (`/workspace/src`, `/workspace/tests`)
-- command-driven code editing/navigation
-- baseline vs post-training behavior
-- verifiable coding tasks (analysis/debugging/testing categories)
+| File                              | Purpose                                   |
+| --------------------------------- | ----------------------------------------- |
+| `examples/harbor_coding_agent.py` | Main demo script with `CodingEnvironment` |
+| `tests/test_harbor_coding.py`     | Pytest tests for the demo                 |
 
 ## Run Demo
 
 ```bash
 OPENAI_API_KEY=... uv run python examples/harbor_coding_agent.py
+```
+
+Or with Anthropic:
+
+```bash
+ANTHROPIC_API_KEY=... uv run python examples/harbor_coding_agent.py
+```
+
+Optional model override:
+
+```bash
+MODEL=gpt-4o-mini uv run python examples/harbor_coding_agent.py
 ```
 
 ## Run Tests
@@ -27,13 +38,21 @@ OPENAI_API_KEY=... uv run python examples/harbor_coding_agent.py
 uv run pytest tests/test_harbor_coding.py -v
 ```
 
+## What It Demonstrates
+
+- **Coding workspace simulation** — Sandboxed `/workspace` with `src/` and `tests/`
+- **Shell-like commands** — `ls`, `cd`, `cat`, `grep`, `find`, `sed`, `echo`, `pytest`, etc.
+- **Baseline vs post-training** — Phase 1 runs evaluation tasks with no examples; Phase 2 trains on coding tasks; Phase 3 re-evaluates with learned examples
+- **Verifiable tasks** — Each task has a `verify(workspace_state) -> bool` function
+
 ## Task Structure
 
 Tasks are `CodingTask` objects with:
 
-- `goal`
-- `verify(workspace_state) -> bool`
-- optional setup hooks
-- metadata (`difficulty`, `category`)
+- `goal` — Natural language description
+- `verify(workspace_state) -> bool` — Success predicate
+- `setup` — Optional hook to modify initial state
+- `difficulty` — `"easy"`, `"medium"`, `"hard"`
+- `category` — `"code-analysis"`, `"debugging"`, `"navigation"`, `"testing"`, `"refactoring"`
 
-This makes it suitable for repeatable benchmarking-style workflows.
+This structure is suitable for repeatable benchmarking workflows and aligns with Harbor/Terminal-Bench 2.0 style evaluations.

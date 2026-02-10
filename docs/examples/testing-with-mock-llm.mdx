@@ -1,18 +1,18 @@
 ---
 title: "Testing With Mock LLM"
-description: "Develop and test quickly without external model calls"
+description: "Develop and test ICRL flows without external model calls"
 ---
+
+## Overview
+
+The mock LLM provider lets you run the full ICRL training and evaluation pipeline without API keys or network access. It uses pattern matching on prompts to generate deterministic plans, reasoning, and actions for file system tasks.
 
 ## Source Files
 
-- `examples/mock_llm.py`
-- `tests/test_with_mock.py`
-
-## Why Use It
-
-- deterministic responses
-- fast local iteration
-- zero API cost
+| File                      | Purpose                          |
+| ------------------------- | -------------------------------- |
+| `examples/mock_llm.py`    | `MockLLMProvider` implementation |
+| `tests/test_with_mock.py` | End-to-end demo using the mock   |
 
 ## Run
 
@@ -20,13 +20,46 @@ description: "Develop and test quickly without external model calls"
 uv run python tests/test_with_mock.py
 ```
 
+## Why Use It
+
+| Benefit           | Description                      |
+| ----------------- | -------------------------------- |
+| **Deterministic** | Same inputs produce same outputs |
+| **Fast**          | No network latency               |
+| **Zero cost**     | No API usage                     |
+| **CI-friendly**   | Tests run without secrets        |
+
 ## Provider Contract
 
-The mock implements the same method as any Python provider:
+The mock implements the same interface as any Python LLM provider:
 
 ```python
 async def complete(messages: list[Message]) -> str:
     ...
 ```
 
-You can swap `MockLLMProvider` with `LiteLLMProvider` without changing `Agent` wiring.
+You can swap `MockLLMProvider` with `LiteLLMProvider` without changing `Agent` wiring:
+
+```python
+from examples.mock_llm import MockLLMProvider
+from icrl import Agent
+
+agent = Agent(
+    llm=MockLLMProvider(),  # or LiteLLMProvider(model="gpt-4o-mini", ...)
+    db_path="./trajectories",
+    plan_prompt=PLAN_PROMPT,
+    reason_prompt=REASON_PROMPT,
+    act_prompt=ACT_PROMPT,
+    k=2,
+    max_steps=10,
+)
+```
+
+## What the Demo Covers
+
+`tests/test_with_mock.py` runs four phases:
+
+1. **Training** — Trains on file system tasks; successful trajectories are stored
+2. **Persistence** — Creates a new agent that loads trajectories from disk
+3. **Retrieval** — Shows semantic search over stored trajectories
+4. **Evaluation** — Runs held-out tasks with retrieval enabled

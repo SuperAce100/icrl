@@ -1,0 +1,45 @@
+---
+title: "Basic OpenAI Demo"
+description: "Minimal ICRL run with OpenAI — the fastest way to verify your setup"
+---
+
+## Overview
+
+The basic OpenAI demo is the smallest possible ICRL example. It uses a trivial environment that succeeds after one action, runs a single training episode, and prints the result. Use it to confirm your API key and environment are working.
+
+## Prerequisites
+
+- `OPENAI_API_KEY` set in your environment
+- Python 3.12+
+- `icrl-py` installed
+
+## Run
+
+```bash
+uv run python examples/basic_openai_demo.py
+```
+
+Optional model override (default is `gpt-4o-mini`):
+
+```bash
+MODEL=gpt-4o-mini uv run python examples/basic_openai_demo.py
+```
+
+## What It Does
+
+1. Creates a `MinimalEnvironment` that accepts any action and returns success
+2. Creates an `Agent` with `LiteLLMProvider` and basic prompts
+3. Runs one `agent.train()` call with goal `"Demonstrate one minimal training run"`
+4. Prints model, success status, and step count
+
+## Expected Output
+
+```
+Model: gpt-4o-mini
+Success: True
+Steps: 1
+```
+
+## Source
+
+`examples/basic_openai_demo.py` — about 60 lines, including the minimal environment definition.

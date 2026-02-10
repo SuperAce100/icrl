@@ -1,16 +1,22 @@
 ---
 title: "File System Agent"
-description: "Python example using a simulated filesystem environment"
+description: "Python example using a simulated filesystem environment for training and evaluation"
 ---
+
+## Overview
+
+The file system agent demonstrates ICRL's training and inference flows using a simulated filesystem environment. The agent learns to navigate directories, read files, and perform operations like `ls`, `cd`, `cat`, `find`, `mkdir`, and `cp`. Successful trajectories are stored and retrieved for similar future tasks.
 
 ## Source Files
 
-- `examples/file_api_env.py`
-- `examples/tasks.py`
-- `tests/test_with_mock.py`
-- `examples/demo_with_real_llm.py`
+| File                             | Purpose                                        |
+| -------------------------------- | ---------------------------------------------- |
+| `examples/file_api_env.py`       | `FileSystemEnvironment` and `Task` definitions |
+| `examples/tasks.py`              | `TRAINING_TASKS` and `EVAL_TASKS`              |
+| `examples/demo_with_real_llm.py` | Full demo with real LLM calls                  |
+| `tests/test_with_mock.py`        | Mock LLM demo (no API keys)                    |
 
-## Run With Mock LLM (no API keys)
+## Run With Mock LLM (No API Keys)
 
 ```bash
 uv run python tests/test_with_mock.py
@@ -18,14 +24,21 @@ uv run python tests/test_with_mock.py
 
 This demonstrates:
 
-- training and inference flows
-- retrieval usage
-- persistent trajectory loading
+- Training phase with trajectory accumulation
+- Database persistence across sessions
+- Trajectory retrieval for in-context examples
+- Evaluation on held-out tasks
 
 ## Run With Real Model
 
 ```bash
 OPENAI_API_KEY=... uv run python examples/demo_with_real_llm.py
+```
+
+Or with Anthropic:
+
+```bash
+ANTHROPIC_API_KEY=... uv run python examples/demo_with_real_llm.py
 ```
 
 Optional model override:
@@ -34,16 +47,23 @@ Optional model override:
 MODEL=gpt-4o-mini uv run python examples/demo_with_real_llm.py
 ```
 
+The demo runs in two phases:
+
+1. **Training** — The agent completes several tasks. Successful runs are stored.
+2. **Evaluation** — Held-out tasks are run with retrieval enabled. The agent uses stored trajectories as examples.
+
 ## Environment Behavior
 
-`FileSystemEnvironment` supports command-like actions such as:
+`FileSystemEnvironment` accepts command-like actions:
 
-- `ls`
-- `cd`
-- `cat`
-- `find`
-- `pwd`
-- `mkdir`
-- `cp`
+| Command          | Description                       |
+| ---------------- | --------------------------------- |
+| `ls [dir]`       | List directory contents           |
+| `cd <dir>`       | Change directory                  |
+| `cat <file>`     | Display file contents             |
+| `find <pattern>` | Search for files matching pattern |
+| `pwd`            | Print working directory           |
+| `mkdir <name>`   | Create directory                  |
+| `cp <src> <dst>` | Copy file                         |
 
-Each task has a verification function that determines `success`.
+Each task has a `verify` function that determines success based on the final `FileSystemState`.

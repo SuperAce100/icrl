@@ -1,0 +1,111 @@
+---
+title: "TypeScript Demos"
+description: "End-to-end Agent examples with OpenAI, Anthropic, and Convex storage"
+---
+
+## Overview
+
+The ICRL TypeScript package includes demo-ready examples that run with real API calls. These demonstrate the `Agent`, custom environments, and storage adapters. Run them from the `icrl-ts` directory.
+
+## Prerequisites
+
+From the monorepo root:
+
+```bash
+cd icrl-ts
+bun install
+```
+
+Required environment variables depend on the demo:
+
+| Demo              | Required                                   | Optional                  |
+| ----------------- | ------------------------------------------ | ------------------------- |
+| OpenAI            | `OPENAI_API_KEY`                           | —                         |
+| Anthropic         | `ANTHROPIC_API_KEY`                        | —                         |
+| Support Triage    | `OPENAI_API_KEY`                           | —                         |
+| Incident Response | `ANTHROPIC_API_KEY`                        | —                         |
+| Web/Convex        | `OPENAI_API_KEY`, `NEXT_PUBLIC_CONVEX_URL` | `ICRL_CONVEX_DATABASE_ID` |
+
+## Run All Core Demos
+
+```bash
+cd icrl-ts
+bun run examples:run
+```
+
+Runs: OpenAI → Anthropic → Support Triage → Incident Response.
+
+## Run Individual Demos
+
+```bash
+cd icrl-ts
+
+bun run example:openai       # Basic Agent with OpenAIProvider
+bun run example:anthropic    # Basic Agent with AnthropicProvider
+bun run example:support      # Customer support triage automation
+bun run example:incident     # Incident response playbook
+bun run example:web         # Convex storage integration
+```
+
+## Run All (Including Web)
+
+```bash
+cd icrl-ts
+bun run examples:run:all
+```
+
+Includes the web-convex demo, which requires `NEXT_PUBLIC_CONVEX_URL` from a running Convex backend (e.g., `web-example`).
+
+## Demo Index
+
+| File                                 | Use Case                                                                         |
+| ------------------------------------ | -------------------------------------------------------------------------------- |
+| `examples/openai-demo.ts`            | Basic end-to-end `Agent` training with `OpenAIProvider` + `OpenAIEmbedder`       |
+| `examples/anthropic-demo.ts`         | Basic end-to-end `Agent` training with `AnthropicProvider`                       |
+| `examples/support-triage-demo.ts`    | Customer support triage: routing + structured reply (billing/shipping/technical) |
+| `examples/incident-response-demo.ts` | On-call incident first-response playbook (severity, owner, first_action)         |
+| `examples/web-convex-demo.ts`        | Uses `web-example`'s `ConvexAdapter` for persistent storage                      |
+
+## OpenAI Demo
+
+Minimal Agent run with OpenAI:
+
+```bash
+bun run example:openai
+```
+
+Uses `MathEnvironment` (trivial add-two-numbers task), `OpenAIProvider`, `OpenAIEmbedder`, and `FileSystemAdapter` for storage.
+
+## Anthropic Demo
+
+Same structure with Claude:
+
+```bash
+bun run example:anthropic
+```
+
+Uses `AnthropicProvider` and `FileSystemAdapter`.
+
+## Support Triage Demo
+
+Customer support ticket routing and reply generation:
+
+- **Environment**: `SupportTicketEnvironment` — routes to billing/shipping/technical based on content
+- **Success**: Requires `priority`, `team`, and `reply` (≥ 40 chars) in the action
+- **Use case**: Automating support triage with learned routing patterns
+
+## Incident Response Demo
+
+On-call incident first-response playbook:
+
+- **Environment**: `IncidentEnvironment` — assigns owner (payments/backend/data) based on incident type
+- **Success**: Requires `severity`, `owner`, and `first_action` in the action
+- **Use case**: Standardizing incident response with learned playbooks
+
+## Web/Convex Demo
+
+Integrates with the `web-example` Convex backend:
+
+- **Storage**: `ConvexAdapter` — trajectories live in Convex, same as the Next.js web demo
+- **Setup**: Run `web-example` and set `NEXT_PUBLIC_CONVEX_URL`, or use a standalone Convex deployment
+- **Optional**: `ICRL_CONVEX_DATABASE_ID` — if omitted, a demo database is created automatically

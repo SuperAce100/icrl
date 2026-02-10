@@ -1,0 +1,91 @@
+---
+title: "Exception Handling Demo"
+description: "ICRL vs vanilla: applying past precedents when policy is too rigid"
+---
+
+## Overview
+
+The exception handling demo shows ICRL's ability to learn from past precedents when handling unusual situations and edge cases. Unlike standard policy lookups, real exception handling requires institutional memory of what worked before.
+
+## The Problem
+
+Every organization handles exceptions based on unwritten rules and past precedents:
+
+- "Refund requests > 30 days: approve if they're a long-term customer"
+- "Enterprise customer asks for custom terms: always loop in legal first"
+- "User claims they were charged twice: refund first, investigate later"
+- "Competitor is poaching our customer: escalate to VP, offer retention discount"
+
+This knowledge lives in past decisions by senior staff and tribal knowledge — **not in any policy document.**
+
+## How ICRL Solves This
+
+ICRL stores successful exception-handling decisions as trajectories. When a similar situation arises:
+
+1. **Retrieves relevant precedents** based on situation similarity
+2. **Applies learned decision patterns** instead of rigid policy
+3. **Provides confident, consistent answers** aligned with past decisions
+
+## Demo Structure
+
+```
+examples/exception_handling_demo/
+├── README.md
+├── setup_demo.py              # Seeds trajectory DB with past decisions
+├── run_demo.py                # Runs the comparison test
+├── evaluate_responses.py      # Detailed analysis
+├── scenarios/
+│   ├── seed_decisions.json    # Past exception-handling precedents
+│   ├── test_scenarios.json    # New edge cases to test
+│   └── policies.md            # Official (rigid) policies
+└── run_quick_demo.sh
+```
+
+The `policies.md` contains strict, black-and-white rules that don't account for nuance. The **real** handling comes from past decisions.
+
+## Running the Demo
+
+From the project root:
+
+```bash
+cd examples/exception_handling_demo
+
+# 1. Setup — seeds the trajectory database with past decisions
+uv run python setup_demo.py
+
+# 2. Run the comparison test
+uv run python run_demo.py
+
+# 3. View detailed evaluation
+uv run python evaluate_responses.py
+```
+
+Quick run:
+
+```bash
+uv run bash run_quick_demo.sh
+```
+
+## Expected Results
+
+| Scenario                    | ICRL                            | Vanilla                            |
+| --------------------------- | ------------------------------- | ---------------------------------- |
+| Late refund, loyal customer | Approve with goodwill           | Deny (policy says 30 days)         |
+| Enterprise custom terms     | Loop in legal, likely approve   | Deny (policy says no custom terms) |
+| Competitor poaching         | Escalate + retention offer      | Standard response                  |
+| Billing dispute, high-value | Refund first, investigate later | Investigate first                  |
+
+**Expected: ICRL matches precedent ~85%+ vs Vanilla ~30%**
+
+## Prerequisites
+
+- `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` set
+- `uv run` from project root, or `python` with `PYTHONPATH` including `src/`
+
+## Key Insight
+
+This demo proves ICRL's value for **judgment-based tasks** where:
+
+- Official policy is too rigid for real situations
+- Past precedents define the actual practice
+- Consistency matters for fairness and trust
