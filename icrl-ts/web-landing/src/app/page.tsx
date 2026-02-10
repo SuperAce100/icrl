@@ -5,27 +5,28 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WorkflowHalftone } from "@/components/workflow-halftone";
 
 const workflowStages = [
   {
     step: "Step 1",
     title: "Capture successful trajectories",
     body: "Store verified trajectories from real task completions as reusable memory.",
-    image: "/visuals/icrl-memory-loop.png",
+    image: "/visuals/workflow-capture-natural.png",
     alt: "Workflow stage for capturing successful trajectories",
   },
   {
     step: "Step 2",
     title: "Retrieve matching prior wins",
     body: "Select relevant successful traces at the exact point an agent needs guidance.",
-    image: "/visuals/icrl-self-improvement-grid.png",
+    image: "/visuals/workflow-retrieve-natural.png",
     alt: "Workflow stage for retrieving relevant successful trajectories",
   },
   {
     step: "Step 3",
     title: "Reinforce instantly at runtime",
     body: "Condition the next action on proven context so behavior improves on the next attempt.",
-    image: "/visuals/icrl-runtime-surface.png",
+    image: "/visuals/workflow-reinforce-natural.png",
     alt: "Workflow stage for instant in-context reinforcement",
   },
 ];
@@ -140,7 +141,7 @@ export default function LandingPage() {
                       <p className="text-sm font-semibold text-foreground">{stage.title}</p>
                     </div>
                     <div className="border border-border/60 bg-background p-2 text-foreground">
-                      <Image src={stage.image} alt={stage.alt} width={1200} height={720} className="h-auto w-full" />
+                      <WorkflowHalftone image={stage.image} label={stage.alt} />
                     </div>
                     <p className="text-sm leading-6 text-muted-foreground">{stage.body}</p>
                   </div>
