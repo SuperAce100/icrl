@@ -42,13 +42,7 @@ asyncio.run(main())
 
 ```ts
 import OpenAI from "openai";
-import {
-  Agent,
-  FileSystemAdapter,
-  OpenAIEmbedder,
-  OpenAIProvider,
-  type Environment,
-} from "icrl";
+import { Agent, FileSystemAdapter, OpenAIEmbedder, OpenAIProvider, type Environment } from "icrl";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -70,8 +64,10 @@ const agent = new Agent({
   embedder: new OpenAIEmbedder(openai),
   storage: new FileSystemAdapter("./trajectories-ts"),
   planPrompt: "Goal: {goal}\nExamples:\n{examples}\nCreate a short plan.",
-  reasonPrompt: "Goal: {goal}\nPlan: {plan}\nObservation: {observation}\nHistory:\n{history}\nExamples:\n{examples}\nThink:",
-  actPrompt: "Goal: {goal}\nPlan: {plan}\nReasoning: {reasoning}\nObservation: {observation}\nRespond with one action.",
+  reasonPrompt:
+    "Goal: {goal}\nPlan: {plan}\nObservation: {observation}\nHistory:\n{history}\nExamples:\n{examples}\nThink:",
+  actPrompt:
+    "Goal: {goal}\nPlan: {plan}\nReasoning: {reasoning}\nObservation: {observation}\nRespond with one action.",
 });
 
 await agent.init();

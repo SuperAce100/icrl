@@ -1,176 +1,235 @@
 ---
 title: "CLI"
-description: "Complete reference for the Python icrl CLI"
+description: "An interactive coding agent in your terminal — like Claude Code, but it learns from every successful run"
 ---
 
 ## Overview
 
-The Python package ships a Typer CLI at `icrl`.
+The ICRL CLI is an interactive, tool-calling coding assistant that lives in your terminal. If you've used [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview) or [OpenAI Codex](https://openai.com/index/codex/), you'll feel right at home — the core experience is the same: type a task in natural language, and the agent reads files, writes code, runs commands, and iterates until the job is done.
 
-Primary command groups:
+The key difference is that **ICRL gets better the more you use it.** Every successful run is stored as a trajectory. On future tasks, the agent retrieves similar past trajectories and uses them as in-context examples, producing better plans and fewer mistakes over time. It's a coding agent that learns your codebase.
 
-- `icrl run`
-- `icrl chat` / `icrl tui`
-- `icrl config ...`
-- `icrl db ...`
-- `icrl version`
+## `icrl chat` — Interactive Mode
 
-## Quick Start
+`icrl chat` is the primary way to use ICRL. It launches a multi-turn terminal UI where you can have an ongoing conversation with the agent.
 
 ```bash
-icrl run "fix failing tests in this repo"
-icrl chat
-icrl config show
-icrl db stats
+uv run icrl chat
 ```
 
-## Global Helpers
+When you start a session, you'll see:
+
+```
+  ___ ____ ____  _
+ |_ _/ ___|  _ \| |
+  | | |   | |_) | |
+  | | |___|  _ <| |___
+ |___\____|_| \_\_____|
+
+Type a task and press Enter. '/clear' to reset, 'exit' to quit.
+Claude Opus 4.5 . ~/my-project . 12 examples
+--------------------------------------------------
+>>
+```
+
+The status line shows your current model, working directory, the number of stored trajectories, and (after the first turn) the current turn number.
+
+### What the Agent Can Do
+
+Just like Claude Code, the ICRL chat agent has full access to your local environment:
+
+- **Read, write, and edit files** in your working directory
+- **Run shell commands** — git, python, npm, cargo, anything in your PATH
+- **Search your codebase** with glob patterns and regex
+- **Search the web** for documentation or solutions
+- **Fetch web pages** and parse their content
+- **Ask you questions** when the task is ambiguous
+
+The agent follows a think-act-observe loop: it reads files to understand context, makes targeted changes, runs commands to verify, and iterates until done.
+
+### What Makes It Different from Claude Code
+
+The agent works like Claude Code on any individual task. The difference is what happens _between_ tasks:
+
+1. **After a successful run**, ICRL asks whether to store the trajectory (the full sequence of reasoning, actions, and observations).
+2. **On future tasks**, the agent retrieves similar past trajectories using semantic search and includes them as in-context examples.
+3. **Over time**, a curation system prunes low-utility trajectories so the example set stays high quality.
+
+This means the agent learns patterns specific to _your_ codebase — your project structure, your testing conventions, your preferred libraries — and applies that knowledge automatically.
+
+### Example Session
 
 ```bash
-icrl version
-icrl --help
-icrl --install-completion
+$ uv run icrl chat
 ```
 
-## Command: `icrl run`
+```
+>> Add input validation to the /api/users endpoint
+
+  Read src/api/users.ts
+  Read src/utils/validate.ts
+  Edited src/api/users.ts
+  $ npm test
+  All tests passed.
+
+✓ Done
+
+Added Zod schema validation to the POST /api/users handler,
+checking email format, password length, and required fields.
+Returns 400 with field-level errors on invalid input.
+
+Store this successful run as a new example? [Y/n]: y
+
+>> Now do the same for /api/posts
+```
+
+On the second task, the agent retrieves the `/api/users` trajectory and uses it as a reference — it already knows your project uses Zod, how your validation utilities are structured, and your test patterns.
+
+### Multi-Turn Conversations
+
+The session maintains full conversation history across turns. You can ask follow-up questions, request changes to what the agent just did, or start entirely new tasks — all within the same session.
+
+- Type `/clear` to reset the conversation and start fresh
+- Type `exit`, `quit`, or `q` to end the session
+
+### Options
 
 ```bash
-icrl run "<goal>" [OPTIONS]
+uv run icrl chat [OPTIONS]
 ```
 
-Options:
+| Flag                                     | Description                                                 | Default           |
+| ---------------------------------------- | ----------------------------------------------------------- | ----------------- |
+| `-m, --model TEXT`                       | Override the LLM model                                      | `claude-opus-4-5` |
+| `-d, --dir PATH`                         | Set the working directory                                   | Current directory |
+| `--compare`                              | Generate two candidate strategies and choose which to store | Off               |
+| `--stats / --no-stats`                   | Show latency, token usage, and cache statistics             | `--stats`         |
+| `-y, --auto-approve / --no-auto-approve` | Auto-approve file writes without confirmation               | `--auto-approve`  |
 
-- `-m, --model TEXT`
-- `--no-train`
-- `--compare`
-- `-d, --dir PATH`
-- `-v, --verbose`
-- `--vertex-credentials PATH`
-- `--vertex-project TEXT`
-- `--vertex-location TEXT`
-- `--stats / --no-stats`
-- `-y, --auto-approve / --no-auto-approve`
-- `--ablate`
+### Compare Mode
 
-Notes:
-
-- `--ablate` runs with/without retrieved examples and prints a comparison.
-- By default, successful runs can be stored to the trajectory DB.
-- `--no-train` disables storing new successful trajectories.
-
-## Commands: `icrl chat` and `icrl tui`
-
-Both start the terminal UI flow.
+Compare mode (`--compare`) is useful when you want to explore different approaches to a task:
 
 ```bash
-icrl chat [OPTIONS]
-icrl tui [OPTIONS]
+uv run icrl chat --compare
 ```
 
-Options:
+The agent proposes two distinct strategies, executes both independently, and presents the results side by side. You then choose which trajectory to store (or reject both). This is particularly useful for tasks where the best approach isn't obvious.
 
-- `-m, --model TEXT`
-- `--compare`
-- `-d, --dir PATH`
-- `--stats / --no-stats`
-- `-y, --auto-approve / --no-auto-approve`
+## `icrl run` — Single-Task Mode
 
-## Config Commands
-
-### Show config
+If you just need to fire off a one-shot task without an interactive session:
 
 ```bash
-icrl config show
+uv run icrl run "fix failing tests in this repo"
 ```
 
-### Set config value
+This runs the agent once, stores the trajectory if successful, and exits. It accepts the same options as `chat`, plus a few extras:
+
+| Flag                        | Description                                                    |
+| --------------------------- | -------------------------------------------------------------- |
+| `--no-train`                | Don't store the trajectory even if the run succeeds            |
+| `--ablate`                  | Run with and without retrieved examples and print a comparison |
+| `-v, --verbose`             | Verbose output                                                 |
+| `--vertex-credentials PATH` | Path to Vertex AI credentials file                             |
+| `--vertex-project TEXT`     | Google Cloud project ID for Vertex AI                          |
+| `--vertex-location TEXT`    | Google Cloud region for Vertex AI                              |
+
+## Configuration
+
+### View Configuration
 
 ```bash
-icrl config set <key> <value>
+uv run icrl config show
 ```
 
-Supported keys:
-
-- `model`
-- `temperature`
-- `max_tokens`
-- `max_steps`
-- `k`
-- `context_compression_threshold`
-- `show_stats`
-- `auto_approve`
-- `db_path`
-- `vertex_credentials_path`
-- `vertex_project_id`
-- `vertex_location`
-
-### Reset config
+### Set a Value
 
 ```bash
-icrl config reset
+uv run icrl config set <key> <value>
 ```
 
-## Database Commands
+Available keys:
 
-Default behavior is project-local DB at `<working_dir>/.icrl/trajectories`.
-Use `--global` to target the global fallback path.
+| Key                             | Description                             | Default           |
+| ------------------------------- | --------------------------------------- | ----------------- |
+| `model`                         | LLM model identifier                    | `claude-opus-4-5` |
+| `temperature`                   | Sampling temperature                    | `1.0`             |
+| `max_tokens`                    | Max tokens per response                 | `16384`           |
+| `max_steps`                     | Max tool-call steps per turn            | `200`             |
+| `k`                             | Number of examples to retrieve          | `3`               |
+| `context_compression_threshold` | Token threshold for context compression | `80000`           |
+| `show_stats`                    | Show performance statistics             | `true`            |
+| `auto_approve`                  | Auto-approve file operations            | `true`            |
+| `db_path`                       | Custom trajectory database path         | Project-local     |
+| `vertex_credentials_path`       | Path to Vertex AI credentials           | —                 |
+| `vertex_project_id`             | Google Cloud project for Vertex AI      | —                 |
+| `vertex_location`               | Google Cloud region for Vertex AI       | —                 |
 
-### Stats
+### Reset Configuration
 
 ```bash
-icrl db stats [--dir PATH] [--global]
+uv run icrl config reset
 ```
 
-### List
+## Trajectory Database
+
+Every project gets its own trajectory database at `<working_dir>/.icrl/trajectories`. Use the `--global` flag on any `db` command to target the global fallback database instead.
+
+### Inspect
 
 ```bash
-icrl db list [--limit N] [--dir PATH] [--global]
+# Summary stats
+uv run icrl db stats
+
+# List stored trajectories
+uv run icrl db list [--limit N]
+
+# Show a specific trajectory
+uv run icrl db show <trajectory_id_or_prefix>
+
+# Semantic search across trajectories
+uv run icrl db search "query" [--k N]
 ```
 
-### Show one trajectory
+### Manage
 
 ```bash
-icrl db show <trajectory_id_or_prefix> [--dir PATH] [--global]
+# Clear the database
+uv run icrl db clear [--force]
+
+# Validate that stored code artifacts still exist
+uv run icrl db validate [trajectory_id] [--include-deprecated]
+
+# List deprecated trajectories
+uv run icrl db deprecated
+
+# Prune low-utility or deprecated trajectories
+uv run icrl db prune [--min-utility FLOAT] [--dry-run] [--force]
+
+# Backfill artifacts for older trajectories
+uv run icrl db extract-artifacts
 ```
 
-### Semantic search
+All `db` commands accept `--dir PATH` to specify the project directory and `--global` to use the global database.
+
+## Provider Selection
+
+The CLI auto-detects which LLM provider to use based on the model string:
+
+- If the model matches a Vertex AI alias or pattern, the CLI uses the Anthropic Vertex provider
+- Otherwise, it uses the generic LiteLLM provider (supports OpenAI, Anthropic, and many others)
+
+The default model is `claude-opus-4-5`. To use a different model:
 
 ```bash
-icrl db search "query" [--k N] [--dir PATH] [--global]
+uv run icrl chat -m gpt-4o
+uv run icrl chat -m claude-sonnet-4-5
 ```
 
-### Clear database
+## Helpers
 
 ```bash
-icrl db clear [--force] [--dir PATH] [--global]
+uv run icrl version    # Print version
+uv run icrl --help     # Top-level help
 ```
-
-### Validate code persistence
-
-```bash
-icrl db validate [trajectory_id] [--include-deprecated] [--dir PATH] [--global]
-```
-
-### List deprecated trajectories
-
-```bash
-icrl db deprecated [--dir PATH] [--global]
-```
-
-### Prune low-utility/deprecated trajectories
-
-```bash
-icrl db prune [--min-utility FLOAT] [--dry-run] [--force] [--dir PATH] [--global]
-```
-
-### Extract artifacts for older trajectories
-
-```bash
-icrl db extract-artifacts [--dir PATH] [--global]
-```
-
-## Provider Selection in CLI
-
-- Default model in config is `claude-opus-4-5`.
-- If model string matches Vertex aliases/patterns, CLI uses the Vertex tool provider.
-- Otherwise CLI uses generic LiteLLM tool provider.

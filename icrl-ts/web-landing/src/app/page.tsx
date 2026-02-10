@@ -199,7 +199,7 @@ export default function LandingPage() {
           aria-label="Hero"
           className="mx-auto px-6 pb-12 pt-12 md:pt-28 md:pb-28 max-w-2xl space-y-8 text-center"
         >
-          <h1 className="font-heading text-4xl  leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl">
+          <h1 className="font-heading text-4xl leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl">
             instant, continuous,
             <br />
             reinforcement learning
@@ -210,7 +210,7 @@ export default function LandingPage() {
             In-context reinforcement learning improves agents in real time by putting agent&apos;s
             most useful past actions into context for the next task.
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-4">
+          <div className="flex sm:flex-row flex-col flex-wrap justify-center items-center gap-4">
             <CopyableInstallSnippet />
             <Button asChild>
               <a href="/docs">
@@ -278,7 +278,7 @@ export default function LandingPage() {
               </CardContent>
             </Card>
 
-            {/* ─── ICRL vs Traditional RL (proper table) ─── */}
+            {/* ─── ICRL vs Traditional RL (table on md+, stacked cards on sm) ─── */}
             <Card className="border-border/70 bg-card shadow-none md:col-span-7">
               <CardHeader>
                 <CardTitle asChild>
@@ -288,15 +288,41 @@ export default function LandingPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
+                {/* Stacked cards: visible on small screens only */}
+                <div className="space-y-3 md:hidden">
+                  {comparisonRows.map((row) => (
+                    <div
+                      key={row.dimension}
+                      className="rounded-md border border-border/60 bg-muted/10 p-3 space-y-2"
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {row.dimension}
+                      </p>
+                      <div className="grid gap-2 text-xs">
+                        <div className="flex gap-2">
+                          <span className="font-semibold text-primary shrink-0">ICRL:</span>
+                          <span className="text-foreground min-w-0">{row.icrl}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="font-semibold text-muted-foreground shrink-0">
+                            Traditional:
+                          </span>
+                          <span className="text-muted-foreground min-w-0">{row.traditional}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Table: visible from md up */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full min-w-[320px] text-xs">
                     <thead>
                       <tr className="border-b border-border/60">
-                        <th className="pb-2 pt-2 pr-3 text-left font-semibold text-muted-foreground" />
-                        <th className="bg-primary/5 px-3 pb-2 pt-2 text-left font-semibold text-primary">
+                        <th className="pb-2 pt-2 pr-3 text-left font-semibold text-muted-foreground w-[30%] min-w-0" />
+                        <th className="bg-primary/5 px-3 pb-2 pt-2 text-left font-semibold text-primary w-[35%] min-w-0">
                           ICRL
                         </th>
-                        <th className="pb-2 pt-2 pl-3 text-left font-semibold text-muted-foreground">
+                        <th className="pb-2 pt-2 pl-3 text-left font-semibold text-muted-foreground w-[35%] min-w-0">
                           Traditional RL
                         </th>
                       </tr>
@@ -304,11 +330,15 @@ export default function LandingPage() {
                     <tbody>
                       {comparisonRows.map((row) => (
                         <tr key={row.dimension} className="border-b border-border/30 last:border-0">
-                          <td className="py-2.5 pr-3 font-medium text-foreground whitespace-nowrap">
+                          <td className="py-2.5 pr-3 font-medium text-foreground align-top">
                             {row.dimension}
                           </td>
-                          <td className="bg-primary/5 py-2.5 px-3 text-foreground">{row.icrl}</td>
-                          <td className="py-2.5 pl-3 text-muted-foreground">{row.traditional}</td>
+                          <td className="bg-primary/5 py-2.5 px-3 text-foreground align-top">
+                            {row.icrl}
+                          </td>
+                          <td className="py-2.5 pl-3 text-muted-foreground align-top">
+                            {row.traditional}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
