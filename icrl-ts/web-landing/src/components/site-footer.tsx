@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { BookOpen, Github, Home } from "lucide-react";
+import { Github } from "lucide-react";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border/40 bg-background/70 backdrop-blur-sm">
+    <footer className="border-t border-border/60 bg-background/85">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-6 sm:flex-row">
         <p className="text-xs text-muted-foreground">
           In-Context Reinforcement Learning. Built with ICRL in 2026.
@@ -13,14 +13,12 @@ export function SiteFooter() {
             href="/"
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            <Home className="size-3" />
             Landing
           </Link>
           <Link
             href="/docs"
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            <BookOpen className="size-3" />
             Docs
           </Link>
           <a
