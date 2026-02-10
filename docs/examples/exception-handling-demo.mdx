@@ -28,18 +28,20 @@ ICRL stores successful exception-handling decisions as trajectories. When a simi
 
 ## Demo Structure
 
-```
-examples/exception_handling_demo/
-├── README.md
-├── setup_demo.py              # Seeds trajectory DB with past decisions
-├── run_demo.py                # Runs the comparison test
-├── evaluate_responses.py      # Detailed analysis
-├── scenarios/
-│   ├── seed_decisions.json    # Past exception-handling precedents
-│   ├── test_scenarios.json    # New edge cases to test
-│   └── policies.md            # Official (rigid) policies
-└── run_quick_demo.sh
-```
+<Tree>
+  <Tree.Folder name="examples/exception_handling_demo" defaultOpen>
+    <Tree.File name="README.md" />
+    <Tree.File name="setup_demo.py" />
+    <Tree.File name="run_demo.py" />
+    <Tree.File name="evaluate_responses.py" />
+    <Tree.Folder name="scenarios" defaultOpen>
+      <Tree.File name="seed_decisions.json" />
+      <Tree.File name="test_scenarios.json" />
+      <Tree.File name="policies.md" />
+    </Tree.Folder>
+    <Tree.File name="run_quick_demo.sh" />
+  </Tree.Folder>
+</Tree>
 
 The `policies.md` contains strict, black-and-white rules that don't account for nuance. The **real** handling comes from past decisions.
 

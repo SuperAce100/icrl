@@ -28,27 +28,30 @@ ICRL stores successful interactions that reflect your preferences. Over time:
 
 ## Demo Structure
 
-```
-examples/preference_learning_demo/
-├── README.md
-├── setup_demo.py              # Seeds DB with user-specific trajectories
-├── run_demo.py                # Runs comparison across user profiles
-├── user_profiles/
-│   ├── expert_terse.json       # Senior dev: "just the code"
-│   ├── learner_detailed.json  # Junior dev: "explain everything"
-│   └── manager_summary.json   # Manager: "high-level overview"
-└── scenarios/
-    ├── seed_interactions.json # Past interactions per user type
-    └── test_requests.json     # New requests to test
-```
+<Tree>
+  <Tree.Folder name="examples/preference_learning_demo" defaultOpen>
+    <Tree.File name="README.md" />
+    <Tree.File name="setup_demo.py" />
+    <Tree.File name="run_demo.py" />
+    <Tree.Folder name="user_profiles" defaultOpen>
+      <Tree.File name="expert_terse.json" />
+      <Tree.File name="learner_detailed.json" />
+      <Tree.File name="manager_summary.json" />
+    </Tree.Folder>
+    <Tree.Folder name="scenarios" defaultOpen>
+      <Tree.File name="seed_interactions.json" />
+      <Tree.File name="test_requests.json" />
+    </Tree.Folder>
+  </Tree.Folder>
+</Tree>
 
 ## User Profiles
 
-| Profile              | Style                 | Wants                               | Example                                     |
-| -------------------- | --------------------- | ----------------------------------- | ------------------------------------------- |
-| **Expert Terse**     | Minimal explanation   | Commands, code snippets             | "How do I rebase?" → `git rebase -i HEAD~3` |
-| **Learner Detailed** | Thorough explanations | Why things work, pitfalls, examples | Full explanation with diagrams              |
-| **Manager Summary**  | High-level overview   | Impact, timeline, risks, decisions  | "Rebasing reorganizes commit history..."    |
+| Profile              | Style                 | Wants                               | Example                                          |
+| -------------------- | --------------------- | ----------------------------------- | ------------------------------------------------ |
+| **Expert Terse**     | Minimal explanation   | Commands, code snippets             | "How do I rebase?" yields `git rebase -i HEAD~3` |
+| **Learner Detailed** | Thorough explanations | Why things work, pitfalls, examples | Full explanation with diagrams                   |
+| **Manager Summary**  | High-level overview   | Impact, timeline, risks, decisions  | "Rebasing reorganizes commit history..."         |
 
 ## Running the Demo
 

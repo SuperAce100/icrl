@@ -27,18 +27,21 @@ ICRL stores successful support interactions as trajectories. When a similar issu
 
 ## Demo Structure
 
-```
-examples/it_support_demo/
-├── README.md
-├── setup_demo.py              # Seeds trajectory DB with past tickets
-├── run_demo.py                # Runs the comparison test
-├── evaluate_responses.py      # Scores responses
-├── scenarios/
-│   ├── seed_tickets.json      # Past resolved tickets (ICRL's memory)
-│   └── test_tickets.json      # New tickets to test
-└── knowledge_base/
-    └── official_docs.md       # Intentionally incomplete docs
-```
+<Tree>
+  <Tree.Folder name="examples/it_support_demo" defaultOpen>
+    <Tree.File name="README.md" />
+    <Tree.File name="setup_demo.py" />
+    <Tree.File name="run_demo.py" />
+    <Tree.File name="evaluate_responses.py" />
+    <Tree.Folder name="scenarios" defaultOpen>
+      <Tree.File name="seed_tickets.json" />
+      <Tree.File name="test_tickets.json" />
+    </Tree.Folder>
+    <Tree.Folder name="knowledge_base">
+      <Tree.File name="official_docs.md" />
+    </Tree.Folder>
+  </Tree.Folder>
+</Tree>
 
 The `knowledge_base/official_docs.md` contains generic, outdated information — exactly like real corporate wikis. The **real** knowledge comes from past ticket resolutions.
 
@@ -67,12 +70,12 @@ uv run python run_demo.py --quick
 
 ## Expected Results
 
-| Test Case          | ICRL (with examples)           | Vanilla (no examples)          |
-| ------------------ | ------------------------------ | ------------------------------ |
-| VPN + macOS Sonoma | "Disable IPv6" ✅              | "Reinstall VPN client" ❌      |
-| Email sync mobile  | "MFA token expired" ✅         | "Check internet connection" ❌ |
-| DB access issue    | "Check guest WiFi" ✅          | "Is the database up?" ❌       |
-| Git push rejected  | "Use Personal Access Token" ✅ | "Reset your password" ❌       |
+| Test Case          | ICRL (with examples)                  | Vanilla (no examples)                   |
+| ------------------ | ------------------------------------- | --------------------------------------- |
+| VPN + macOS Sonoma | "Disable IPv6" (correct)              | "Reinstall VPN client" (incorrect)      |
+| Email sync mobile  | "MFA token expired" (correct)         | "Check internet connection" (incorrect) |
+| DB access issue    | "Check guest WiFi" (correct)          | "Is the database up?" (incorrect)       |
+| Git push rejected  | "Use Personal Access Token" (correct) | "Reset your password" (incorrect)       |
 
 **Expected: ICRL ~90%+ accuracy vs Vanilla ~25% accuracy**
 

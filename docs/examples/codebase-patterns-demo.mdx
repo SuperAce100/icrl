@@ -27,26 +27,30 @@ After successfully completing 2–3 similar tasks, ICRL:
 
 ## Demo Structure
 
-```
-examples/codebase_patterns_demo/
-├── README.md
-├── setup_demo.py              # Prepares the demo environment
-├── run_demo.sh
-├── validate_patterns.py
-└── mock_codebase/
-    ├── app/
-    │   ├── main.py
-    │   ├── core/
-    │   │   ├── response.py      # Custom APIResponse wrapper
-    │   │   ├── exceptions.py    # Custom exception hierarchy
-    │   │   └── logging.py       # Structured logging
-    │   ├── models/
-    │   ├── routes/             # users.py, products.py
-    │   └── services/
-    ├── tests/
-    ├── _reference/             # Expected outputs for comparison
-    └── pyproject.toml
-```
+<Tree>
+  <Tree.Folder name="examples/codebase_patterns_demo" defaultOpen>
+    <Tree.File name="README.md" />
+    <Tree.File name="setup_demo.py" />
+    <Tree.File name="run_demo.sh" />
+    <Tree.File name="validate_patterns.py" />
+    <Tree.Folder name="mock_codebase" defaultOpen>
+      <Tree.Folder name="app" defaultOpen>
+        <Tree.File name="main.py" />
+        <Tree.Folder name="core" defaultOpen>
+          <Tree.File name="response.py" />
+          <Tree.File name="exceptions.py" />
+          <Tree.File name="logging.py" />
+        </Tree.Folder>
+        <Tree.Folder name="models" />
+        <Tree.Folder name="routes" />
+        <Tree.Folder name="services" />
+      </Tree.Folder>
+      <Tree.Folder name="tests" />
+      <Tree.Folder name="_reference" />
+      <Tree.File name="pyproject.toml" />
+    </Tree.Folder>
+  </Tree.Folder>
+</Tree>
 
 ## Custom Patterns (What ICRL Learns)
 
