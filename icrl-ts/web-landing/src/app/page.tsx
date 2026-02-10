@@ -17,7 +17,6 @@ import {
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { WorkflowHalftone } from "@/components/workflow-halftone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -254,12 +253,8 @@ export default function LandingPage() {
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border-primary/60 bg-card shadow-none md:col-span-12">
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24" style={{ maskImage: "linear-gradient(to top, black, transparent)" }}>
-              <WorkflowHalftone image="/visuals/workflow-capture-natural.png" label="CTA flourish" fitMode="fill" className="h-full opacity-35" />
-            </div>
-            <div className="pointer-events-none absolute inset-0 bg-background/80" />
-            <CardContent className="relative flex flex-col gap-5 py-6 md:flex-row md:items-center md:justify-between">
+          <Card className="border-primary/60 bg-card shadow-none md:col-span-12">
+            <CardContent className="flex flex-col gap-5 py-6 md:flex-row md:items-center md:justify-between">
               <div className="space-y-2">
                 <p className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">Start building with ICRL</p>
                 <p className="text-sm leading-6 text-muted-foreground">
