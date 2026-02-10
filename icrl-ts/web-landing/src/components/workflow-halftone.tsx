@@ -8,11 +8,16 @@ interface WorkflowHalftoneProps {
   image: string;
   label: string;
   className?: string;
+  fitMode?: "box" | "fill";
 }
 
-export function WorkflowHalftone({ image, label, className }: WorkflowHalftoneProps) {
+export function WorkflowHalftone({ image, label, className, fitMode = "box" }: WorkflowHalftoneProps) {
   return (
-    <div className={cn("relative aspect-[16/10] w-full overflow-hidden", className)} aria-label={label} role="img">
+    <div
+      className={cn("relative w-full overflow-hidden", fitMode === "box" && "aspect-[16/10]", className)}
+      aria-label={label}
+      role="img"
+    >
       <HalftoneDots
         className="h-full w-full"
         width={1280}

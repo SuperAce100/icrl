@@ -135,28 +135,41 @@ export default function LandingPage() {
               </div>
               <div className="grid gap-4 md:grid-cols-3">
                 {workflowStages.map((stage) => (
-                  <div key={stage.title} className="space-y-3 border border-border/60 bg-muted/20 p-3">
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">{stage.step}</p>
+                  <div key={stage.title} className="relative overflow-hidden border border-border/60 bg-muted/20 p-4">
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24" style={{ maskImage: "linear-gradient(to top, black, transparent)" }}>
+                      <WorkflowHalftone image={stage.image} label={stage.alt} fitMode="fill" className="h-full opacity-55" />
+                    </div>
+                    <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 border border-primary/40 bg-background/30" />
+                    <div className="pointer-events-none absolute inset-0 bg-background/70" />
+                    <div className="relative space-y-3">
+                      <p className="inline-flex border border-primary/60 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
+                        {stage.step}
+                      </p>
                       <p className="text-sm font-semibold text-foreground">{stage.title}</p>
+                      <p className="text-sm leading-6 text-muted-foreground">{stage.body}</p>
                     </div>
-                    <div className="border border-border/60 bg-background p-2 text-foreground">
-                      <WorkflowHalftone image={stage.image} label={stage.alt} />
-                    </div>
-                    <p className="text-sm leading-6 text-muted-foreground">{stage.body}</p>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border/70 bg-card shadow-none md:col-span-5">
+          <Card className="relative overflow-hidden border-border/70 bg-card shadow-none md:col-span-5">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24" style={{ maskImage: "linear-gradient(to top, black, transparent)" }}>
+              <WorkflowHalftone
+                image={workflowStages[0].image}
+                label="Decorative flourish for ICRL card"
+                fitMode="fill"
+                className="h-full opacity-40"
+              />
+            </div>
+            <div className="pointer-events-none absolute inset-0 bg-background/80" />
             <CardHeader>
               <CardTitle className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
                 Why teams choose ICRL
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="relative space-y-3">
               <p className="text-sm leading-6 text-muted-foreground">
                 It delivers self-improvement at inference time. You keep your model stack and gain a fast reinforcement
                 mechanism directly in product workflows.
@@ -169,13 +182,25 @@ export default function LandingPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/70 bg-card shadow-none md:col-span-7">
+          <Card className="relative overflow-hidden border-border/70 bg-card shadow-none md:col-span-7">
+            <div
+              className="pointer-events-none absolute right-0 top-0 h-28 w-44"
+              style={{ maskImage: "linear-gradient(to bottom left, black, transparent)" }}
+            >
+              <WorkflowHalftone
+                image={workflowStages[1].image}
+                label="Decorative flourish for comparison card"
+                fitMode="fill"
+                className="h-full opacity-45"
+              />
+            </div>
+            <div className="pointer-events-none absolute inset-0 bg-background/80" />
             <CardHeader>
               <CardTitle className="font-[family-name:var(--font-archivo)] text-2xl tracking-tight text-foreground">
                 ICRL vs traditional RL
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
+            <CardContent className="relative grid gap-4 sm:grid-cols-2">
               {comparisons.map((group) => (
                 <div key={group.label} className="space-y-2 border border-border/60 bg-muted/20 p-4">
                   <p className="text-sm font-semibold uppercase tracking-[0.08em] text-foreground">{group.label}</p>
@@ -189,13 +214,22 @@ export default function LandingPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/70 bg-card shadow-none md:col-span-7">
+          <Card className="relative overflow-hidden border-border/70 bg-card shadow-none md:col-span-7">
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-20" style={{ maskImage: "linear-gradient(to right, black, transparent)" }}>
+              <WorkflowHalftone
+                image={workflowStages[2].image}
+                label="Decorative flourish for use case card"
+                fitMode="fill"
+                className="h-full opacity-45"
+              />
+            </div>
+            <div className="pointer-events-none absolute inset-0 bg-background/80" />
             <CardHeader>
               <CardTitle className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
                 Instant self-improvement use cases
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="relative space-y-4">
               {useCases.map((item) => (
                 <div key={item.title} className="border border-border/60 bg-muted/20 p-4">
                   <div className="mb-2 flex items-center gap-2">
@@ -208,13 +242,22 @@ export default function LandingPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/70 bg-card shadow-none md:col-span-5">
+          <Card className="relative overflow-hidden border-border/70 bg-card shadow-none md:col-span-5">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-20" style={{ maskImage: "linear-gradient(to bottom, black, transparent)" }}>
+              <WorkflowHalftone
+                image={workflowStages[1].image}
+                label="Decorative flourish for package links"
+                fitMode="fill"
+                className="h-full opacity-35"
+              />
+            </div>
+            <div className="pointer-events-none absolute inset-0 bg-background/80" />
             <CardHeader>
               <CardTitle className="font-[family-name:var(--font-archivo)] text-xl tracking-tight text-foreground">
                 Published packages
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="relative space-y-3">
               <a
                 href="https://www.npmjs.com/package/icrl"
                 target="_blank"
