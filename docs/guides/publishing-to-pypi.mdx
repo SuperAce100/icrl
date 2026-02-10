@@ -1,0 +1,81 @@
+---
+title: "Publishing to PyPI"
+description: "Release checklist and commands for publishing the Python package with uv"
+---
+
+## Prerequisites
+
+- PyPI project owner/maintainer access for `icrl`
+- Python 3.12+
+- `uv` installed
+- A PyPI API token with publish permission
+
+## 1. Bump version
+
+Update the version in both files:
+
+- `pyproject.toml` (`[project].version`)
+- `src/icrl/__init__.py` (`__version__`)
+
+## 2. Build artifacts
+
+```bash
+uv build
+```
+
+This creates:
+
+- `dist/icrl-<version>.tar.gz`
+- `dist/icrl-<version>-py3-none-any.whl`
+
+## 3. Validate metadata before upload
+
+```bash
+uvx twine check dist/*
+```
+
+Optional smoke test from the built wheel:
+
+```bash
+uvx --from ./dist/icrl-<version>-py3-none-any.whl \
+  python -c "import icrl; print(icrl.__version__)"
+```
+
+## 4. Publish with `uv publish`
+
+Set your token:
+
+```bash
+export UV_PUBLISH_TOKEN="pypi-..."
+```
+
+Upload to PyPI:
+
+```bash
+uv publish
+```
+
+By default, `uv publish` uploads `dist/*`.
+
+## 5. TestPyPI dry run (recommended)
+
+```bash
+UV_PUBLISH_URL="https://test.pypi.org/legacy/" \
+UV_PUBLISH_TOKEN="pypi-..." \
+uv publish
+```
+
+## 6. Verify release
+
+- Confirm the version on PyPI: `https://pypi.org/project/icrl/`
+- Install in a fresh environment:
+
+```bash
+pip install icrl==<version>
+python -c "import icrl; print(icrl.__version__)"
+```
+
+## Notes
+
+- If upload fails with an existing-file error, that version is already published. Bump the version and rebuild.
+- Keep changelog/release notes in GitHub alongside the version tag.
