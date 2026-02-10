@@ -30,7 +30,7 @@ export function CopyableInstallSnippet() {
         <button
           type="button"
           onClick={() => handleCopy("npm")}
-          className="group flex items-center justify-between gap-4 px-4 py-2.5 text-left transition-colors hover:bg-muted/40 hover:text-foreground"
+          className="group flex items-center justify-between gap-4 px-4 py-2.5 text-left transition-colors hover:bg-muted/40 hover:text-foreground bg-card"
           aria-label="Copy npm install command"
         >
           <span>{NPM_CMD}</span>
@@ -43,7 +43,7 @@ export function CopyableInstallSnippet() {
         <button
           type="button"
           onClick={() => handleCopy("pip")}
-          className="group flex items-center justify-between gap-4 px-4 py-2.5 text-left transition-colors hover:bg-muted/40 hover:text-foreground"
+          className="group flex items-center justify-between gap-4 px-4 py-2.5 text-left transition-colors hover:bg-muted/40 hover:text-foreground bg-card"
           aria-label="Copy pip install command"
         >
           <span>{PIP_CMD}</span>

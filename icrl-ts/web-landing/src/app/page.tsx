@@ -10,15 +10,13 @@ import {
   Globe,
   Home,
   MessageSquare,
-  Package,
   PenLine,
-  Sparkles,
-  Target,
   Terminal,
   ThumbsUp,
 } from "lucide-react";
 
 import { CopyableInstallSnippet } from "@/components/copyable-install-snippet";
+import { InstallLinks } from "@/components/install-links";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
@@ -194,7 +192,7 @@ export default function LandingPage() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(item) }}
         />
       ))}
-      <main className="min-h-screen bg-background">
+      <main className="min-h-screen bg-background bg-linear-to-b from-background to-primary/20 dark:from-background dark:to-background">
         <SiteHeader />
 
         <section
@@ -237,25 +235,27 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm leading-6 text-muted-foreground">
+                  At LLM scale, traditional reinforcement learning requires retraining the model
+                  with every new experience, a very expensive process that doesn&apos;s even work
+                  for the closed-source frontier and takes weeks to successfully complete.
                   <span className="font-semibold text-foreground">
                     In-Context Reinforcement Learning (ICRL)
                   </span>{" "}
-                  is a framework that lets LLM agents learn from their own experience at runtime —
-                  without any fine-tuning, retraining, or prompt engineering. When an agent
-                  successfully completes a task, ICRL stores that trajectory. The next time a
-                  similar task comes up, the agent retrieves the most relevant past steps and uses
-                  them as in-context examples to guide its decisions.
+                  lets LLM agents improve continuously without any post-training work at all. When
+                  an agent successfully completes a task, ICRL stores that trajectory, so the next
+                  time a similar task comes up, the can will retrieve the most relevant past steps
+                  and use them as in-context examples to guide its decisions.
                 </p>
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Think of it as giving your agent a growing memory of what has worked before. Over
-                  time, low-quality or outdated trajectories are automatically curated out, so the
-                  agent&apos;s experience stays fresh and relevant. The result is an agent that gets
-                  measurably better with every task it completes — all while using the same frozen
-                  model underneath.
+                  When the attention mechanism attends to repeated in context examples, it forms
+                  what is functionally a LoRA on top of the base model equivalent to a small fine
+                  tune on the in context data{" "}
+                  <span className="font-semibold text-foreground">1</span>. We see improvements
+                  across a wide range of tasks, from coding to support triage to RLHF type tasks{" "}
+                  <span className="font-semibold text-foreground">2</span>.
                 </p>
                 <p className="text-sm leading-6 text-muted-foreground">
-                  ICRL works with any LLM provider and any agentic framework. It ships as a
-                  lightweight{" "}
+                  ICRL works with any LLM provider, even closed-source ones. It ships as a{" "}
                   <a
                     href="https://www.npmjs.com/package/icrl"
                     target="_blank"
@@ -271,10 +271,9 @@ export default function LandingPage() {
                     rel="noreferrer noopener"
                     className="underline underline-offset-2 text-foreground hover:text-primary"
                   >
-                    PyPI
+                    pip
                   </a>{" "}
-                  package with a simple API: store trajectories, retrieve by goal and step
-                  observation, and curate over time.
+                  package, so you can apply our research right away.
                 </p>
               </CardContent>
             </Card>
@@ -361,8 +360,8 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-sm leading-6 text-muted-foreground">
-                  One thing ICRL enables is to specialize an agent to a specific codebase. Using the
-                  ICRL CLI, you can launch a terminal UI like Claude Code or Codex that creates an
+                  ICRL enables you to specialize an agent to a specific codebase. Using the ICRL
+                  CLI, you can launch a terminal UI like Claude Code or Codex that creates an
                   interactive coding assistant in your shell. Unlike static assistants, it{" "}
                   <span className="font-semibold text-foreground">gets better over time</span> as
                   successful trajectories are stored and retrieved for future tasks.
@@ -370,7 +369,7 @@ export default function LandingPage() {
                 <pre className="border border-border/60 bg-muted/20 p-3 font-mono text-xs text-foreground">{`uv run icrl chat`}</pre>
                 <p className="text-sm leading-6 text-muted-foreground">
                   The more you use it, the better it gets at understanding your project&apos;s
-                  patterns, conventions, and architecture, like a custom model was finetuned to your
+                  patterns, conventions, and architecture, like a custom model fine-tuned to your
                   codebase.
                 </p>
               </CardContent>
@@ -507,67 +506,24 @@ export default function LandingPage() {
 
             {/* ─── CTA ─── */}
             <Card
-              className="border-primary/60 bg-linear-to-r from-primary/5 via-card to-transparent shadow-none md:col-span-12"
+              className="border-primary/60 bg-card shadow-none md:col-span-12 px-6"
               role="complementary"
               aria-label="Call to action"
             >
-              <CardContent className="flex flex-col gap-5 py-6 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-2">
-                  <h2 className="font-heading text-2xl tracking-tight text-foreground">
-                    Start building with ICRL
+              <CardContent className="flex flex-col items-center gap-5 py-6 text-center md:flex-row md:justify-between md:gap-6 md:text-left">
+                <div className="space-y-1 max-md:max-w-md">
+                  <h2 className="font-heading text-4xl text-foreground">
+                    Start improving your agents{" "}
+                    <ArrowRight className="size-8 text-primary inline" />
                   </h2>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    Install the package, run coding tasks with the CLI, and let successful
-                    trajectories continuously improve your agent.
-                  </p>
                 </div>
-                <nav aria-label="Install links" className="flex flex-wrap items-center gap-3">
-                  <Button asChild>
-                    <a href="/docs">
-                      <Target className="size-4" />
-                      Open docs
-                    </a>
-                  </Button>
-                  <Button asChild variant="ghost">
-                    <a
-                      href="https://www.npmjs.com/package/icrl"
-                      target="_blank"
-                      rel="noreferrer noopener"
-                    >
-                      <Package className="size-4" />
-                      npm
-                    </a>
-                  </Button>
-                  <Button asChild variant="ghost">
-                    <a
-                      href="https://pypi.org/project/icrl/"
-                      target="_blank"
-                      rel="noreferrer noopener"
-                    >
-                      <Package className="size-4" />
-                      PyPI
-                    </a>
-                  </Button>
-                  <Button asChild variant="ghost">
-                    <a
-                      href="https://github.com/SuperAce100/icrl"
-                      target="_blank"
-                      rel="noreferrer noopener"
-                    >
-                      <Sparkles className="size-4" />
-                      GitHub
-                    </a>
-                  </Button>
-                </nav>
+                <div className="flex shrink-0 flex-col items-center md:items-end">
+                  <InstallLinks />
+                </div>
               </CardContent>
             </Card>
           </div>
         </section>
-
-        <div
-          className="h-px w-full bg-linear-to-r from-transparent via-border/60 to-transparent"
-          aria-hidden
-        />
 
         <SiteFooter />
       </main>
