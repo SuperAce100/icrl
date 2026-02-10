@@ -1,59 +1,32 @@
 ---
 title: "TypeScript Package API"
-description: "TypeScript interfaces, classes, and providers"
+description: "Overview of the ICRL TypeScript library"
 ---
 
-## Agent
+## Overview
 
-```ts
-new Agent(options: AgentOptions)
-await agent.init()
-await agent.train(env, goal)
-await agent.run(env, goal)
-await agent.trainBatch(envFactory, goals)
-await agent.runBatch(envFactory, goals)
-agent.getDatabase()
-agent.getStats()
-```
+The ICRL TypeScript package (`icrl`) provides the same trajectory-learning framework as the Python package. Use the pages in this section for detailed API documentation.
 
-`AgentOptions` includes:
+## Core Components
 
-- `llm`, `storage`, `embedder`
-- `planPrompt`, `reasonPrompt`, `actPrompt`
-- `k`, `maxSteps`
-- `seedTrajectories`, `onStep`
-- `curationThreshold`, `curationMinRetrievals`
-- `verifyTrajectory`
+- [Agent](/api-reference/typescript-agent) — main agent class
+- [TrajectoryDatabase](/api-reference/typescript-trajectory-database) — trajectory store with semantic search
+- [TrajectoryRetriever](/api-reference/typescript-trajectory-retriever) — step-level retrieval
+- [CurationManager](/api-reference/typescript-curation-manager) — automatic curation
+- [ReActLoop](/api-reference/typescript-react-loop) — planning, reasoning, acting loop
 
-## Database and Retrieval
+## Storage & Protocols
 
-- `TrajectoryDatabase(storage, embedder, options?)`
-- `TrajectoryRetriever(database, k?)`
-- `CurationManager(database, options?)`
-- `ReActLoop(llm, retriever, options)`
+- [StorageAdapter](/api-reference/typescript-storage) — pluggable storage interface; built-in `FileSystemAdapter`
+- [Environment](/api-reference/typescript-environment) — environment protocol
+- [LLMProvider](/api-reference/typescript-llm-provider) — LLM protocol
+- [Embedder](/api-reference/typescript-embedder) — embedding protocol
 
-## Storage Interfaces
+## Models
 
-`StorageAdapter` defines trajectory/metadata/embedding persistence and similarity search.
-
-Built-in implementation:
-
-- `FileSystemAdapter`
+- [Models](/api-reference/typescript-models) — `Trajectory`, `Step`, `Message`, `StepExample`, helpers
 
 ## Providers
 
-- `OpenAIProvider`
-- `OpenAIEmbedder`
-- `AnthropicProvider`
-- `AnthropicVertexProvider`
-
-Model aliases export:
-
-- `ANTHROPIC_VERTEX_MODEL_ALIASES`
-
-## Protocols
-
-- `Environment`
-- `StepResult`
-- `LLMProvider`
-- `Embedder`
+- [OpenAI Provider](/api-reference/typescript-openai-provider) — `OpenAIProvider`, `OpenAIEmbedder`
+- [Anthropic Provider](/api-reference/typescript-anthropic-provider) — `AnthropicProvider`, `AnthropicVertexProvider`

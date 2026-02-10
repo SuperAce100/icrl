@@ -1,0 +1,48 @@
+---
+title: "Agent"
+description: "Main TypeScript agent class"
+---
+
+## Constructor
+
+```ts
+new Agent(options: AgentOptions)
+```
+
+## Options
+
+`AgentOptions` includes:
+
+- `llm`, `storage`, `embedder`
+- `planPrompt`, `reasonPrompt`, `actPrompt`
+- `k` (default: 3), `maxSteps` (default: 30)
+- `seedTrajectories`, `onStep`
+- `curationThreshold` (default: 0.3), `curationMinRetrievals` (default: 5)
+- `verifyTrajectory`
+
+## Core Methods
+
+```ts
+await agent.init();
+await agent.train(env, goal);
+await agent.run(env, goal);
+await agent.trainBatch(envFactory, goals);
+await agent.runBatch(envFactory, goals);
+agent.getDatabase();
+agent.getStats();
+```
+
+## Notes
+
+- `init()` must be called before `train()` or `run()`.
+- `train` stores successful trajectories (subject to `verifyTrajectory`).
+- `run` never writes new trajectories.
+- `getDatabase()` exposes the underlying `TrajectoryDatabase`.
+
+## Stats Shape
+
+`getStats()` returns:
+
+- `totalTrajectories`
+- `successfulTrajectories`
+- `successRate`

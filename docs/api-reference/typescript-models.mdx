@@ -1,0 +1,31 @@
+---
+title: "Models"
+description: "Trajectory, Step, Message, and related types"
+---
+
+## Zod Schemas
+
+```ts
+MessageSchema, StepSchema, StepExampleSchema, TrajectorySchema, StepContextSchema;
+CurationMetadataSchema, DeferredValidationSchema;
+```
+
+## Types
+
+- `Message` — `{ role, content }`
+- `Step` — `{ observation, reasoning, action }`
+- `StepExample` — step with goal, plan, trajectoryId, stepIndex
+- `Trajectory` — `{ id?, goal, plan, steps, success, metadata? }`
+- `StepContext` — context for prompt formatting
+- `CurationMetadata` — retrieval/utility tracking
+- `DeferredValidation` — validation metadata
+
+## Helpers
+
+```ts
+trajectoryToExampleString(trajectory)
+stepExampleToString(example)
+formatExamples(examples: StepExample[])
+formatHistory(history: Step[])
+updateCurationUtility(meta: CurationMetadata)
+```

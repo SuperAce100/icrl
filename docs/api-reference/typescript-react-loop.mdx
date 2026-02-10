@@ -1,0 +1,48 @@
+---
+title: "ReActLoop"
+description: "ReAct-style agent loop with planning, reasoning, and acting"
+---
+
+## Constructor
+
+```ts
+new ReActLoop(llm: LLMProvider, retriever: TrajectoryRetriever, options: ReActLoopOptions)
+```
+
+## Options
+
+`ReActLoopOptions` includes:
+
+- `planPrompt`, `reasonPrompt`, `actPrompt`
+- `maxSteps` (default: 30)
+- `onStep`
+- `maxGoalChars`, `maxPlanChars`, `maxObsChars`, `maxReasoningChars`
+
+## Prompt Placeholders
+
+- Plan: `{goal}`, `{examples}`
+- Reason: `{goal}`, `{plan}`, `{observation}`, `{history}`, `{examples}`
+- Act: `{goal}`, `{plan}`, `{reasoning}`, `{history}`, `{examples}`
+
+## Methods
+
+```ts
+await loop.run(env, goal);
+```
+
+Returns a `Trajectory` with `goal`, `plan`, `steps`, `success`, `metadata`.
+
+## StepContext
+
+Internal type for step formatting:
+
+```ts
+interface StepContext {
+  goal: string;
+  plan: string;
+  observation: string;
+  reasoning: string;
+  history: Step[];
+  examples: StepExample[];
+}
+```

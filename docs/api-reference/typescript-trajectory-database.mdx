@@ -1,0 +1,60 @@
+---
+title: "TrajectoryDatabase"
+description: "TypeScript trajectory store with pluggable storage and semantic search"
+---
+
+## Constructor
+
+```ts
+new TrajectoryDatabase(
+  storage: StorageAdapter,
+  embedder: Embedder,
+  options?: TrajectoryDatabaseOptions
+)
+```
+
+`TrajectoryDatabaseOptions` includes:
+
+- `maxEmbedChars` (default: 2000) — maximum characters for embedding text
+
+## Load
+
+```ts
+await db.load();
+```
+
+Load trajectories and index from storage. Must be called before other operations.
+
+## Core Methods
+
+```ts
+await db.add(trajectory);
+db.get(id);
+db.getAll();
+await db.remove(id);
+db.size;
+```
+
+## Search
+
+```ts
+db.search(query, (k = 3));
+db.searchSteps(query, (k = 3));
+```
+
+- `search` — trajectory-level retrieval by goal similarity
+- `searchSteps` — step-level retrieval for in-context examples
+
+## Retrieval Feedback
+
+```ts
+await db.recordRetrieval(trajectoryId, ledToSuccess);
+db.getCurationMetadata(trajectoryId);
+```
+
+## Storage Access
+
+```ts
+db.getStorage();
+db.getEmbedder();
+```

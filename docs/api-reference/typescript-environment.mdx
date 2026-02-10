@@ -1,0 +1,25 @@
+---
+title: "Environment Protocol"
+description: "Required environment interface for TypeScript"
+---
+
+## Interface
+
+```ts
+interface Environment {
+  reset(goal: string): string | Promise<string>;
+  step(action: string): StepResult | Promise<StepResult>;
+}
+```
+
+## StepResult
+
+```ts
+interface StepResult {
+  observation: string;
+  done: boolean;
+  success: boolean;
+}
+```
+
+`reset` returns the initial observation. `step` executes an action and returns the result. The environment should store the goal internally for success determination in `step`.

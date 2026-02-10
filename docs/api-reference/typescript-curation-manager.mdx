@@ -1,0 +1,29 @@
+---
+title: "CurationManager"
+description: "Automatic curation for trajectory databases"
+---
+
+## Constructor
+
+```ts
+new CurationManager(database: TrajectoryDatabase, options?: CurationManagerOptions)
+```
+
+`CurationManagerOptions` includes:
+
+- `threshold` (default: 0.3) — utility score below which trajectories are pruned
+- `minRetrievals` (default: 5) — minimum retrievals before a trajectory can be pruned
+- `curateEvery` (default: 10) — run curation after this many successful episodes
+
+## Methods
+
+```ts
+await curation.maybeCurate();
+await curation.curate();
+curation.getUtilityScores();
+curation.getLowUtilityTrajectories();
+```
+
+- `maybeCurate` — checks if curation should run (by episode count) and runs it if so
+- `curate` — prunes low-utility trajectories, returns removed IDs
+- `getLowUtilityTrajectories` — IDs that would be pruned if curation ran now

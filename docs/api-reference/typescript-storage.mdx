@@ -1,0 +1,55 @@
+---
+title: "StorageAdapter"
+description: "Pluggable storage interface for trajectories and embeddings"
+---
+
+## Interface
+
+`StorageAdapter` defines trajectory, metadata, and embedding persistence plus vector similarity search.
+
+## Required Methods
+
+**Init & Trajectories:**
+
+```ts
+init(): Promise<void>
+saveTrajectory(trajectory: Trajectory): Promise<void>
+getTrajectory(id: string): Promise<Trajectory | null>
+getAllTrajectories(): Promise<Trajectory[]>
+deleteTrajectory(id: string): Promise<boolean>
+```
+
+**Curation Metadata:**
+
+```ts
+saveCurationMetadata(meta: CurationMetadata): Promise<void>
+getCurationMetadata(trajectoryId: string): Promise<CurationMetadata | null>
+getAllCurationMetadata(): Promise<CurationMetadata[]>
+deleteCurationMetadata(trajectoryId: string): Promise<boolean>
+```
+
+**Embeddings:**
+
+```ts
+saveEmbedding(embedding: StoredEmbedding): Promise<void>
+saveEmbeddings(embeddings: StoredEmbedding[]): Promise<void>
+getEmbedding(id: string): Promise<StoredEmbedding | null>
+getEmbeddingsByType(type: "trajectory" | "step"): Promise<StoredEmbedding[]>
+deleteEmbeddingsForTrajectory(trajectoryId: string): Promise<void>
+searchByEmbedding(query: number[], type: "trajectory" | "step", k: number): Promise<EmbeddingSearchResult[]>
+```
+
+**Step Examples:**
+
+```ts
+getStepExamplesForTrajectory(trajectoryId: string): Promise<StepExample[]>
+getAllStepExamples(): Promise<StepExample[]>
+```
+
+## Built-in Implementation
+
+- `FileSystemAdapter(path: string, options?: FileSystemAdapterOptions)` — stores trajectories as JSON on disk with in-memory embedding index
+
+`FileSystemAdapterOptions`:
+
+- `normalizeEmbeddings` (default: true)

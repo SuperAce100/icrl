@@ -1,0 +1,26 @@
+---
+title: "TrajectoryRetriever"
+description: "Step-level retriever for in-context learning"
+---
+
+## Constructor
+
+```ts
+new TrajectoryRetriever(database: TrajectoryDatabase, k?: number)
+```
+
+`k` defaults to 2.
+
+## Methods
+
+```ts
+await retriever.retrieveForPlan(goal, k?)
+await retriever.retrieveForStep(goal, plan, observation, k?)
+retriever.getRetrievedIds()
+retriever.clearRetrieved()
+retriever.recordEpisodeResult(success)
+```
+
+- `retrieveForPlan` — examples for planning phase (query: goal)
+- `retrieveForStep` — examples for reasoning/acting step (query: goal + observation)
+- `recordEpisodeResult` — call after episode ends to update curation metadata for retrieved trajectories

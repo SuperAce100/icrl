@@ -1,0 +1,16 @@
+---
+title: "Embedder Protocol"
+description: "Required embedding interface for TypeScript"
+---
+
+## Interface
+
+```ts
+interface Embedder {
+  readonly dimension: number;
+  embed(texts: string[]): Promise<number[][]>;
+  embedSingle(text: string): Promise<number[]>;
+}
+```
+
+Used by `TrajectoryDatabase` for semantic similarity search. `dimension` is the embedding vector size.

@@ -1,0 +1,14 @@
+---
+title: "LLMProvider Protocol"
+description: "Required TypeScript provider interface"
+---
+
+## Interface
+
+```ts
+interface LLMProvider {
+  complete(messages: Message[]): Promise<string>;
+}
+```
+
+That single method is sufficient for integration with `Agent` and `ReActLoop`.

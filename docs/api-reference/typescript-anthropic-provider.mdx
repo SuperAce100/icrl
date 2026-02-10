@@ -1,0 +1,30 @@
+---
+title: "Anthropic Provider"
+description: "Anthropic and Anthropic Vertex providers for TypeScript"
+---
+
+## Anthropic Provider
+
+```ts
+new AnthropicProvider(anthropic: Anthropic, options?: AnthropicProviderOptions)
+```
+
+`AnthropicProviderOptions` includes:
+
+- `model` (default: `"claude-sonnet-4-20250514"`)
+
+## Anthropic Vertex Provider
+
+```ts
+new AnthropicVertexProvider(client, options?: AnthropicVertexProviderOptions)
+```
+
+For Google Cloud Vertex AI integration.
+
+## Model Aliases
+
+```ts
+ANTHROPIC_VERTEX_MODEL_ALIASES;
+```
+
+Map of short names (e.g. `claude-3-5-sonnet`) to Vertex model IDs.

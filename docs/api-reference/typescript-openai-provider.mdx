@@ -1,0 +1,35 @@
+---
+title: "OpenAI Provider"
+description: "OpenAI LLM and embedding provider for TypeScript"
+---
+
+## LLM Provider
+
+```ts
+new OpenAIProvider(openai: OpenAI, options?: OpenAIProviderOptions)
+```
+
+`OpenAIProviderOptions` includes:
+
+- `model` (default: `"gpt-4o"`)
+
+## Embedder
+
+```ts
+new OpenAIEmbedder(openai: OpenAI, options?: OpenAIEmbedderOptions)
+```
+
+`OpenAIEmbedderOptions` includes:
+
+- `model` (default: `"text-embedding-3-small"`)
+
+## Usage
+
+```ts
+import OpenAI from "openai";
+import { OpenAIProvider, OpenAIEmbedder } from "icrl";
+
+const openai = new OpenAI();
+const llm = new OpenAIProvider(openai, { model: "gpt-4o" });
+const embedder = new OpenAIEmbedder(openai);
+```

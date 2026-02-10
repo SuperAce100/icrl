@@ -21,7 +21,10 @@
     }
   },
   "contextual": {
-    "options": ["copy", "view"]
+    "options": [
+      "copy",
+      "view"
+    ]
   },
   "fonts": {
     "heading": {
@@ -50,7 +53,11 @@
         "groups": [
           {
             "group": "Getting Started",
-            "pages": ["introduction", "installation", "quickstart"]
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
           },
           {
             "group": "Core Concepts",
@@ -89,7 +96,9 @@
         "groups": [
           {
             "group": "Overview",
-            "pages": ["api-reference/overview"]
+            "pages": [
+              "api-reference/overview"
+            ]
           },
           {
             "group": "Python API",
@@ -111,7 +120,21 @@
           },
           {
             "group": "TypeScript API",
-            "pages": ["api-reference/typescript-package"]
+            "pages": [
+              "api-reference/typescript-package",
+              "api-reference/typescript-agent",
+              "api-reference/typescript-trajectory-database",
+              "api-reference/typescript-trajectory-retriever",
+              "api-reference/typescript-curation-manager",
+              "api-reference/typescript-react-loop",
+              "api-reference/typescript-storage",
+              "api-reference/typescript-environment",
+              "api-reference/typescript-llm-provider",
+              "api-reference/typescript-embedder",
+              "api-reference/typescript-models",
+              "api-reference/typescript-openai-provider",
+              "api-reference/typescript-anthropic-provider"
+            ]
           }
         ]
       }
