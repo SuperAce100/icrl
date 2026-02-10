@@ -148,6 +148,11 @@
           "anchor": "PyPI",
           "icon": "python",
           "href": "https://pypi.org/project/icrl-py/"
+        },
+        {
+          "anchor": "npm",
+          "icon": "npm",
+          "href": "https://www.npmjs.com/package/icrl"
         }
       ]
     }
