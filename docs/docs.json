@@ -50,7 +50,7 @@
         "groups": [
           {
             "group": "Getting Started",
-            "pages": ["introduction", "installation", "quickstart"]
+            "pages": ["introduction", "installation", "quickstart", "contributing"]
           },
           {
             "group": "Core Concepts",

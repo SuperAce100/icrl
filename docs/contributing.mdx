@@ -1,0 +1,162 @@
+---
+title: "Contributing"
+description: "Project structure, setup, and development workflow"
+---
+
+## Project Structure
+
+<Tree>
+  <Tree.Folder name="icrl" defaultOpen>
+    <Tree.File name="pyproject.toml" />
+    <Tree.File name="uv.lock" />
+    <Tree.File name="README.md" />
+    <Tree.Folder name="docs" defaultOpen>
+      <Tree.Folder name="api-reference" />
+      <Tree.Folder name="core-concepts" />
+      <Tree.Folder name="examples" />
+      <Tree.Folder name="guides" />
+    </Tree.Folder>
+    <Tree.Folder name="src" defaultOpen>
+      <Tree.Folder name="icrl" defaultOpen>
+        <Tree.Folder name="cli" />
+        <Tree.Folder name="providers" />
+        <Tree.Folder name="harbor" />
+        <Tree.Folder name="validators" />
+      </Tree.Folder>
+    </Tree.Folder>
+    <Tree.Folder name="examples" defaultOpen>
+      <Tree.Folder name="codebase_patterns_demo" />
+      <Tree.Folder name="exception_handling_demo" />
+      <Tree.Folder name="it_support_demo" />
+      <Tree.Folder name="preference_learning_demo" />
+    </Tree.Folder>
+    <Tree.Folder name="tests" />
+    <Tree.Folder name="icrl-ts" defaultOpen>
+      <Tree.Folder name="src" defaultOpen>
+        <Tree.Folder name="providers" />
+        <Tree.Folder name="adapters" />
+      </Tree.Folder>
+      <Tree.Folder name="examples" />
+      <Tree.Folder name="tests" />
+      <Tree.Folder name="web-example" defaultOpen>
+        <Tree.Folder name="convex" />
+        <Tree.Folder name="src" />
+      </Tree.Folder>
+      <Tree.Folder name="web-landing" defaultOpen>
+        <Tree.Folder name="src" />
+      </Tree.Folder>
+    </Tree.Folder>
+  </Tree.Folder>
+</Tree>
+
+## Key Directories
+
+| Path                   | Purpose                                                    |
+| ---------------------- | ---------------------------------------------------------- |
+| `src/icrl/`            | Python package: Agent, database, loop, retriever, curation |
+| `src/icrl/cli/`        | CLI entrypoints, TUI, tools, providers                     |
+| `examples/`            | Python demos (file system, Harbor, domain demos)           |
+| `tests/`               | Python tests and walkthroughs                              |
+| `icrl-ts/`             | TypeScript package and web apps                            |
+| `icrl-ts/src/`         | TS library: Agent, database, loop, providers               |
+| `icrl-ts/web-example/` | Next.js + Convex demo app                                  |
+| `icrl-ts/web-landing/` | Marketing/landing site                                     |
+| `docs/`                | Mintlify documentation                                     |
+
+## Development Setup
+
+### Prerequisites
+
+- Python 3.12+
+- [uv](https://docs.astral.sh/uv/) for Python
+- Node 18+ and [bun](https://bun.sh/) for TypeScript
+- API keys for demos: `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY`
+
+### Python (from repo root)
+
+```bash
+git clone https://github.com/SuperAce100/icrl.git
+cd icrl
+
+uv sync
+```
+
+Editable install is default with `uv sync` when developing from source.
+
+### TypeScript
+
+```bash
+cd icrl-ts
+bun install
+bun run build
+```
+
+### Environment Variables
+
+Create a `.env` file in the repo root (or in `icrl-ts/` for TS demos):
+
+```bash
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+For Vertex AI usage: `GOOGLE_APPLICATION_CREDENTIALS`, `VERTEXAI_PROJECT`, `VERTEXAI_LOCATION`.
+
+## Running Tests
+
+### Python
+
+```bash
+# Mock LLM integration (no API keys)
+uv run python tests/test_with_mock.py
+
+# Agent API walkthrough
+uv run python tests/agent_api_walkthrough.py
+
+# Database API walkthrough
+uv run python tests/database_api_walkthrough.py
+
+# Harbor coding tests
+uv run --with pytest python -m pytest tests/test_harbor_coding.py -v
+```
+
+### TypeScript
+
+```bash
+cd icrl-ts
+bun run tests:run
+```
+
+## Linting and Formatting
+
+### Python
+
+Uses [ruff](https://docs.astral.sh/ruff/) for linting and formatting:
+
+```bash
+uv run ruff check src tests examples
+uv run ruff format src tests examples
+```
+
+### TypeScript
+
+```bash
+cd icrl-ts
+bun run lint
+bun run typecheck
+```
+
+## Submitting Changes
+
+1. **Fork** the repository and create a branch from `main`.
+2. **Make changes** with clear commits. Follow existing style (ruff for Python, project conventions for TS).
+3. **Run tests** before submitting. Ensure `uv run python tests/test_with_mock.py` and `uv run --with pytest python -m pytest tests/` pass for Python changes.
+4. **Open a pull request** against `main`. Describe the change and link any related issues.
+
+## Documentation
+
+Docs live in `docs/` and use [Mintlify](https://mintlify.com/). To preview locally:
+
+```bash
+bunx mint dev
+```
