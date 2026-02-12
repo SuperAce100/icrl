@@ -92,6 +92,16 @@ const GITHUB_BASE = "https://github.com/SuperAce100/icrl/tree/main";
 
 const comparisonRows = [
   {
+    dimension: "Computational cost",
+    icrl: "Minimal — only storage + retrieval, no training",
+    traditional: "High — full training runs, GPUs, evals",
+  },
+  {
+    dimension: "Model capability",
+    icrl: "All models, including closed-source ones",
+    traditional: "Open-source models only",
+  },
+  {
     dimension: "When it improves",
     icrl: "Immediately, on the next similar task",
     traditional: "After a full retraining cycle",
@@ -110,16 +120,6 @@ const comparisonRows = [
     dimension: "Feedback latency",
     icrl: "Instant — same session",
     traditional: "Batch-delayed — hours to days",
-  },
-  {
-    dimension: "Works with frozen models",
-    icrl: "Yes — no fine-tuning needed",
-    traditional: "No — requires weight updates",
-  },
-  {
-    dimension: "Computational cost",
-    icrl: "Minimal — storage + retrieval, no training",
-    traditional: "High — full training runs, GPUs, evals",
   },
   {
     dimension: "Interpretability",
@@ -200,15 +200,15 @@ export default function LandingPage() {
           className="mx-auto px-6 pb-12 pt-12 md:pt-28 md:pb-28 max-w-2xl space-y-8 text-center"
         >
           <h1 className="font-heading text-4xl leading-[1.04] tracking-tight text-foreground sm:text-5xl md:text-6xl">
-            instant, continuous,
+            in context
             <br />
             reinforcement learning
             <br />
-            for LLM agents
+            for language models
           </h1>
           <p className="mx-auto text-base leading-7 text-muted-foreground sm:text-lg text-balance">
-            In-context reinforcement learning improves agents in real time by putting agent&apos;s
-            most useful past actions into context for the next task.
+            In-context reinforcement learning improves language models in real time by putting
+            agent&apos;s most useful past actions into context for the next task.
           </p>
           <div className="flex sm:flex-row flex-col flex-wrap justify-center items-center gap-4">
             <CopyableInstallSnippet />
@@ -235,15 +235,15 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm leading-6 text-muted-foreground">
-                  At LLM scale, traditional reinforcement learning requires retraining the model
-                  with every new experience, a very expensive process that doesn&apos;s even work
-                  for the closed-source frontier and takes weeks to successfully complete.
+                  Reinforcement learning requires retraining the model with every new experience, a
+                  very expensive process that doesn&apos;s work for the closed-source frontier and
+                  takes weeks to successfully complete.{" "}
                   <span className="font-semibold text-foreground">
                     In-Context Reinforcement Learning (ICRL)
                   </span>{" "}
                   lets LLM agents improve continuously without any post-training work at all. When
                   an agent successfully completes a task, ICRL stores that trajectory, so the next
-                  time a similar task comes up, the can will retrieve the most relevant past steps
+                  time a similar task comes up, the agent will retrieve the most relevant past steps
                   and use them as in-context examples to guide its decisions.
                 </p>
                 <p className="text-sm leading-6 text-muted-foreground">
@@ -288,7 +288,11 @@ export default function LandingPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {/* Stacked cards: visible on small screens only */}
+                <p className="mb-4 text-sm text-muted-foreground leading-relaxed">
+                  You can get the same improvements from traditional RL with ICRL, at a much cheaper
+                  cost, on closed source models, and at all times.
+                </p>
+
                 <div className="space-y-3 md:hidden">
                   {comparisonRows.map((row) => (
                     <div
