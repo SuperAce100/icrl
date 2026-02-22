@@ -56,6 +56,6 @@
 
 ## Docs + API Hygiene
 - If changing public behavior or constructor options:
-  - update `/Users/asanshaygupta/.codex/worktrees/9a8b/icrl/README.md`
-  - update relevant docs under `/Users/asanshaygupta/.codex/worktrees/9a8b/icrl/docs/`
+  - update the repository `README.md`
+  - update relevant docs under `docs/`
 - If changing semantics shared with TypeScript core, keep parity or document intentional divergence.
