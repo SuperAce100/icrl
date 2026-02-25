@@ -22,6 +22,7 @@ warnings.filterwarnings("ignore", message="coroutine 'close_litellm_async_client
 from icrl.cli.tools.base import ToolRegistry  # noqa: E402
 from icrl.models import Message  # noqa: E402
 from icrl.providers.anthropic_vertex import AnthropicVertexProvider  # noqa: E402
+from icrl.providers.gemini_vertex import GeminiVertexProvider  # noqa: E402
 
 
 @dataclass
@@ -70,10 +71,10 @@ class ToolResponse:
 
 
 class AnthropicVertexToolProvider:
-    """Anthropic Vertex AI provider with native tool calling support.
+    """Vertex AI provider with native tool calling support.
 
-    This provider uses Anthropic Claude models on Google Cloud Vertex AI
-    with native tool calling capabilities.
+    This provider supports both Anthropic Claude and Gemini models
+    on Google Cloud Vertex AI with native tool calling capabilities.
     """
 
     def __init__(
@@ -102,7 +103,12 @@ class AnthropicVertexToolProvider:
         self._registry = registry
 
         # Create base provider to handle credentials setup
-        self._base_provider = AnthropicVertexProvider(
+        provider_cls = (
+            GeminiVertexProvider
+            if _is_gemini_vertex_model(model)
+            else AnthropicVertexProvider
+        )
+        self._base_provider = provider_cls(
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
@@ -251,15 +257,25 @@ def is_vertex_model(model: str) -> bool:
     if model.startswith("vertex_ai/"):
         return True
 
-    # Check for Anthropic model aliases that should use Vertex
-    vertex_aliases = set(AnthropicVertexProvider.MODEL_ALIASES.keys())
+    # Check known Vertex model aliases
+    vertex_aliases = set(AnthropicVertexProvider.MODEL_ALIASES.keys()) | set(
+        GeminiVertexProvider.MODEL_ALIASES.keys()
+    )
     if model in vertex_aliases:
         return True
 
     # Check for environment variable indicating Vertex preference
     if os.environ.get("ICRL_USE_VERTEX_AI", "").lower() in {"1", "true", "yes"}:
-        # Claude models should use Vertex if env var is set
-        if "claude" in model.lower():
+        # Claude/Gemini models should use Vertex if env var is set
+        if "claude" in model.lower() or "gemini" in model.lower():
             return True
 
     return False
+
+
+def _is_gemini_vertex_model(model: str) -> bool:
+    """Check if model should use Gemini Vertex provider."""
+    model_lower = model.lower()
+    if model in GeminiVertexProvider.MODEL_ALIASES:
+        return True
+    return model_lower.startswith("vertex_ai/") and "gemini" in model_lower

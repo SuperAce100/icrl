@@ -43,6 +43,7 @@ from icrl.harbor.prompts import (
     SYSTEM_PROMPT,
 )
 from icrl.providers.anthropic_vertex import AnthropicVertexProvider
+from icrl.providers.gemini_vertex import GeminiVertexProvider
 
 # Disable LiteLLM's async logging worker to avoid event loop mismatch errors
 litellm.disable_logging_worker = True
@@ -50,44 +51,43 @@ litellm.disable_logging_worker = True
 litellm.drop_params = True
 
 
+def _has_vertex_credentials() -> bool:
+    """Check if GOOGLE_APPLICATION_CREDENTIALS is configured and exists."""
+    creds = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    return bool(creds and Path(creds).exists())
+
+
+def _is_gemini_vertex_model(model: str) -> bool:
+    """Check if model should use Gemini Vertex AI provider."""
+    model_lower = model.lower()
+    if model in GeminiVertexProvider.MODEL_ALIASES:
+        return True
+    if model_lower.startswith("vertex_ai/") and "gemini" in model_lower:
+        return True
+    if os.environ.get("ICRL_USE_VERTEX_AI", "").lower() in {"1", "true", "yes"}:
+        if "gemini" in model_lower:
+            return True
+    return False
+
+
 def _is_vertex_model(model: str) -> bool:
     """Check if model should use Vertex AI provider."""
     # Explicit vertex_ai/ prefix
     if model.startswith("vertex_ai/"):
         return True
-    # Claude model aliases that should use Vertex when credentials are available
-    vertex_aliases = {
-        "claude-opus-4.5",
-        "claude-opus-4-5",
-        "claude-4.5-opus",
-        "claude-sonnet-4.5",
-        "claude-sonnet-4-5",
-        "claude-4.5-sonnet",
-        "claude-haiku-4.5",
-        "claude-haiku-4-5",
-        "claude-4.5-haiku",
-        "claude-sonnet-4",
-        "claude-4-sonnet",
-        "claude-opus-4",
-        "claude-4-opus",
-        "claude-3-7-sonnet",
-        "claude-3.7-sonnet",
-        "claude-3-5-sonnet",
-        "claude-3.5-sonnet",
-        "claude-3-5-haiku",
-        "claude-3-opus",
-        "claude-3-sonnet",
-        "claude-3-haiku",
-    }
+
+    # Known Vertex aliases should use Vertex when credentials are available
+    vertex_aliases = set(AnthropicVertexProvider.MODEL_ALIASES.keys()) | set(
+        GeminiVertexProvider.MODEL_ALIASES.keys()
+    )
     if model in vertex_aliases:
-        # Only use Vertex if credentials are configured
-        creds = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-        if creds and Path(creds).exists():
-            return True
+        return _has_vertex_credentials()
+
     # Environment variable override
     if os.environ.get("ICRL_USE_VERTEX_AI", "").lower() in {"1", "true", "yes"}:
-        if "claude" in model.lower():
+        if "claude" in model.lower() or "gemini" in model.lower():
             return True
+
     return False
 
 
@@ -96,15 +96,24 @@ def _create_llm_provider(
 ):
     """Create the appropriate LLM provider based on model type."""
     if _is_vertex_model(model):
-        # Use Vertex AI for Claude models
+        # Use Vertex AI for Claude/Gemini models
         credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-        location = os.environ.get("VERTEXAI_LOCATION", "us-east5")
-        # "global" is not valid for Anthropic models
-        if location == "global":
-            location = "us-east5"
         project_id = os.environ.get("VERTEXAI_PROJECT")
 
-        return AnthropicVertexProvider(
+        provider_cls = (
+            GeminiVertexProvider
+            if _is_gemini_vertex_model(model)
+            else AnthropicVertexProvider
+        )
+        location = os.environ.get("VERTEXAI_LOCATION")
+        if not location:
+            location = (
+                "global" if provider_cls is GeminiVertexProvider else "us-east5"
+            )
+        if provider_cls is AnthropicVertexProvider and location == "global":
+            location = "us-east5"
+
+        return provider_cls(
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
