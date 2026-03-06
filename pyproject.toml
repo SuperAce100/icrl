@@ -43,6 +43,11 @@ Issues = "https://github.com/SuperAce100/icrl/issues"
 [project.scripts]
 icrl = "icrl.cli.main:app"
 
+[project.optional-dependencies]
+lean = [
+    "lean-dojo>=4.20.0",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
