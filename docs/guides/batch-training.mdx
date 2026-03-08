@@ -7,10 +7,12 @@ description: "Train and evaluate across many goals"
 
 ```python
 trajectories = await agent.train_batch(env_factory, goals)
-results = await agent.run_batch(env_factory, eval_goals)
+results = await agent.run_batch(env_factory, eval_goals, mini_batch_size=4)
 ```
 
 `env_factory` should return a fresh environment instance per goal.
+`mini_batch_size` is supported for inference/test mode; training remains sequential
+because it mutates the shared trajectory database.
 
 ## TypeScript
 

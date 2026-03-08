@@ -443,8 +443,8 @@ goals = ["Task 1", "Task 2", "Task 3"]
 # Training mode - learns from each successful episode
 trajectories = await agent.train_batch(make_env, goals)
 
-# Inference mode - frozen database
-trajectories = await agent.run_batch(make_env, goals)
+# Inference mode - frozen database, optionally in parallel mini-batches
+trajectories = await agent.run_batch(make_env, goals, mini_batch_size=4)
 ```
 
 ### Custom Embeddings

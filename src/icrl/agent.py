@@ -1,7 +1,9 @@
 """Main Agent class for ICRL."""
 
 import asyncio
+import copy
 from collections.abc import Callable
+from typing import cast
 
 from icrl.curation import CurationManager
 from icrl.database import TrajectoryDatabase
@@ -59,6 +61,7 @@ class Agent:
                 If None, trajectories are stored automatically (no verification).
         """
         self._llm = llm
+        self._db_path = db_path
         self._plan_prompt = plan_prompt
         self._reason_prompt = reason_prompt
         self._act_prompt = act_prompt
@@ -66,6 +69,8 @@ class Agent:
         self._max_steps = max_steps
         self._on_step = on_step
         self._verify_trajectory = verify_trajectory
+        self._curation_threshold = curation_threshold
+        self._curation_min_retrievals = curation_min_retrievals
 
         self._database = TrajectoryDatabase(db_path)
 
@@ -138,7 +143,7 @@ class Agent:
         Returns:
             The resulting trajectory.
         """
-        return await self._loop.run(env, goal)
+        return await self._loop.run(env, goal, record_retrieval_result=False)
 
     def train_sync(self, env: Environment, goal: str) -> Trajectory:
         """Synchronous wrapper for train.
@@ -168,6 +173,7 @@ class Agent:
         self,
         env_factory: Callable[[], Environment],
         goals: list[str],
+        mini_batch_size: int = 1,
     ) -> list[Trajectory]:
         """Train on multiple goals.
 
@@ -176,10 +182,19 @@ class Agent:
         Args:
             env_factory: A callable that returns a new environment instance.
             goals: List of goal descriptions.
+            mini_batch_size: Maximum number of concurrent episodes. Training
+                uses shared mutable state, so values above 1 are not supported.
 
         Returns:
             List of resulting trajectories.
         """
+        mini_batch_size = self._validate_mini_batch_size(mini_batch_size)
+        if mini_batch_size != 1:
+            raise ValueError(
+                "Parallel mini-batches are only supported for run_batch() in "
+                "inference/test mode."
+            )
+
         trajectories = []
         for goal in goals:
             env = env_factory()
@@ -191,6 +206,7 @@ class Agent:
         self,
         env_factory: Callable[[], Environment],
         goals: list[str],
+        mini_batch_size: int = 1,
     ) -> list[Trajectory]:
         """Run inference on multiple goals.
 
@@ -199,16 +215,91 @@ class Agent:
         Args:
             env_factory: A callable that returns a new environment instance.
             goals: List of goal descriptions.
+            mini_batch_size: Maximum number of concurrent episodes to run.
 
         Returns:
             List of resulting trajectories.
         """
-        trajectories = []
-        for goal in goals:
-            env = env_factory()
-            trajectory = await self.run(env, goal)
-            trajectories.append(trajectory)
-        return trajectories
+        mini_batch_size = self._validate_mini_batch_size(mini_batch_size)
+        if not goals:
+            return []
+
+        if mini_batch_size == 1:
+            trajectories = []
+            for goal in goals:
+                env = env_factory()
+                trajectory = await self.run(env, goal)
+                trajectories.append(trajectory)
+            return trajectories
+
+        semaphore = asyncio.Semaphore(mini_batch_size)
+        results = cast(list[Trajectory | None], [None] * len(goals))
+
+        async def _run_goal(index: int, goal: str) -> None:
+            async with semaphore:
+                env = env_factory()
+                batch_agent = self._create_isolated_batch_agent()
+                results[index] = await batch_agent.run(env, goal)
+
+        await asyncio.gather(
+            *(_run_goal(index, goal) for index, goal in enumerate(goals))
+        )
+        return [trajectory for trajectory in results if trajectory is not None]
+
+    def _validate_mini_batch_size(self, mini_batch_size: int) -> int:
+        """Validate and normalize batch concurrency values."""
+        if mini_batch_size < 1:
+            raise ValueError("mini_batch_size must be >= 1")
+        return mini_batch_size
+
+    def _create_isolated_batch_agent(self) -> "Agent":
+        """Create a fresh agent instance for concurrent inference work."""
+        return Agent(
+            llm=self._clone_llm_provider(),
+            db_path=self._db_path,
+            plan_prompt=self._plan_prompt,
+            reason_prompt=self._reason_prompt,
+            act_prompt=self._act_prompt,
+            k=self._k,
+            max_steps=self._max_steps,
+            on_step=self._on_step,
+            curation_threshold=self._curation_threshold,
+            curation_min_retrievals=self._curation_min_retrievals,
+            verify_trajectory=self._verify_trajectory,
+        )
+
+    def _clone_llm_provider(self) -> LLMProvider:
+        """Best-effort clone for known providers used in concurrent batches."""
+        clone = getattr(self._llm, "clone", None)
+        if callable(clone):
+            return clone()
+
+        from icrl.providers import AnthropicVertexProvider, LiteLLMProvider
+
+        if isinstance(self._llm, LiteLLMProvider):
+            return LiteLLMProvider(
+                model=self._llm._model,
+                temperature=self._llm._temperature,
+                max_tokens=self._llm._max_tokens,
+                system_prompt=self._llm._system_prompt,
+                **self._llm._kwargs,
+            )
+
+        if isinstance(self._llm, AnthropicVertexProvider):
+            return AnthropicVertexProvider(
+                model=self._llm._model,
+                temperature=self._llm._temperature,
+                max_tokens=self._llm._max_tokens,
+                system_prompt=self._llm._system_prompt,
+                project_id=self._llm.project_id,
+                location=self._llm.location,
+                **self._llm._kwargs,
+            )
+
+        try:
+            return copy.deepcopy(self._llm)
+        except Exception:
+            return self._llm
 
     def get_stats(self) -> dict[str, int | float]:
         """Get statistics about the agent's database.

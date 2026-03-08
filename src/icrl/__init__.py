@@ -56,6 +56,7 @@ __all__ = [
 try:
     from icrl.harbor import (  # noqa: F401
         HarborEnvironmentAdapter,
+        HarborTrial,
         ICRLTestAgent,
         ICRLTrainAgent,
     )
@@ -63,6 +64,7 @@ try:
     __all__.extend(
         [
             "HarborEnvironmentAdapter",
+            "HarborTrial",
             "ICRLTrainAgent",
             "ICRLTestAgent",
         ]

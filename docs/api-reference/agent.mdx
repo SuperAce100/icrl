@@ -29,8 +29,8 @@ await agent.train(env, goal)
 await agent.run(env, goal)
 agent.train_sync(env, goal)
 agent.run_sync(env, goal)
-await agent.train_batch(env_factory, goals)
-await agent.run_batch(env_factory, goals)
+await agent.train_batch(env_factory, goals, mini_batch_size=1)
+await agent.run_batch(env_factory, goals, mini_batch_size=4)
 agent.get_stats()
 ```
 
@@ -38,6 +38,9 @@ agent.get_stats()
 
 - `train` stores successful trajectories (subject to `verify_trajectory`).
 - `run` never writes new trajectories.
+- `run_batch(..., mini_batch_size=N)` runs up to `N` inference episodes in parallel.
+- `train_batch` accepts `mini_batch_size` for API symmetry, but values above `1`
+  are rejected because training mutates shared database state.
 - `database` property exposes the underlying `TrajectoryDatabase`.
 
 ## Stats Shape
