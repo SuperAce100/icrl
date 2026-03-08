@@ -16,11 +16,12 @@ Example usage with Harbor CLI:
         -t "*django*"
 """
 
-from icrl.harbor.adapter import HarborEnvironmentAdapter
+from icrl.harbor.adapter import HarborEnvironmentAdapter, HarborTrial
 from icrl.harbor.agents import ICRLTestAgent, ICRLTrainAgent, ICRLZeroShotAgent
 
 __all__ = [
     "HarborEnvironmentAdapter",
+    "HarborTrial",
     "ICRLTrainAgent",
     "ICRLTestAgent",
     "ICRLZeroShotAgent",

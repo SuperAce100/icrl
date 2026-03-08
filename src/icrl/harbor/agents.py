@@ -24,6 +24,7 @@ from __future__ import annotations
 import os
 import tempfile
 import time
+from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -31,11 +32,11 @@ import litellm
 from dotenv import load_dotenv
 from harbor.agents.base import BaseAgent
 
-from icrl import Agent, LiteLLMProvider, Step, StepContext
+from icrl import Agent, LiteLLMProvider, Step, StepContext, Trajectory
 from icrl._debug import log as _debug_log
 from icrl._debug import set_run_id as _set_debug_run_id
 from icrl.harbor import docker_workarounds as _docker_workarounds  # noqa: F401
-from icrl.harbor.adapter import HarborEnvironmentAdapter
+from icrl.harbor.adapter import HarborEnvironmentAdapter, HarborTrial
 from icrl.harbor.prompts import (
     ACT_PROMPT,
     PLAN_PROMPT,
@@ -44,10 +45,10 @@ from icrl.harbor.prompts import (
 )
 from icrl.providers.anthropic_vertex import AnthropicVertexProvider
 
-# Disable LiteLLM's async logging worker to avoid event loop mismatch errors
-litellm.disable_logging_worker = True
-# Drop unsupported params for newer models like GPT-5
-litellm.drop_params = True
+# Disable LiteLLM's async logging worker to avoid event loop mismatch errors.
+setattr(litellm, "disable_logging_worker", True)
+# Drop unsupported params for newer models like GPT-5.
+setattr(litellm, "drop_params", True)
 
 
 def _is_vertex_model(model: str) -> bool:
@@ -93,7 +94,7 @@ def _is_vertex_model(model: str) -> bool:
 
 def _create_llm_provider(
     model: str, temperature: float, max_tokens: int, system_prompt: str
-):
+) -> LiteLLMProvider | AnthropicVertexProvider:
     """Create the appropriate LLM provider based on model type."""
     if _is_vertex_model(model):
         # Use Vertex AI for Claude models
@@ -223,6 +224,45 @@ def _create_step_callback(
         context.metadata = meta
 
     return callback
+
+
+def _create_test_mode_agent(
+    context: AgentContext | None = None,
+    trajectory_log: list[dict] | None = None,
+) -> tuple[Agent, LiteLLMProvider | AnthropicVertexProvider]:
+    """Create a fresh evaluation-mode agent and its provider."""
+    db_path = _get_db_path()
+    model = _get_model()
+    k = _get_k()
+    max_steps = _get_max_steps()
+
+    temp = 1.0 if "gpt-5" in model.lower() else 0.3
+    llm = _create_llm_provider(
+        model=model,
+        temperature=temp,
+        max_tokens=_get_max_completion_tokens(),
+        system_prompt=SYSTEM_PROMPT,
+    )
+
+    on_step = None
+    if context is not None:
+        on_step = _create_step_callback(
+            context,
+            trajectory_log if trajectory_log is not None else [],
+            mode="test",
+        )
+
+    agent = Agent(
+        llm=llm,
+        db_path=db_path,
+        plan_prompt=PLAN_PROMPT,
+        reason_prompt=REASON_PROMPT,
+        act_prompt=ACT_PROMPT,
+        k=k,
+        max_steps=max_steps,
+        on_step=on_step,
+    )
+    return agent, llm
 
 
 class ICRLTrainAgent(BaseAgent):
@@ -506,6 +546,31 @@ class ICRLTestAgent(BaseAgent):
         """Set up the agent (no-op for ICRL)."""
         pass
 
+    @classmethod
+    async def run_mini_batch(
+        cls,
+        trials: Sequence[HarborTrial],
+        *,
+        mini_batch_size: int = 1,
+        max_actions: int | None = None,
+        timeout_sec: int = 300,
+    ) -> list[Trajectory]:
+        """Run multiple Harbor evaluation trials in parallel mini-batches."""
+
+        def agent_factory() -> Agent:
+            agent, _ = _create_test_mode_agent()
+            return agent
+
+        return await HarborEnvironmentAdapter.run_test_mini_batch(
+            trials,
+            agent_factory,
+            mini_batch_size=mini_batch_size,
+            max_actions=(
+                max_actions if max_actions is not None else _get_max_steps() + 10
+            ),
+            timeout_sec=timeout_sec,
+        )
+
     async def run(
         self,
         instruction: str,
@@ -542,10 +607,7 @@ class ICRLTestAgent(BaseAgent):
         )
         # endregion agent log (debug-mode)
 
-        db_path = _get_db_path()
-        model = _get_model()
         k = _get_k()
-        max_steps = _get_max_steps()
 
         if _is_smoke_mode():
             if context.metadata is None:
@@ -560,30 +622,12 @@ class ICRLTestAgent(BaseAgent):
             )
             return
 
-        temp = 1.0 if "gpt-5" in model.lower() else 0.3
-        llm = _create_llm_provider(
-            model=model,
-            temperature=temp,
-            max_tokens=_get_max_completion_tokens(),
-            system_prompt=SYSTEM_PROMPT,
-        )
-
         trajectory_log: list[dict] = []
-
-        agent = Agent(
-            llm=llm,
-            db_path=db_path,
-            plan_prompt=PLAN_PROMPT,
-            reason_prompt=REASON_PROMPT,
-            act_prompt=ACT_PROMPT,
-            k=k,
-            max_steps=max_steps,
-            on_step=_create_step_callback(context, trajectory_log, mode="test"),
-        )
+        agent, llm = _create_test_mode_agent(context, trajectory_log)
 
         adapter = HarborEnvironmentAdapter(
             environment=environment,
-            max_actions=max_steps + 10,
+            max_actions=_get_max_steps() + 10,
             timeout_sec=300,  # 5 min timeout for complex tasks
         )
 

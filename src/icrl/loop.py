@@ -55,12 +55,20 @@ class ReActLoop:
         self._max_steps = max_steps
         self._on_step = on_step
 
-    async def run(self, env: Environment, goal: str) -> Trajectory:
+    async def run(
+        self,
+        env: Environment,
+        goal: str,
+        *,
+        record_retrieval_result: bool = True,
+    ) -> Trajectory:
         """Run a complete episode.
 
         Args:
             env: The environment to interact with.
             goal: The goal description.
+            record_retrieval_result: Whether to write retrieval-success metadata
+                back to the database for curation.
 
         Returns:
             The resulting trajectory.
@@ -179,7 +187,10 @@ class ReActLoop:
             step_result = env.step(action)
             observation, done, success = await _maybe_await(step_result)
 
-        self._retriever.record_episode_result(success)
+        if record_retrieval_result:
+            self._retriever.record_episode_result(success)
+        else:
+            self._retriever.clear_retrieved()
 
         return Trajectory(
             goal=goal,

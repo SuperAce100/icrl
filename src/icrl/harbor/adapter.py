@@ -9,13 +9,30 @@ from __future__ import annotations
 import asyncio
 import os
 import time
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, cast
 
 from icrl._debug import log as _debug_log
+from icrl.models import Trajectory
 
 if TYPE_CHECKING:
     from harbor.environments.base import BaseEnvironment
+
+
+class HarborTrialRunner(Protocol):
+    """Any object that can execute one Harbor-backed trial."""
+
+    async def run(self, env: HarborEnvironmentAdapter, goal: str) -> Trajectory: ...
+
+
+@dataclass(slots=True)
+class HarborTrial:
+    """One isolated Harbor test-mode trial."""
+
+    instruction: str
+    environment: BaseEnvironment
 
 
 class HarborEnvironmentAdapter:
@@ -29,6 +46,40 @@ class HarborEnvironmentAdapter:
         goal: The current task goal/instruction.
         max_actions: Maximum number of actions before episode ends.
     """
+
+    @classmethod
+    async def run_test_mini_batch(
+        cls,
+        trials: Sequence[HarborTrial],
+        agent_factory: Callable[[], HarborTrialRunner],
+        *,
+        mini_batch_size: int = 1,
+        max_actions: int = 50,
+        timeout_sec: int = 120,
+    ) -> list[Trajectory]:
+        """Run multiple Harbor-backed inference trials with bounded concurrency."""
+        if mini_batch_size < 1:
+            raise ValueError("mini_batch_size must be >= 1")
+        if not trials:
+            return []
+
+        semaphore = asyncio.Semaphore(mini_batch_size)
+        results = cast(list[Trajectory | None], [None] * len(trials))
+
+        async def _run_trial(index: int, trial: HarborTrial) -> None:
+            async with semaphore:
+                agent = agent_factory()
+                adapter = cls(
+                    environment=trial.environment,
+                    max_actions=max_actions,
+                    timeout_sec=timeout_sec,
+                )
+                results[index] = await agent.run(adapter, trial.instruction)
+
+        await asyncio.gather(
+            *(_run_trial(index, trial) for index, trial in enumerate(trials))
+        )
+        return [trajectory for trajectory in results if trajectory is not None]
 
     def __init__(
         self,
@@ -137,7 +188,6 @@ Start by exploring the codebase to find the relevant code."""
 
             # Execute each command individually (like original harness)
             all_outputs: list[str] = []
-            last_return_code = 0
 
             for cmd, timeout in commands:
                 if not cmd:
@@ -153,8 +203,6 @@ Start by exploring the codebase to find the relevant code."""
                 output, return_code = await self._execute_command_async(
                     cmd, timeout_override=timeout
                 )
-                last_return_code = return_code
-
                 self._maybe_trace_step(cmd, output)
                 self._maybe_write_agent_log(cmd, output, return_code)
 
@@ -202,7 +250,10 @@ Start by exploring the codebase to find the relevant code."""
 
         # Extract keystrokes with their duration attributes
         # Pattern: <keystrokes duration="X">command</keystrokes>
-        keystrokes_pattern = r'<keystrokes(?:\s+duration=["\']?(\d*\.?\d+)["\']?)?[^>]*>([\s\S]*?)</keystrokes>'
+        keystrokes_pattern = (
+            r'<keystrokes(?:\s+duration=["\']?(\d*\.?\d+)["\']?)?[^>]*>'
+            r"([\s\S]*?)</keystrokes>"
+        )
         matches = re.findall(keystrokes_pattern, action, re.IGNORECASE)
 
         for duration_str, keystroke in matches:
